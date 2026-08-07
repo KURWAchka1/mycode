@@ -10,8 +10,8 @@ android {
         applicationId 'app.playerokmonitor'
         minSdk 26
         targetSdk 36
-        versionCode 1
-        versionName '1.0.0'
+        versionCode 2
+        versionName '1.0.1'
     }
 
     buildTypes {
@@ -41,9 +41,9 @@ android {
     }
 }
 
-// Generate a tiny, deterministic notification WAV during the build. Keeping the
-// sound generated from source avoids committing opaque binary blobs while still
-// giving every APK the exact same distinctive alert.
+// Generate a short, soft and distinctive two-note chime during the build.
+// The alert intentionally uses a conservative amplitude and smooth envelopes,
+// so it is recognizable without sounding like an alarm.
 def generatedSoundDir = file("$buildDir/generated/res/orderSound/raw")
 def generatedSoundFile = file("$buildDir/generated/res/orderSound/raw/order_alert.wav")
 
@@ -52,34 +52,53 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
     doLast {
         generatedSoundDir.mkdirs()
 
-        final int sampleRate = 8000
-        final double durationSeconds = 0.90d
+        final int sampleRate = 16000
+        final double durationSeconds = 0.48d
         final int sampleCount = (int) (sampleRate * durationSeconds)
         byte[] pcm = new byte[sampleCount]
 
         for (int i = 0; i < sampleCount; i++) {
             double t = i / (double) sampleRate
-            double envelope = 0.0d
-            double frequency = 0.0d
 
-            if (t < 0.18d) {
-                double x = t / 0.18d
-                envelope = Math.pow(Math.sin(Math.PI * x), 1.3d)
-                frequency = 880.0d + 700.0d * x
-            } else if (t >= 0.24d && t < 0.42d) {
-                double x = (t - 0.24d) / 0.18d
-                envelope = Math.pow(Math.sin(Math.PI * x), 1.3d)
-                frequency = 1180.0d + 500.0d * x
-            } else if (t >= 0.50d && t < 0.82d) {
-                double x = (t - 0.50d) / 0.32d
-                envelope = Math.pow(Math.sin(Math.PI * x), 1.2d)
-                frequency = 980.0d + 900.0d * x
+            // First soft bell: C5 -> a calm recognizable opening.
+            double a1 = 0.0d
+            if (t >= 0.015d && t < 0.34d) {
+                double x = t - 0.015d
+                double attack = Math.min(1.0d, x / 0.025d)
+                double decay = Math.exp(-7.2d * x)
+                a1 = attack * decay
             }
 
-            double phase = 2.0d * Math.PI * frequency * t
-            double wave = 0.72d * envelope *
-                    (0.78d * Math.sin(phase) + 0.22d * Math.sin(2.0d * phase))
-            int unsignedSample = Math.max(0, Math.min(255, (int) Math.round(128.0d + 127.0d * wave)))
+            // Second bell: G5 starts slightly later and overlaps for a pleasant
+            // consonant interval instead of a harsh siren-like sweep.
+            double a2 = 0.0d
+            if (t >= 0.13d && t < 0.47d) {
+                double x = t - 0.13d
+                double attack = Math.min(1.0d, x / 0.028d)
+                double decay = Math.exp(-6.6d * x)
+                a2 = attack * decay
+            }
+
+            // Tiny high shimmer makes it unique, but remains much quieter than
+            // the two main notes.
+            double shimmer = 0.0d
+            if (t >= 0.19d && t < 0.43d) {
+                double x = t - 0.19d
+                shimmer = Math.min(1.0d, x / 0.020d) * Math.exp(-10.0d * x)
+            }
+
+            double wave =
+                    0.18d * a1 * Math.sin(2.0d * Math.PI * 523.25d * t) +
+                    0.15d * a2 * Math.sin(2.0d * Math.PI * 783.99d * t) +
+                    0.035d * shimmer * Math.sin(2.0d * Math.PI * 1174.66d * t)
+
+            // Gentle fade-out prevents a click at the end of the WAV.
+            if (t > 0.42d) {
+                wave *= Math.max(0.0d, (durationSeconds - t) / (durationSeconds - 0.42d))
+            }
+
+            int unsignedSample = Math.max(0, Math.min(255,
+                    (int) Math.round(128.0d + 127.0d * wave)))
             pcm[i] = (byte) unsignedSample
         }
 
