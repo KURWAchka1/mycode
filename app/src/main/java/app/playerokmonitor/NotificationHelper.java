@@ -12,9 +12,9 @@ import android.os.Build;
 
 final class NotificationHelper {
     static final String SERVICE_CHANNEL = "monitor_service_v1";
-    // Channel IDs are immutable after creation. v2 intentionally forces Android
-    // to pick up the new, softer sound for users upgrading from 1.0.0.
-    static final String ORDERS_CHANNEL = "playerok_orders_v2";
+    // Notification channel sound settings are persistent. v3 guarantees that
+    // upgrades from 1.0.1 use the new clean 16-bit chime instead of cached v2.
+    static final String ORDERS_CHANNEL = "playerok_orders_v3";
     static final int SERVICE_NOTIFICATION_ID = 1001;
 
     private NotificationHelper() {}
@@ -38,7 +38,7 @@ final class NotificationHelper {
                 "Новые заказы Playerok",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        orders.setDescription("Короткий мягкий сигнал новых оплаченных заказов");
+        orders.setDescription("Чистый короткий мягкий сигнал новых оплаченных заказов");
         Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.order_alert);
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
