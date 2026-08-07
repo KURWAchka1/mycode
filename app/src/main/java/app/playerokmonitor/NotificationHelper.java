@@ -12,7 +12,9 @@ import android.os.Build;
 
 final class NotificationHelper {
     static final String SERVICE_CHANNEL = "monitor_service_v1";
-    static final String ORDERS_CHANNEL = "playerok_orders_v1";
+    // Channel IDs are immutable after creation. v2 intentionally forces Android
+    // to pick up the new, softer sound for users upgrading from 1.0.0.
+    static final String ORDERS_CHANNEL = "playerok_orders_v2";
     static final int SERVICE_NOTIFICATION_ID = 1001;
 
     private NotificationHelper() {}
@@ -36,7 +38,7 @@ final class NotificationHelper {
                 "Новые заказы Playerok",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        orders.setDescription("Мгновенные уведомления о новых оплаченных заказах");
+        orders.setDescription("Короткий мягкий сигнал новых оплаченных заказов");
         Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.order_alert);
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -44,7 +46,7 @@ final class NotificationHelper {
                 .build();
         orders.setSound(sound, attributes);
         orders.enableVibration(true);
-        orders.setVibrationPattern(new long[]{0, 180, 100, 260});
+        orders.setVibrationPattern(new long[]{0, 55, 70, 65});
         manager.createNotificationChannel(orders);
     }
 
