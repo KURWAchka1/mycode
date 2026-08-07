@@ -10,8 +10,8 @@ android {
         applicationId 'app.playerokmonitor'
         minSdk 26
         targetSdk 36
-        versionCode 2
-        versionName '1.0.1'
+        versionCode 3
+        versionName '1.0.2'
     }
 
     buildTypes {
@@ -41,9 +41,9 @@ android {
     }
 }
 
-// Generate a short, soft and distinctive two-note chime during the build.
-// The alert intentionally uses a conservative amplitude and smooth envelopes,
-// so it is recognizable without sounding like an alarm.
+// Generate a clean, short two-note chime during the build.
+// 16-bit PCM at 44.1 kHz avoids the audible quantization noise of the previous
+// 8-bit file while preserving the same pleasant C5/G5 character.
 def generatedSoundDir = file("$buildDir/generated/res/orderSound/raw")
 def generatedSoundFile = file("$buildDir/generated/res/orderSound/raw/order_alert.wav")
 
@@ -52,54 +52,57 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
     doLast {
         generatedSoundDir.mkdirs()
 
-        final int sampleRate = 16000
-        final double durationSeconds = 0.48d
-        final int sampleCount = (int) (sampleRate * durationSeconds)
-        byte[] pcm = new byte[sampleCount]
+        final int sampleRate = 44100
+        final int bitsPerSample = 16
+        final int bytesPerSample = bitsPerSample / 8
+        final double durationSeconds = 0.50d
+        final int sampleCount = (int) Math.round(sampleRate * durationSeconds)
+        byte[] pcm = new byte[sampleCount * bytesPerSample]
+
+        def smoothstep = { double x ->
+            double v = Math.max(0.0d, Math.min(1.0d, x))
+            v * v * (3.0d - 2.0d * v)
+        }
 
         for (int i = 0; i < sampleCount; i++) {
             double t = i / (double) sampleRate
 
-            // First soft bell: C5 -> a calm recognizable opening.
-            double a1 = 0.0d
-            if (t >= 0.015d && t < 0.34d) {
-                double x = t - 0.015d
-                double attack = Math.min(1.0d, x / 0.025d)
-                double decay = Math.exp(-7.2d * x)
-                a1 = attack * decay
+            // First bell: C5. Local phase starts at zero and a smooth attack
+            // prevents clicks or a noisy transient at note onset.
+            double note1 = 0.0d
+            if (t >= 0.012d && t < 0.36d) {
+                double x = t - 0.012d
+                double attack = smoothstep(x / 0.030d)
+                double decay = Math.exp(-6.8d * x)
+                double release = t > 0.31d ? smoothstep((0.36d - t) / 0.05d) : 1.0d
+                note1 = attack * decay * release *
+                        Math.sin(2.0d * Math.PI * 523.251d * x)
             }
 
-            // Second bell: G5 starts slightly later and overlaps for a pleasant
-            // consonant interval instead of a harsh siren-like sweep.
-            double a2 = 0.0d
-            if (t >= 0.13d && t < 0.47d) {
-                double x = t - 0.13d
-                double attack = Math.min(1.0d, x / 0.028d)
-                double decay = Math.exp(-6.6d * x)
-                a2 = attack * decay
+            // Second bell: G5, slightly delayed and overlapping the first.
+            double note2 = 0.0d
+            if (t >= 0.135d && t < 0.485d) {
+                double x = t - 0.135d
+                double attack = smoothstep(x / 0.032d)
+                double decay = Math.exp(-6.2d * x)
+                double release = t > 0.425d ? smoothstep((0.485d - t) / 0.060d) : 1.0d
+                note2 = attack * decay * release *
+                        Math.sin(2.0d * Math.PI * 783.991d * x)
             }
 
-            // Tiny high shimmer makes it unique, but remains much quieter than
-            // the two main notes.
-            double shimmer = 0.0d
-            if (t >= 0.19d && t < 0.43d) {
-                double x = t - 0.19d
-                shimmer = Math.min(1.0d, x / 0.020d) * Math.exp(-10.0d * x)
+            // Keep the signal comfortably below full scale. No added noise,
+            // high-frequency shimmer or distortion is used.
+            double wave = 0.21d * note1 + 0.17d * note2
+
+            // Final master fade makes the last samples converge exactly to zero.
+            if (t > 0.465d) {
+                wave *= smoothstep((durationSeconds - t) / 0.035d)
             }
 
-            double wave =
-                    0.18d * a1 * Math.sin(2.0d * Math.PI * 523.25d * t) +
-                    0.15d * a2 * Math.sin(2.0d * Math.PI * 783.99d * t) +
-                    0.035d * shimmer * Math.sin(2.0d * Math.PI * 1174.66d * t)
-
-            // Gentle fade-out prevents a click at the end of the WAV.
-            if (t > 0.42d) {
-                wave *= Math.max(0.0d, (durationSeconds - t) / (durationSeconds - 0.42d))
-            }
-
-            int unsignedSample = Math.max(0, Math.min(255,
-                    (int) Math.round(128.0d + 127.0d * wave)))
-            pcm[i] = (byte) unsignedSample
+            int sample = (int) Math.round(Math.max(-1.0d, Math.min(1.0d, wave)) * 32767.0d)
+            int offset = i * 2
+            pcm[offset] = (byte) (sample & 0xff)
+            pcm[offset + 1] = (byte) ((sample >>> 8) & 0xff)
         }
 
         generatedSoundFile.withOutputStream { stream ->
@@ -120,12 +123,12 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
             writeAscii('WAVE')
             writeAscii('fmt ')
             writeLe32(16)
-            writeLe16(1)          // PCM
-            writeLe16(1)          // mono
+            writeLe16(1)                         // PCM
+            writeLe16(1)                         // mono
             writeLe32(sampleRate)
-            writeLe32(sampleRate) // byte rate: 8-bit mono
-            writeLe16(1)          // block align
-            writeLe16(8)          // bits per sample
+            writeLe32(sampleRate * bytesPerSample)
+            writeLe16(bytesPerSample)            // block align
+            writeLe16(bitsPerSample)
             writeAscii('data')
             writeLe32(pcm.length)
             stream.write(pcm)
