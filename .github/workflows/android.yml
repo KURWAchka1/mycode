@@ -46,36 +46,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -eu
-            APK=app/build/outputs/apk/debug/app-debug.apk
-            adb install -r "$APK"
-
-            # Avoid the Android 13+ runtime notification permission dialog from
-            # becoming the foreground activity during the launch smoke test.
-            adb shell pm grant app.playerokmonitor android.permission.POST_NOTIFICATIONS
-            adb shell am force-stop app.playerokmonitor
-            adb logcat -c
-
-            adb shell am start -W -n app.playerokmonitor/.MainActivity
-            sleep 5
-
-            PID="$(adb shell pidof app.playerokmonitor 2>/dev/null | tr -d '\r' || true)"
-            if [ -z "$PID" ]; then
-              echo 'Playerok Monitor process is not alive after launch'
-              adb logcat -d -b crash || true
-              adb logcat -d | grep -E 'AndroidRuntime|FATAL EXCEPTION|app.playerokmonitor' | tail -200 || true
-              exit 1
-            fi
-
-            adb shell dumpsys activity activities | grep -F 'app.playerokmonitor/.MainActivity'
-
-            if adb logcat -d -b crash | grep -F 'app.playerokmonitor'; then
-              echo 'Application crash detected'
-              exit 1
-            fi
-
-            echo "Smoke test OK, pid=$PID"
+          script: bash .github/scripts/android16-smoke-test.sh
 
       - name: Verify APK metadata and signature
         run: |
