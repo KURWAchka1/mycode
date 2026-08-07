@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -47,24 +47,44 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            set -eu
+            APK=app/build/outputs/apk/debug/app-debug.apk
+            adb install -r "$APK"
+
+            # Avoid the Android 13+ runtime notification permission dialog from
+            # becoming the foreground activity during the launch smoke test.
+            adb shell pm grant app.playerokmonitor android.permission.POST_NOTIFICATIONS
+            adb shell am force-stop app.playerokmonitor
             adb logcat -c
+
             adb shell am start -W -n app.playerokmonitor/.MainActivity
-            sleep 4
-            PID="$(adb shell pidof app.playerokmonitor | tr -d '\r')"
-            test -n "$PID"
+            sleep 5
+
+            PID="$(adb shell pidof app.playerokmonitor 2>/dev/null | tr -d '\r' || true)"
+            if [ -z "$PID" ]; then
+              echo 'Playerok Monitor process is not alive after launch'
+              adb logcat -d -b crash || true
+              adb logcat -d | grep -E 'AndroidRuntime|FATAL EXCEPTION|app.playerokmonitor' | tail -200 || true
+              exit 1
+            fi
+
             adb shell dumpsys activity activities | grep -F 'app.playerokmonitor/.MainActivity'
+
             if adb logcat -d -b crash | grep -F 'app.playerokmonitor'; then
               echo 'Application crash detected'
               exit 1
             fi
 
+            echo "Smoke test OK, pid=$PID"
+
       - name: Verify APK metadata and signature
         run: |
+          set -eu
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
+          BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$BUILD_TOOLS_DIR/aapt" dump badging "$APK" | tee apk-badging.txt
+          "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           grep -F "package: name='app.playerokmonitor'" apk-badging.txt
           grep -F "targetSdkVersion:'36'" apk-badging.txt
 
