@@ -29,8 +29,93 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    sourceSets {
+        main {
+            res.srcDir "$buildDir/generated/res/orderSound"
+        }
+    }
+
     lint {
         abortOnError true
         checkReleaseBuilds true
+    }
+}
+
+// Generate a tiny, deterministic notification WAV during the build. Keeping the
+// sound generated from source avoids committing opaque binary blobs while still
+// giving every APK the exact same distinctive alert.
+def generatedSoundDir = file("$buildDir/generated/res/orderSound/raw")
+def generatedSoundFile = file("$buildDir/generated/res/orderSound/raw/order_alert.wav")
+
+def generateOrderAlert = tasks.register('generateOrderAlert') {
+    outputs.file(generatedSoundFile)
+    doLast {
+        generatedSoundDir.mkdirs()
+
+        final int sampleRate = 8000
+        final double durationSeconds = 0.90d
+        final int sampleCount = (int) (sampleRate * durationSeconds)
+        byte[] pcm = new byte[sampleCount]
+
+        for (int i = 0; i < sampleCount; i++) {
+            double t = i / (double) sampleRate
+            double envelope = 0.0d
+            double frequency = 0.0d
+
+            if (t < 0.18d) {
+                double x = t / 0.18d
+                envelope = Math.pow(Math.sin(Math.PI * x), 1.3d)
+                frequency = 880.0d + 700.0d * x
+            } else if (t >= 0.24d && t < 0.42d) {
+                double x = (t - 0.24d) / 0.18d
+                envelope = Math.pow(Math.sin(Math.PI * x), 1.3d)
+                frequency = 1180.0d + 500.0d * x
+            } else if (t >= 0.50d && t < 0.82d) {
+                double x = (t - 0.50d) / 0.32d
+                envelope = Math.pow(Math.sin(Math.PI * x), 1.2d)
+                frequency = 980.0d + 900.0d * x
+            }
+
+            double phase = 2.0d * Math.PI * frequency * t
+            double wave = 0.72d * envelope *
+                    (0.78d * Math.sin(phase) + 0.22d * Math.sin(2.0d * phase))
+            int unsignedSample = Math.max(0, Math.min(255, (int) Math.round(128.0d + 127.0d * wave)))
+            pcm[i] = (byte) unsignedSample
+        }
+
+        generatedSoundFile.withOutputStream { stream ->
+            def writeAscii = { String s -> stream.write(s.getBytes('US-ASCII')) }
+            def writeLe16 = { int v ->
+                stream.write(v & 0xff)
+                stream.write((v >>> 8) & 0xff)
+            }
+            def writeLe32 = { int v ->
+                stream.write(v & 0xff)
+                stream.write((v >>> 8) & 0xff)
+                stream.write((v >>> 16) & 0xff)
+                stream.write((v >>> 24) & 0xff)
+            }
+
+            writeAscii('RIFF')
+            writeLe32(36 + pcm.length)
+            writeAscii('WAVE')
+            writeAscii('fmt ')
+            writeLe32(16)
+            writeLe16(1)          // PCM
+            writeLe16(1)          // mono
+            writeLe32(sampleRate)
+            writeLe32(sampleRate) // byte rate: 8-bit mono
+            writeLe16(1)          // block align
+            writeLe16(8)          // bits per sample
+            writeAscii('data')
+            writeLe32(pcm.length)
+            stream.write(pcm)
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == 'preBuild' || (task.name.startsWith('merge') && task.name.endsWith('Resources'))) {
+        task.dependsOn(generateOrderAlert)
     }
 }
