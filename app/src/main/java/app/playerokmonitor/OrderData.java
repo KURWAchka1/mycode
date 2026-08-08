@@ -42,6 +42,7 @@ final class OrderData {
     final String recipientConfirmedByName;
     final String recipientConfirmedByRole;
     final String recipientConfirmedByRelation;
+    final boolean relistEligible;
     final String relistState;
     final String relistedItemId;
     final String relistedItemUrl;
@@ -88,6 +89,7 @@ final class OrderData {
             String recipientConfirmedByName,
             String recipientConfirmedByRole,
             String recipientConfirmedByRelation,
+            boolean relistEligible,
             String relistState,
             String relistedItemId,
             String relistedItemUrl,
@@ -133,6 +135,7 @@ final class OrderData {
         this.recipientConfirmedByName = recipientConfirmedByName;
         this.recipientConfirmedByRole = recipientConfirmedByRole;
         this.recipientConfirmedByRelation = recipientConfirmedByRelation;
+        this.relistEligible = relistEligible;
         this.relistState = relistState;
         this.relistedItemId = relistedItemId;
         this.relistedItemUrl = relistedItemUrl;
@@ -188,6 +191,7 @@ final class OrderData {
                 o.optString("recipient_confirmed_by_name", ""),
                 o.optString("recipient_confirmed_by_role", ""),
                 o.optString("recipient_confirmed_by_relation", ""),
+                o.optBoolean("relist_eligible", false),
                 o.optString("relist_state", ""),
                 o.optString("relisted_item_id", ""),
                 o.optString("relisted_item_url", ""),

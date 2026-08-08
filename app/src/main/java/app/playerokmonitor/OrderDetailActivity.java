@@ -203,7 +203,7 @@ public final class OrderDetailActivity extends Activity {
             note.addView(comment, ccp);
         }
 
-        if (order.isSale()) addRelistCard(order);
+        if (order.isSale() && order.relistEligible) addRelistCard(order);
 
         Button open = Ui.button(this, "", true);
         if (order.rolledBack) {

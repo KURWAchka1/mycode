@@ -1,4 +1,8 @@
-# Playerok Monitor 2.3.0 · Safe One-tap Relist
+# Playerok Monitor 2.3.1 · New Orders Only
+
+- Relisting is offered only for orders first seen after this server update. Every order already stored on the VPS at migration time is permanently excluded and hidden in the app.
+
+## Included from 2.3.0
 
 - A completed sale can relist its original sold item directly from the order screen while preserving the same cover, description and fields.
 - The app previews Playerok's current publication fee and requires an explicit confirmation before any paid action.
