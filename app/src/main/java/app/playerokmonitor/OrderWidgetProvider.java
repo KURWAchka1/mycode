@@ -19,10 +19,11 @@ import java.util.Map;
 
 /** Responsive order dashboard for One UI Home, foldables, DeX and Flex Window. */
 public final class OrderWidgetProvider extends AppWidgetProvider {
+    private static final int WIDTH_WIDE_STRIP = 250;
     private static final int WIDTH_COMPACT = 220;
-    private static final int HEIGHT_STRIP = 80;
-    private static final int HEIGHT_MEDIUM = 110;
-    private static final int HEIGHT_LARGE = 170;
+    private static final int HEIGHT_STRIP = 60;
+    private static final int HEIGHT_MEDIUM = 104;
+    private static final int HEIGHT_LARGE = 150;
 
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
@@ -60,9 +61,10 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
     private static RemoteViews buildResponsive(Context context, WidgetData data) {
         Map<SizeF, RemoteViews> layouts = new LinkedHashMap<>();
         layouts.put(new SizeF(110f, 40f), buildStrip(context, data));
+        layouts.put(new SizeF(250f, 40f), buildWideStrip(context, data));
         layouts.put(new SizeF(180f, 72f), buildCompact(context, data));
-        layouts.put(new SizeF(250f, 110f), buildMedium(context, data));
-        layouts.put(new SizeF(280f, 170f), buildLarge(context, data));
+        layouts.put(new SizeF(250f, 104f), buildMedium(context, data));
+        layouts.put(new SizeF(280f, 150f), buildLarge(context, data));
         return new RemoteViews(layouts);
     }
 
@@ -73,7 +75,11 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
         int height = options == null
                 ? HEIGHT_MEDIUM
                 : options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, HEIGHT_MEDIUM);
-        if (height <= HEIGHT_STRIP) return buildStrip(context, data);
+        if (height <= HEIGHT_STRIP) {
+            return width >= WIDTH_WIDE_STRIP
+                    ? buildWideStrip(context, data)
+                    : buildStrip(context, data);
+        }
         if (width < WIDTH_COMPACT || height < HEIGHT_MEDIUM) return buildCompact(context, data);
         if (height >= HEIGHT_LARGE) return buildLarge(context, data);
         return buildMedium(context, data);
@@ -81,7 +87,9 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
 
     private static RemoteViews buildStrip(Context context, WidgetData data) {
         RemoteViews views = base(context, R.layout.order_widget_strip, data);
-        views.setTextViewText(R.id.widget_strip_summary, "↑" + data.sales + "  ↓" + data.purchases);
+        views.setTextViewText(R.id.widget_status, Prefs.isEnabled(context) ? "Активен" : "Выключен");
+        int deals = data.sales + data.purchases;
+        views.setTextViewText(R.id.widget_strip_summary, dealText(deals));
         views.setContentDescription(
                 R.id.widget_strip_summary,
                 "Продаж: " + data.sales + ", покупок: " + data.purchases
@@ -92,13 +100,18 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
         return views;
     }
 
+    private static RemoteViews buildWideStrip(Context context, WidgetData data) {
+        RemoteViews views = base(context, R.layout.order_widget_wide_strip, data);
+        views.setTextViewText(R.id.widget_status, Prefs.isEnabled(context) ? "Активен" : "Выключен");
+        bindCounts(views, data);
+        bindCountClicks(context, views);
+        return views;
+    }
+
     private static RemoteViews buildCompact(Context context, WidgetData data) {
         RemoteViews views = base(context, R.layout.order_widget_compact, data);
         bindCounts(views, data);
         bindCountClicks(context, views);
-        int risks = data.problems + data.refunds;
-        views.setViewVisibility(R.id.widget_alert_chip, risks > 0 ? View.VISIBLE : View.GONE);
-        views.setTextViewText(R.id.widget_alert_summary, eventText(risks));
         return views;
     }
 
@@ -122,7 +135,10 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
             String direction = data.latest.isSale() ? "Продажа" : "Покупка";
             String price = clean(data.latest.price, "без цены");
             views.setTextViewText(R.id.widget_latest_name, name);
-            views.setTextViewText(R.id.widget_latest_meta, direction + "  •  " + price);
+            views.setTextViewText(
+                    R.id.widget_latest_meta,
+                    direction + "  •  " + price + "  •  " + data.latest.lifecycleSummary()
+            );
             views.setOnClickPendingIntent(
                     R.id.widget_latest_card,
                     detailIntent(context, data.latest)
@@ -203,8 +219,8 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
         return count + " " + plural(count, "риск", "риска", "рисков");
     }
 
-    private static String eventText(int count) {
-        return count + " " + plural(count, "событие", "события", "событий");
+    private static String dealText(int count) {
+        return count + " " + plural(count, "сделка", "сделки", "сделок");
     }
 
     private static String plural(int count, String one, String few, String many) {

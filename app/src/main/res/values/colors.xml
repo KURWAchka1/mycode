@@ -2,8 +2,8 @@
 <resources>
     <color name="widget_background">#FF080D19</color>
     <color name="widget_text">#FFFFFFFF</color>
-    <color name="widget_text_soft">#FFEAF1FF</color>
-    <color name="widget_muted">#FFC0C8D8</color>
-    <color name="widget_accent">#FF68C7FF</color>
+    <color name="widget_text_soft">#FFF1F4FA</color>
+    <color name="widget_muted">#FFADB6C5</color>
+    <color name="widget_accent">#FF8CC5FF</color>
     <color name="widget_alert">#FFFF8792</color>
 </resources>

@@ -1,11 +1,11 @@
-# Playerok Monitor 2.1.0 · One UI 8.5 Adaptive Widget
+# Playerok Monitor 2.2.0 · One UI 8.5 Order Lifecycle
 
-- Four responsive widget compositions: one-row strip, compact, medium and large.
-- Android 12+ responsive `RemoteViews` lets One UI Home choose the correct layout immediately while resizing.
-- Generated One UI artwork always uses center-crop, so it never stretches or squashes at any widget size.
-- Minimum widget height is one home-screen row; horizontal and vertical resizing remain enabled.
-- Glass metric cards, live state indicator, alert accents and latest-deal card replace the old text-only dashboard.
-- Sales and purchases open the matching app tab; the latest-deal card opens that exact order.
-- Existing One UI palette, foldable/DeX support, Galaxy quick tile and deep Playerok/VPS integration remain included.
+- Widget redesigned around Samsung's concise One UI information hierarchy: one calm surface, a compact header, a unified metric grid and no decorative chevron.
+- Five responsive compositions now include a dedicated wide 4×1 strip. Layout density changes while text size remains readable.
+- The heavy generated artwork and nested glass cards were removed; subtle tonal depth and restrained status color keep data legible on the home screen.
+- Order cards and details show whether fulfillment was confirmed by the seller and whether receipt was confirmed by the recipient, including automatic confirmation.
+- Playerok markers `ITEM_SENT`, `DEAL_CONFIRMED` and `DEAL_CONFIRMED_AUTOMATICALLY` are persisted on the VPS and synchronized through the orders API.
+- First-time monitoring performs a silent cursor bootstrap. Historical test and real-order events are treated as a baseline; only events created afterward notify.
+- Changing Pairing URL safely resets the local cursor and cached orders, while normal stop/start keeps the existing cursor.
 
-The attached APK is CI-built, Android 16 smoke-tested and signed with the GitHub Actions debug key for direct personal installation.
+The attached APK is CI-built, linted, Android 16 smoke-tested and signed for direct personal installation.

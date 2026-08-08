@@ -148,6 +148,27 @@ public final class OrderDetailActivity extends Activity {
         String person = order.counterparty.isEmpty() ? "—" : "@" + order.counterparty;
         addField(card, order.counterpartyLabel(), person);
         addField(card, "Оплачено", Ui.formatDate(order.paidAt));
+        addField(
+                card,
+                order.isSale() ? "Выполнение вами" : "Выполнение продавцом",
+                order.sellerFulfilled ? "Подтверждено" : "Не подтверждено"
+        );
+        if (order.sellerFulfilled && !order.sellerFulfilledAt.isEmpty()) {
+            addField(card, "Выполнение подтверждено", Ui.formatDate(order.sellerFulfilledAt));
+        }
+        addField(
+                card,
+                order.isSale() ? "Получение покупателем" : "Получение вами",
+                order.recipientConfirmed
+                        ? (order.recipientConfirmationAutomatic ? "Автоматически" : "Подтверждено")
+                        : "Не подтверждено"
+        );
+        if (order.recipientConfirmed && !order.recipientConfirmedAt.isEmpty()) {
+            addField(card, "Получение подтверждено", Ui.formatDate(order.recipientConfirmedAt));
+        }
+        if (order.recipientConfirmed && !order.recipientConfirmedByRelation.isEmpty()) {
+            addField(card, "Получение подтвердил", order.recipientConfirmationActorLabel());
+        }
         if (order.isSale()) {
             addField(card, "Автоответ", order.replySent ? "Отправлен" : "Ожидает отправки");
         }

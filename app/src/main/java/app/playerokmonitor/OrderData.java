@@ -30,6 +30,18 @@ final class OrderData {
     final String rolledBackByName;
     final String rolledBackByRole;
     final String rolledBackByRelation;
+    final String dealStatus;
+    final boolean sellerFulfilled;
+    final String sellerFulfilledAt;
+    final String sellerFulfilledByName;
+    final String sellerFulfilledByRole;
+    final String sellerFulfilledByRelation;
+    final boolean recipientConfirmed;
+    final String recipientConfirmedAt;
+    final boolean recipientConfirmationAutomatic;
+    final String recipientConfirmedByName;
+    final String recipientConfirmedByRole;
+    final String recipientConfirmedByRelation;
     final boolean replySent;
     final long revision;
     final String dealUrl;
@@ -57,6 +69,18 @@ final class OrderData {
             String rolledBackByName,
             String rolledBackByRole,
             String rolledBackByRelation,
+            String dealStatus,
+            boolean sellerFulfilled,
+            String sellerFulfilledAt,
+            String sellerFulfilledByName,
+            String sellerFulfilledByRole,
+            String sellerFulfilledByRelation,
+            boolean recipientConfirmed,
+            String recipientConfirmedAt,
+            boolean recipientConfirmationAutomatic,
+            String recipientConfirmedByName,
+            String recipientConfirmedByRole,
+            String recipientConfirmedByRelation,
             boolean replySent,
             long revision,
             String dealUrl
@@ -83,6 +107,18 @@ final class OrderData {
         this.rolledBackByName = rolledBackByName;
         this.rolledBackByRole = rolledBackByRole;
         this.rolledBackByRelation = rolledBackByRelation;
+        this.dealStatus = dealStatus;
+        this.sellerFulfilled = sellerFulfilled;
+        this.sellerFulfilledAt = sellerFulfilledAt;
+        this.sellerFulfilledByName = sellerFulfilledByName;
+        this.sellerFulfilledByRole = sellerFulfilledByRole;
+        this.sellerFulfilledByRelation = sellerFulfilledByRelation;
+        this.recipientConfirmed = recipientConfirmed;
+        this.recipientConfirmedAt = recipientConfirmedAt;
+        this.recipientConfirmationAutomatic = recipientConfirmationAutomatic;
+        this.recipientConfirmedByName = recipientConfirmedByName;
+        this.recipientConfirmedByRole = recipientConfirmedByRole;
+        this.recipientConfirmedByRelation = recipientConfirmedByRelation;
         this.replySent = replySent;
         this.revision = revision;
         this.dealUrl = dealUrl;
@@ -119,6 +155,18 @@ final class OrderData {
                 o.optString("rolled_back_by_name", ""),
                 o.optString("rolled_back_by_role", ""),
                 o.optString("rolled_back_by_relation", ""),
+                o.optString("deal_status", ""),
+                o.optBoolean("seller_fulfilled", false),
+                o.optString("seller_fulfilled_at", ""),
+                o.optString("seller_fulfilled_by_name", ""),
+                o.optString("seller_fulfilled_by_role", ""),
+                o.optString("seller_fulfilled_by_relation", ""),
+                o.optBoolean("recipient_confirmed", false),
+                o.optString("recipient_confirmed_at", ""),
+                o.optBoolean("recipient_confirmation_automatic", false),
+                o.optString("recipient_confirmed_by_name", ""),
+                o.optString("recipient_confirmed_by_role", ""),
+                o.optString("recipient_confirmed_by_relation", ""),
                 o.optBoolean("reply_sent", false),
                 o.optLong("revision", 0L),
                 dealUrl
@@ -154,6 +202,27 @@ final class OrderData {
     String problemReporterLabel() { return actorLabel(problemReportedByName, problemReportedByRole, problemReportedByRelation); }
     String problemResolverLabel() { return actorLabel(problemResolvedByName, problemResolvedByRole, problemResolvedByRelation); }
     String refundActorLabel() { return actorLabel(rolledBackByName, rolledBackByRole, rolledBackByRelation); }
+    String fulfillmentActorLabel() { return actorLabel(sellerFulfilledByName, sellerFulfilledByRole, sellerFulfilledByRelation); }
+    String recipientConfirmationActorLabel() { return actorLabel(recipientConfirmedByName, recipientConfirmedByRole, recipientConfirmedByRelation); }
+
+    String fulfillmentSummary() {
+        if (isSale()) return sellerFulfilled ? "Выполнение подтверждено вами" : "Выполнение вами не подтверждено";
+        return sellerFulfilled ? "Продавец подтвердил выполнение" : "Продавец не подтвердил выполнение";
+    }
+
+    String receiptSummary() {
+        if (!recipientConfirmed) {
+            return isSale() ? "Покупатель не подтвердил получение" : "Получение вами не подтверждено";
+        }
+        if (recipientConfirmationAutomatic) return "Получение подтверждено автоматически";
+        return isSale() ? "Покупатель подтвердил получение" : "Получение подтверждено вами";
+    }
+
+    String lifecycleSummary() {
+        String first = sellerFulfilled ? "Выполнено ✓" : "Не выполнено";
+        String second = recipientConfirmed ? (recipientConfirmationAutomatic ? "Получено авто" : "Получено ✓") : "Не получено";
+        return first + "  •  " + second;
+    }
 
     String displayName() { return itemName.isEmpty() ? "Сделка Playerok" : itemName; }
 }

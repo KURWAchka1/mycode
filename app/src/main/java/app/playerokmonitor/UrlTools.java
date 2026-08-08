@@ -35,6 +35,7 @@ final class UrlTools {
 
     static String healthUrl(String pairingUrl) { return rebuild(pairingUrl, "/health", 0L, false, null, null); }
     static String testUrl(String pairingUrl) { return rebuild(pairingUrl, "/test", 0L, false, null, null); }
+    static String cursorUrl(String pairingUrl) { return rebuild(pairingUrl, "/cursor", 0L, false, null, null); }
 
     private static String rebuild(String raw, String path, long after, boolean includeAfter, String extraName, String extraValue) {
         Uri source = Uri.parse(raw.trim());

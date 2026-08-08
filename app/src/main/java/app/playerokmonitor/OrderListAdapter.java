@@ -108,7 +108,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setTextColor(Ui.RED);
             h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.withAlpha(Ui.RED, 90), 20));
-            h.info.setText("Возврат оформил: " + order.refundActorLabel());
+            h.info.setText("Возврат оформил: " + order.refundActorLabel() + "\n" + order.lifecycleSummary());
             h.info.setTextColor(Ui.RED);
             h.info.setVisibility(View.VISIBLE);
         } else if (order.problemActive) {
@@ -116,7 +116,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setTextColor(Ui.RED);
             h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.withAlpha(Ui.RED, 90), 20));
-            h.info.setText("Проблему создал: " + order.problemReporterLabel() + " — требуется реакция");
+            h.info.setText("Проблему создал: " + order.problemReporterLabel() + " — требуется реакция\n" + order.lifecycleSummary());
             h.info.setTextColor(Ui.RED);
             h.info.setVisibility(View.VISIBLE);
         } else if (!order.problemResolvedAt.isEmpty()) {
@@ -124,7 +124,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setTextColor(Ui.GREEN);
             h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 20));
-            h.info.setText("Проблему решил: " + order.problemResolverLabel());
+            h.info.setText("Проблему решил: " + order.problemResolverLabel() + "\n" + order.lifecycleSummary());
             h.info.setTextColor(Ui.GREEN);
             h.info.setVisibility(View.VISIBLE);
         } else {
@@ -132,7 +132,9 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setTextColor(Ui.GREEN);
             h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 20));
-            h.info.setVisibility(View.GONE);
+            h.info.setText(order.lifecycleSummary());
+            h.info.setTextColor(Ui.MUTED);
+            h.info.setVisibility(View.VISIBLE);
         }
         return convertView;
     }
