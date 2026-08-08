@@ -23,10 +23,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle 8.13
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
+      - name: Install Gradle 8.13
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 \
+            --connect-timeout 20 --max-time 180 \
+            -o /tmp/gradle-8.13-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v8.13.0/gradle-8.13-bin.zip
+          echo '20f1b1176237254a6fc204d8434196fa11a4cfb387567519c61556e8710aed78  /tmp/gradle-8.13-bin.zip' | sha256sum -c -
+          unzip -q /tmp/gradle-8.13-bin.zip -d /tmp
+          echo '/tmp/gradle-8.13/bin' >> "$GITHUB_PATH"
+          /tmp/gradle-8.13/bin/gradle --version
 
       - name: Build APK and run lint
         run: gradle --no-daemon :app:lintDebug :app:assembleDebug
@@ -58,11 +66,12 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           grep -F "package: name='app.playerokmonitor'" apk-badging.txt
           grep -F "targetSdkVersion:'36'" apk-badging.txt
+          grep -F "versionName='1.2.0'" apk-badging.txt
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: PlayerokMonitor-Android16-debug
+          name: PlayerokMonitor-1.2.0-sales-purchases
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-badging.txt
