@@ -30,6 +30,7 @@ public final class OrderDetailActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Ui.prepareWindow(this);
         dealId = getIntent().getStringExtra(EXTRA_DEAL_ID);
         if (dealId == null) dealId = "";
         setContentView(buildRoot());
@@ -42,7 +43,7 @@ public final class OrderDetailActivity extends Activity {
         scroll.setBackgroundColor(Ui.BG);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        int p = Ui.dp(this, 18);
+        int p = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
         content.setPadding(p, p, p, p);
         scroll.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
@@ -71,18 +72,18 @@ public final class OrderDetailActivity extends Activity {
         content.addView(head, matchWrap());
 
         ImageButton back = Ui.iconButton(this, R.drawable.ic_nav_back, "Назад");
-        back.setOnClickListener(v -> finish());
-        head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        back.setOnClickListener(v -> { Ui.haptic(v); finish(); });
+        head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
         String titleText = order == null ? "Сделка" : (order.isSale() ? "Моя продажа" : "Моя покупка");
-        TextView title = Ui.text(this, titleText, 25, Ui.TEXT, true);
+        TextView title = Ui.text(this, titleText, 32, Ui.TEXT, true);
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         tp.leftMargin = Ui.dp(this, 10);
         head.addView(title, tp);
 
         ImageButton refresh = Ui.iconButton(this, R.drawable.ic_nav_refresh, "Обновить сделку");
-        refresh.setOnClickListener(v -> sync(true));
-        head.addView(refresh, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        refresh.setOnClickListener(v -> { Ui.haptic(v); sync(true); });
+        head.addView(refresh, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
         if (order == null) {
             TextView missing = Ui.text(this,
@@ -101,22 +102,22 @@ public final class OrderDetailActivity extends Activity {
         String bannerBody;
         int bannerTextColor;
         if (order.rolledBack) {
-            banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, 0xFFFFB8B8, 16));
+            banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, Ui.withAlpha(Ui.RED, 90), 20));
             bannerTitle = "ВОЗВРАТ ПО СДЕЛКЕ";
             bannerBody = "Возврат оформил: " + order.refundActorLabel();
             bannerTextColor = Ui.RED;
         } else if (order.problemActive) {
-            banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, 0xFFFFB8B8, 16));
+            banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, Ui.withAlpha(Ui.RED, 90), 20));
             bannerTitle = "ПРОБЛЕМА ПО СДЕЛКЕ";
             bannerBody = "Проблему создал: " + order.problemReporterLabel() + ". Проверьте сделку и чат как можно скорее.";
             bannerTextColor = Ui.RED;
         } else if (!order.problemResolvedAt.isEmpty()) {
-            banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, 0xFFC8EBD5, 16));
+            banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, Ui.withAlpha(Ui.GREEN, 90), 20));
             bannerTitle = "ПРОБЛЕМА РЕШЕНА";
             bannerBody = "Проблему решил: " + order.problemResolverLabel();
             bannerTextColor = Ui.GREEN;
         } else {
-            banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, 0xFFC8EBD5, 16));
+            banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, Ui.withAlpha(Ui.GREEN, 90), 20));
             bannerTitle = order.isSale() ? "ПРОДАЖА ОПЛАЧЕНА" : "ПОКУПКА ОПЛАЧЕНА";
             bannerBody = "Сделка сохранена в базе VPS";
             bannerTextColor = Ui.GREEN;
@@ -133,7 +134,7 @@ public final class OrderDetailActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
-        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 16));
+        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
         LinearLayout.LayoutParams cp = matchWrap();
         cp.topMargin = Ui.dp(this, 14);
         content.addView(card, cp);
@@ -167,7 +168,7 @@ public final class OrderDetailActivity extends Activity {
             LinearLayout note = new LinearLayout(this);
             note.setOrientation(LinearLayout.VERTICAL);
             note.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
-            note.setBackground(Ui.roundedStroke(this, 0xFFF9F7FF, 0xFFE2DCF9, 16));
+            note.setBackground(Ui.roundedStroke(this, Ui.ACCENT_BG, Ui.BORDER, 20));
             LinearLayout.LayoutParams np = matchWrap();
             np.topMargin = Ui.dp(this, 14);
             content.addView(note, np);
@@ -178,8 +179,7 @@ public final class OrderDetailActivity extends Activity {
             note.addView(comment, ccp);
         }
 
-        Button open = new Button(this);
-        open.setAllCaps(false);
+        Button open = Ui.button(this, "", true);
         if (order.rolledBack) {
             open.setText("Открыть возврат в Playerok");
         } else if (order.problemActive) {
@@ -190,6 +190,7 @@ public final class OrderDetailActivity extends Activity {
         open.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_nav_open, 0);
         open.setCompoundDrawablePadding(Ui.dp(this, 8));
         open.setOnClickListener(v -> {
+            Ui.haptic(v);
             try {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(order.dealUrl)));
             } catch (Exception e) {
@@ -203,7 +204,7 @@ public final class OrderDetailActivity extends Activity {
         LinearLayout ids = new LinearLayout(this);
         ids.setOrientation(LinearLayout.VERTICAL);
         ids.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
-        ids.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 16));
+        ids.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
         LinearLayout.LayoutParams ip = matchWrap();
         ip.topMargin = Ui.dp(this, 14);
         content.addView(ids, ip);
@@ -217,6 +218,7 @@ public final class OrderDetailActivity extends Activity {
         TextView chat = Ui.text(this, "chat: " + order.chatId, 12, Ui.MUTED, false);
         chat.setTypeface(Typeface.MONOSPACE);
         LinearLayout.LayoutParams chp = matchWrap(); chp.topMargin = Ui.dp(this, 4); ids.addView(chat, chp);
+        Ui.reveal(content);
     }
 
     private void addField(LinearLayout parent, String label, String value) {

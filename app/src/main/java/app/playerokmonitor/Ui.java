@@ -1,11 +1,22 @@
 package app.playerokmonitor;
 
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
+import android.view.animation.PathInterpolator;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -15,25 +26,93 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+/** Small, dependency-free One UI presentation layer.
+ *
+ * Values follow Samsung's public One UI guidance: 24 dp content margins,
+ * reachable controls, generous viewing space, 18 dp button radii and the
+ * official One UI blue.  Keeping this native avoids a second UI framework on
+ * a monitoring app that must remain tiny and dependable.
+ */
 final class Ui {
-    static final int BG = Color.rgb(246, 247, 249);
-    static final int CARD = Color.WHITE;
-    static final int TEXT = Color.rgb(31, 35, 41);
-    static final int MUTED = Color.rgb(111, 118, 129);
-    static final int ACCENT = Color.rgb(82, 66, 214);
-    static final int ACCENT_BG = Color.rgb(239, 236, 255);
-    static final int GREEN = Color.rgb(31, 145, 84);
-    static final int GREEN_BG = Color.rgb(232, 247, 238);
-    static final int RED = Color.rgb(196, 54, 54);
-    static final int RED_BG = Color.rgb(255, 235, 235);
-    static final int AMBER = Color.rgb(166, 103, 0);
-    static final int AMBER_BG = Color.rgb(255, 246, 222);
-    static final int BORDER = Color.rgb(229, 232, 237);
+    static int BG;
+    static int CARD;
+    static int SURFACE_2;
+    static int TEXT;
+    static int MUTED;
+    static int ACCENT;
+    static int ACCENT_BG;
+    static int GREEN;
+    static int GREEN_BG;
+    static int RED;
+    static int RED_BG;
+    static int AMBER;
+    static int AMBER_BG;
+    static int BORDER;
 
     private Ui() {}
 
+    static void configure(Context context) {
+        boolean dark = (context.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        if (dark) {
+            BG = Color.BLACK;
+            CARD = Color.rgb(28, 28, 30);
+            SURFACE_2 = Color.rgb(43, 43, 46);
+            TEXT = Color.rgb(247, 247, 248);
+            MUTED = Color.rgb(174, 174, 180);
+            ACCENT = Color.rgb(62, 145, 255);      // One UI primary, dark
+            ACCENT_BG = Color.rgb(18, 48, 82);
+            GREEN = Color.rgb(80, 210, 130);
+            GREEN_BG = Color.rgb(20, 62, 39);
+            RED = Color.rgb(255, 105, 105);
+            RED_BG = Color.rgb(79, 29, 31);
+            AMBER = Color.rgb(255, 190, 73);
+            AMBER_BG = Color.rgb(72, 51, 17);
+            BORDER = Color.rgb(57, 57, 61);
+        } else {
+            BG = Color.rgb(247, 247, 247);
+            CARD = Color.WHITE;
+            SURFACE_2 = Color.rgb(239, 240, 242);
+            TEXT = Color.rgb(37, 37, 37);
+            MUTED = Color.rgb(104, 104, 109);
+            ACCENT = Color.rgb(0, 114, 222);       // One UI primary, light
+            ACCENT_BG = Color.rgb(229, 242, 255);
+            GREEN = Color.rgb(19, 128, 72);
+            GREEN_BG = Color.rgb(231, 247, 237);
+            RED = Color.rgb(199, 48, 54);
+            RED_BG = Color.rgb(255, 234, 235);
+            AMBER = Color.rgb(156, 94, 0);
+            AMBER_BG = Color.rgb(255, 245, 218);
+            BORDER = Color.rgb(226, 226, 230);
+        }
+    }
+
+    static void prepareWindow(Activity activity) {
+        configure(activity);
+        Window window = activity.getWindow();
+        window.setStatusBarColor(BG);
+        window.setNavigationBarColor(BG);
+        boolean dark = (activity.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                int flags = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                controller.setSystemBarsAppearance(dark ? 0 : flags, flags);
+            }
+        } else {
+            window.getDecorView().setSystemUiVisibility(dark ? 0
+                    : View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+    }
+
     static int dp(Context c, int value) {
         return Math.round(value * c.getResources().getDisplayMetrics().density);
+    }
+
+    static boolean isWide(Context c) {
+        return c.getResources().getConfiguration().smallestScreenWidthDp >= 600;
     }
 
     static GradientDrawable rounded(Context c, int fill, int radiusDp) {
@@ -47,6 +126,16 @@ final class Ui {
         GradientDrawable d = rounded(c, fill, radiusDp);
         d.setStroke(dp(c, 1), stroke);
         return d;
+    }
+
+    static RippleDrawable ripple(Context c, int fill, int stroke, int radiusDp) {
+        GradientDrawable content = roundedStroke(c, fill, stroke, radiusDp);
+        GradientDrawable mask = rounded(c, Color.WHITE, radiusDp);
+        return new RippleDrawable(ColorStateList.valueOf(withAlpha(ACCENT, 36)), content, mask);
+    }
+
+    static int withAlpha(int color, int alpha) {
+        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
     }
 
     static TextView text(Context c, String value, float sp, int color, boolean bold) {
@@ -63,23 +152,53 @@ final class Ui {
         ImageButton button = new ImageButton(c);
         button.setImageResource(drawableRes);
         button.setContentDescription(description);
-        button.setBackground(roundedStroke(c, CARD, BORDER, 12));
+        button.setTooltipText(description);
+        button.setBackground(ripple(c, CARD, BORDER, 18));
         button.setImageTintList(ColorStateList.valueOf(TEXT));
-        int p = dp(c, 12);
+        int p = dp(c, 13);
         button.setPadding(p, p, p, p);
         button.setScaleType(ImageButton.ScaleType.CENTER_INSIDE);
         return button;
     }
 
+    static Button button(Context c, String label, boolean primary) {
+        Button button = new Button(c);
+        button.setText(label);
+        button.setTextSize(15);
+        button.setAllCaps(false);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setTextColor(primary ? Color.WHITE : TEXT);
+        button.setBackground(ripple(c, primary ? ACCENT : SURFACE_2,
+                primary ? ACCENT : BORDER, 18));
+        button.setMinHeight(dp(c, 52));
+        button.setPadding(dp(c, 18), 0, dp(c, 18), 0);
+        return button;
+    }
+
     static void styleTab(Context c, TextView tab, boolean selected) {
         tab.setTextColor(selected ? ACCENT : MUTED);
-        tab.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
-        tab.setBackground(roundedStroke(
-                c,
-                selected ? ACCENT_BG : CARD,
-                selected ? 0xFFCFC8FF : BORDER,
-                12
-        ));
+        tab.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        tab.setBackground(ripple(c,
+                selected ? ACCENT_BG : SURFACE_2,
+                selected ? withAlpha(ACCENT, 90) : BORDER,
+                18));
+    }
+
+    static void haptic(View view) {
+        view.performHapticFeedback(Build.VERSION.SDK_INT >= 30
+                ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY);
+    }
+
+    static void reveal(View view) {
+        if (!ValueAnimator.areAnimatorsEnabled()) return;
+        view.setAlpha(0f);
+        view.setTranslationY(dp(view.getContext(), 10));
+        view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(260L)
+                .setInterpolator(new PathInterpolator(0.22f, 0.25f, 0f, 1f))
+                .start();
     }
 
     static String formatDate(String raw) {

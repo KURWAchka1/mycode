@@ -8,6 +8,7 @@ import android.graphics.Insets;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.ImageButton;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors;
 
 public final class MainActivity extends Activity {
     private static final int REQ_NOTIFICATIONS = 5001;
+    static final String EXTRA_DIRECTION = "direction";
 
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private OrderListAdapter adapter;
@@ -39,7 +41,10 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Ui.prepareWindow(this);
         NotificationHelper.ensureChannels(this);
+        GalaxyIntegration.publishShortcuts(this);
+        applyIntent(getIntent());
         setContentView(buildUi());
         requestNotificationPermissionIfNeeded();
         allOrders = OrdersRepository.loadCached(this);
@@ -52,10 +57,10 @@ public final class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.BG);
-        int side = Ui.dp(this, 16);
-        root.setPadding(side, Ui.dp(this, 10), side, Ui.dp(this, 10));
+        int side = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
+        root.setPadding(side, Ui.dp(this, 12), side, Ui.dp(this, 12));
         root.setOnApplyWindowInsetsListener((v, insets) -> {
-            int left = side, top = Ui.dp(this, 10), right = side, bottom = Ui.dp(this, 10);
+            int left = side, top = Ui.dp(this, 12), right = side, bottom = Ui.dp(this, 16);
             if (Build.VERSION.SDK_INT >= 30) {
                 Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
                 left += bars.left;
@@ -82,7 +87,7 @@ public final class MainActivity extends Activity {
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        titleBlock.addView(Ui.text(this, "Playerok Monitor", 27, Ui.TEXT, true));
+        titleBlock.addView(Ui.text(this, "Playerok Monitor", 34, Ui.TEXT, true));
         TextView subtitle = Ui.text(this, "Продажи, покупки и проблемы", 14, Ui.MUTED, false);
         LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -91,14 +96,17 @@ public final class MainActivity extends Activity {
         titleBlock.addView(subtitle, subParams);
 
         ImageButton settings = Ui.iconButton(this, R.drawable.ic_nav_settings, "Настройки");
-        settings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
-        header.addView(settings, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        settings.setOnClickListener(v -> {
+            Ui.haptic(v);
+            startActivity(new Intent(this, SettingsActivity.class));
+        });
+        header.addView(settings, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
         LinearLayout tools = new LinearLayout(this);
         tools.setOrientation(LinearLayout.HORIZONTAL);
         tools.setGravity(Gravity.CENTER_VERTICAL);
         tools.setPadding(Ui.dp(this, 14), Ui.dp(this, 11), Ui.dp(this, 10), Ui.dp(this, 11));
-        tools.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 14));
+        tools.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
         root.addView(tools, matchWrap());
 
         statusChip = Ui.text(this, "", 13, Ui.GREEN, true);
@@ -112,22 +120,25 @@ public final class MainActivity extends Activity {
         tools.addView(hint, hintParams);
 
         refreshButton = Ui.iconButton(this, R.drawable.ic_nav_refresh, "Обновить список");
-        refreshButton.setOnClickListener(v -> syncOrders(true));
-        tools.addView(refreshButton, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 44)));
+        refreshButton.setOnClickListener(v -> {
+            Ui.haptic(v);
+            syncOrders(true);
+        });
+        tools.addView(refreshButton, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 48)));
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams tabsParams = matchWrap();
-        tabsParams.topMargin = Ui.dp(this, 18);
+        tabsParams.topMargin = Ui.dp(this, 20);
         root.addView(tabs, tabsParams);
 
         salesTab = makeTab("Мои продажи");
         salesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_SALE));
-        tabs.addView(salesTab, new LinearLayout.LayoutParams(0, Ui.dp(this, 46), 1f));
+        tabs.addView(salesTab, new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f));
 
         purchasesTab = makeTab("Мои покупки");
         purchasesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_PURCHASE));
-        LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(0, Ui.dp(this, 46), 1f);
+        LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f);
         purchaseParams.leftMargin = Ui.dp(this, 8);
         tabs.addView(purchasesTab, purchaseParams);
 
@@ -146,6 +157,8 @@ public final class MainActivity extends Activity {
         list.setDividerHeight(0);
         list.setCacheColorHint(android.graphics.Color.TRANSPARENT);
         list.setBackgroundColor(Ui.BG);
+        list.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        list.setVerticalScrollBarEnabled(false);
         adapter = new OrderListAdapter(this);
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, position, id) -> {
@@ -160,6 +173,7 @@ public final class MainActivity extends Activity {
                 1f));
 
         updateTabStyles();
+        Ui.reveal(root);
         return root;
     }
 
@@ -178,6 +192,7 @@ public final class MainActivity extends Activity {
 
     private void selectDirection(String direction) {
         if (direction.equals(selectedDirection)) return;
+        Ui.haptic(OrderData.DIRECTION_SALE.equals(direction) ? salesTab : purchasesTab);
         selectedDirection = direction;
         updateTabStyles();
         renderSelectedTab();
@@ -271,6 +286,47 @@ public final class MainActivity extends Activity {
         allOrders = OrdersRepository.loadCached(this);
         renderSelectedTab();
         syncOrders(false);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        applyIntent(intent);
+        updateTabStyles();
+        renderSelectedTab();
+    }
+
+    private void applyIntent(Intent intent) {
+        if (intent == null) return;
+        String direction = intent.getStringExtra(EXTRA_DIRECTION);
+        if ((direction == null || direction.isEmpty()) && intent.getData() != null) {
+            direction = intent.getData().getQueryParameter(EXTRA_DIRECTION);
+        }
+        if (OrderData.DIRECTION_SALE.equals(direction) || OrderData.DIRECTION_PURCHASE.equals(direction)) {
+            selectedDirection = direction;
+        }
+    }
+
+    @Override
+    public boolean onKeyShortcut(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_R) {
+            syncOrders(true);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_1) {
+            selectDirection(OrderData.DIRECTION_SALE);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_2) {
+            selectDirection(OrderData.DIRECTION_PURCHASE);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_COMMA) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        }
+        return super.onKeyShortcut(keyCode, event);
     }
 
     @Override

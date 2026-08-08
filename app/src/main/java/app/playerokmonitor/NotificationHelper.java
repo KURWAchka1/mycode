@@ -19,6 +19,7 @@ final class NotificationHelper {
     private NotificationHelper() {}
 
     static void ensureChannels(Context context) {
+        Ui.configure(context);
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager manager = context.getSystemService(NotificationManager.class);
 
@@ -81,6 +82,7 @@ final class NotificationHelper {
                 .setContentIntent(openPi)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
+                .setColor(Ui.ACCENT)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .addAction(new Notification.Action.Builder(null, "Остановить", stopPi).build())
                 .build();
@@ -125,6 +127,7 @@ final class NotificationHelper {
                 .setAutoCancel(true)
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .setVisibility(Notification.VISIBILITY_PUBLIC);
+        builder.setGroup("playerok_monitor_events");
         if (urgent) builder.setColor(Ui.RED);
 
         NotificationManager manager = context.getSystemService(NotificationManager.class);

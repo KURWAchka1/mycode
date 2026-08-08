@@ -17,7 +17,7 @@ final class HttpTextClient {
         connection.setReadTimeout(readTimeoutMs);
         connection.setUseCaches(false);
         connection.setRequestProperty("Accept", "*/*");
-        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/1.1");
+        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/2.0 OneUI");
         try {
             int code = connection.getResponseCode();
             InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();

@@ -34,6 +34,7 @@ public final class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Ui.prepareWindow(this);
         NotificationHelper.ensureChannels(this);
         setContentView(buildUi());
         requestNotificationPermissionIfNeeded();
@@ -45,7 +46,7 @@ public final class SettingsActivity extends Activity {
         scroll.setBackgroundColor(Ui.BG);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        int p = Ui.dp(this, 18);
+        int p = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
         root.setPadding(p, p, p, p);
         scroll.addView(root, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
@@ -75,10 +76,10 @@ public final class SettingsActivity extends Activity {
         root.addView(head, matchWrap());
 
         ImageButton back = Ui.iconButton(this, R.drawable.ic_nav_back, "Назад");
-        back.setOnClickListener(v -> finish());
-        head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        back.setOnClickListener(v -> { Ui.haptic(v); finish(); });
+        head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
-        TextView title = Ui.text(this, "Настройки", 26, Ui.TEXT, true);
+        TextView title = Ui.text(this, "Настройки", 32, Ui.TEXT, true);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         titleParams.leftMargin = Ui.dp(this, 10);
         head.addView(title, titleParams);
@@ -93,7 +94,7 @@ public final class SettingsActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
-        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 16));
+        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
         LinearLayout.LayoutParams cardParams = matchWrap();
         cardParams.topMargin = Ui.dp(this, 16);
         root.addView(card, cardParams);
@@ -114,24 +115,24 @@ public final class SettingsActivity extends Activity {
                 android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         card.addView(urlInput, matchWrap());
 
-        Button saveStart = button("Сохранить и запустить мониторинг");
-        saveStart.setOnClickListener(v -> saveAndStart());
+        Button saveStart = Ui.button(this, "Сохранить и запустить мониторинг", true);
+        saveStart.setOnClickListener(v -> { Ui.haptic(v); saveAndStart(); });
         card.addView(saveStart, marginTop(14));
 
         Button health = button("Проверить соединение с VPS");
-        health.setOnClickListener(v -> checkServer(false));
+        health.setOnClickListener(v -> { Ui.haptic(v); checkServer(false); });
         card.addView(health, marginTop(8));
 
         Button test = button("Тестовое уведомление");
-        test.setOnClickListener(v -> checkServer(true));
+        test.setOnClickListener(v -> { Ui.haptic(v); checkServer(true); });
         card.addView(test, marginTop(8));
 
         Button stop = button("Остановить мониторинг");
-        stop.setOnClickListener(v -> stopMonitoring());
+        stop.setOnClickListener(v -> { Ui.haptic(v); stopMonitoring(); });
         card.addView(stop, marginTop(8));
 
         Button notificationSettings = button("Настройки звука уведомлений");
-        notificationSettings.setOnClickListener(v -> openNotificationSettings());
+        notificationSettings.setOnClickListener(v -> { Ui.haptic(v); openNotificationSettings(); });
         card.addView(notificationSettings, marginTop(8));
 
         statusText = Ui.text(this, "", 14, Ui.MUTED, false);
@@ -144,6 +145,8 @@ public final class SettingsActivity extends Activity {
         LinearLayout.LayoutParams noteParams = matchWrap();
         noteParams.topMargin = Ui.dp(this, 16);
         root.addView(note, noteParams);
+
+        Ui.reveal(root);
 
         return scroll;
     }
@@ -161,11 +164,7 @@ public final class SettingsActivity extends Activity {
     }
 
     private Button button(String text) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setAllCaps(false);
-        button.setMinHeight(Ui.dp(this, 50));
-        return button;
+        return Ui.button(this, text, false);
     }
 
     private void saveAndStart() {
@@ -179,6 +178,7 @@ public final class SettingsActivity extends Activity {
         }
         Prefs.setUrl(this, url);
         Prefs.setEnabled(this, true);
+        GalaxyIntegration.refreshSurfaces(this);
         Intent service = new Intent(this, MonitorService.class).setAction(MonitorService.ACTION_START);
         startForegroundService(service);
         refreshStatus();
@@ -187,6 +187,7 @@ public final class SettingsActivity extends Activity {
 
     private void stopMonitoring() {
         Prefs.setEnabled(this, false);
+        GalaxyIntegration.refreshSurfaces(this);
         Intent service = new Intent(this, MonitorService.class).setAction(MonitorService.ACTION_STOP);
         startService(service);
         refreshStatus();

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Playerok Monitor</string>
+    <string name="tile_label">Playerok Monitor</string>
+    <string name="widget_description">Продажи, покупки, проблемы и возвраты Playerok</string>
+</resources>

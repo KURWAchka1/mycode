@@ -93,6 +93,7 @@ final class OrdersRepository {
                 Prefs.setOrdersRevision(context, revision);
                 orders = parseArray(array.toString());
             }
+            GalaxyIntegration.refreshSurfaces(context);
             return new SyncResult(Collections.unmodifiableList(orders), revision, unchanged);
         }
     }

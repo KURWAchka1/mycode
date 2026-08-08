@@ -40,7 +40,7 @@ final class OrderListAdapter extends BaseAdapter {
 
             LinearLayout card = new LinearLayout(context);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(Ui.dp(context, 16), Ui.dp(context, 14), Ui.dp(context, 16), Ui.dp(context, 14));
+            card.setPadding(Ui.dp(context, 18), Ui.dp(context, 16), Ui.dp(context, 18), Ui.dp(context, 16));
             outer.addView(card, new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -107,7 +107,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setText("ВОЗВРАТ");
             h.status.setTextColor(Ui.RED);
             h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
-            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, 0xFFFFC9C9, 16));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.withAlpha(Ui.RED, 90), 20));
             h.info.setText("Возврат оформил: " + order.refundActorLabel());
             h.info.setTextColor(Ui.RED);
             h.info.setVisibility(View.VISIBLE);
@@ -115,7 +115,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setText("ПРОБЛЕМА");
             h.status.setTextColor(Ui.RED);
             h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
-            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, 0xFFFFC9C9, 16));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.withAlpha(Ui.RED, 90), 20));
             h.info.setText("Проблему создал: " + order.problemReporterLabel() + " — требуется реакция");
             h.info.setTextColor(Ui.RED);
             h.info.setVisibility(View.VISIBLE);
@@ -123,7 +123,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setText("РЕШЕНО");
             h.status.setTextColor(Ui.GREEN);
             h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
-            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 16));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 20));
             h.info.setText("Проблему решил: " + order.problemResolverLabel());
             h.info.setTextColor(Ui.GREEN);
             h.info.setVisibility(View.VISIBLE);
@@ -131,7 +131,7 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setText("ОПЛАЧЕН");
             h.status.setTextColor(Ui.GREEN);
             h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
-            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 16));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 20));
             h.info.setVisibility(View.GONE);
         }
         return convertView;
