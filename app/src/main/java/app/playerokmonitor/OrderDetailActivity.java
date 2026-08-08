@@ -97,25 +97,35 @@ public final class OrderDetailActivity extends Activity {
         LinearLayout banner = new LinearLayout(this);
         banner.setOrientation(LinearLayout.VERTICAL);
         banner.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
-        if (order.problemActive) {
+        String bannerTitle;
+        String bannerBody;
+        int bannerTextColor;
+        if (order.rolledBack) {
             banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, 0xFFFFB8B8, 16));
-            banner.addView(Ui.text(this, "ПРОБЛЕМА ПО СДЕЛКЕ", 15, Ui.RED, true));
-            TextView b2 = Ui.text(this,
-                    order.isSale()
-                            ? "Покупатель сообщил о проблеме. Проверьте сделку и чат как можно скорее."
-                            : "По этой покупке создана проблема. Проверьте сделку и чат Playerok.",
-                    14, Ui.RED, false);
-            LinearLayout.LayoutParams bp = matchWrap();
-            bp.topMargin = Ui.dp(this, 6);
-            banner.addView(b2, bp);
+            bannerTitle = "ВОЗВРАТ ПО СДЕЛКЕ";
+            bannerBody = "Возврат оформил: " + order.refundActorLabel();
+            bannerTextColor = Ui.RED;
+        } else if (order.problemActive) {
+            banner.setBackground(Ui.roundedStroke(this, Ui.RED_BG, 0xFFFFB8B8, 16));
+            bannerTitle = "ПРОБЛЕМА ПО СДЕЛКЕ";
+            bannerBody = "Проблему создал: " + order.problemReporterLabel() + ". Проверьте сделку и чат как можно скорее.";
+            bannerTextColor = Ui.RED;
+        } else if (!order.problemResolvedAt.isEmpty()) {
+            banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, 0xFFC8EBD5, 16));
+            bannerTitle = "ПРОБЛЕМА РЕШЕНА";
+            bannerBody = "Проблему решил: " + order.problemResolverLabel();
+            bannerTextColor = Ui.GREEN;
         } else {
             banner.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, 0xFFC8EBD5, 16));
-            banner.addView(Ui.text(this, order.isSale() ? "ПРОДАЖА ОПЛАЧЕНА" : "ПОКУПКА ОПЛАЧЕНА", 15, Ui.GREEN, true));
-            TextView b2 = Ui.text(this, "Сделка сохранена в базе VPS", 14, Ui.GREEN, false);
-            LinearLayout.LayoutParams bp = matchWrap();
-            bp.topMargin = Ui.dp(this, 6);
-            banner.addView(b2, bp);
+            bannerTitle = order.isSale() ? "ПРОДАЖА ОПЛАЧЕНА" : "ПОКУПКА ОПЛАЧЕНА";
+            bannerBody = "Сделка сохранена в базе VPS";
+            bannerTextColor = Ui.GREEN;
         }
+        banner.addView(Ui.text(this, bannerTitle, 15, bannerTextColor, true));
+        TextView bannerDetails = Ui.text(this, bannerBody, 14, bannerTextColor, false);
+        LinearLayout.LayoutParams bp = matchWrap();
+        bp.topMargin = Ui.dp(this, 6);
+        banner.addView(bannerDetails, bp);
         LinearLayout.LayoutParams bannerParams = matchWrap();
         bannerParams.topMargin = Ui.dp(this, 16);
         content.addView(banner, bannerParams);
@@ -142,9 +152,15 @@ public final class OrderDetailActivity extends Activity {
         }
         if (!order.problemReportedAt.isEmpty()) {
             addField(card, "Проблема создана", Ui.formatDate(order.problemReportedAt));
+            addField(card, "Проблему создал", order.problemReporterLabel());
         }
-        if (!order.problemActive && !order.problemResolvedAt.isEmpty()) {
+        if (!order.problemResolvedAt.isEmpty()) {
             addField(card, "Проблема решена", Ui.formatDate(order.problemResolvedAt));
+            addField(card, "Проблему решил", order.problemResolverLabel());
+        }
+        if (order.rolledBack) {
+            addField(card, "Возврат оформлен", Ui.formatDate(order.rolledBackAt));
+            addField(card, "Возврат оформил", order.refundActorLabel());
         }
 
         if (!order.buyerComment.isEmpty()) {
@@ -164,7 +180,13 @@ public final class OrderDetailActivity extends Activity {
 
         Button open = new Button(this);
         open.setAllCaps(false);
-        open.setText(order.problemActive ? "Открыть проблемную сделку" : "Открыть сделку в Playerok");
+        if (order.rolledBack) {
+            open.setText("Открыть возврат в Playerok");
+        } else if (order.problemActive) {
+            open.setText("Открыть проблемную сделку");
+        } else {
+            open.setText("Открыть сделку в Playerok");
+        }
         open.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_nav_open, 0);
         open.setCompoundDrawablePadding(Ui.dp(this, 8));
         open.setOnClickListener(v -> {
@@ -231,19 +253,8 @@ public final class OrderDetailActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
-    private void toast(String text) {
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
-    }
+    private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_SHORT).show(); }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        sync(false);
-    }
-
-    @Override
-    protected void onDestroy() {
-        network.shutdownNow();
-        super.onDestroy();
-    }
+    @Override protected void onResume() { super.onResume(); sync(false); }
+    @Override protected void onDestroy() { network.shutdownNow(); super.onDestroy(); }
 }

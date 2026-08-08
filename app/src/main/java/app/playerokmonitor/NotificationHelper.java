@@ -51,10 +51,10 @@ final class NotificationHelper {
 
         NotificationChannel problems = new NotificationChannel(
                 PROBLEMS_CHANNEL,
-                "Проблемы по заказам Playerok",
+                "Проблемы и возвраты Playerok",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        problems.setDescription("Срочные уведомления, когда покупатель сообщает о проблеме по сделке");
+        problems.setDescription("Срочные уведомления о проблемах и возвратах по сделкам");
         problems.setSound(sound, attributes);
         problems.enableVibration(true);
         problems.setVibrationPattern(new long[]{0, 90, 80, 90});
@@ -95,10 +95,12 @@ final class NotificationHelper {
             String body
     ) {
         ensureChannels(context);
+        // Resolution updates the order card silently; creating a problem or a
+        // refund is urgent and gets an alert.
         if ("PROBLEM_RESOLVED".equals(kind)) return;
 
-        boolean problem = "PROBLEM_CREATED".equals(kind);
-        String channel = problem ? PROBLEMS_CHANNEL : ORDERS_CHANNEL;
+        boolean urgent = "PROBLEM_CREATED".equals(kind) || "DEAL_ROLLED_BACK".equals(kind);
+        String channel = urgent ? PROBLEMS_CHANNEL : ORDERS_CHANNEL;
         Intent open;
         if (dealId != null && !dealId.isEmpty()) {
             open = new Intent(context, OrderDetailActivity.class)
@@ -123,7 +125,7 @@ final class NotificationHelper {
                 .setAutoCancel(true)
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .setVisibility(Notification.VISIBILITY_PUBLIC);
-        if (problem) builder.setColor(Ui.RED);
+        if (urgent) builder.setColor(Ui.RED);
 
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         manager.notify((int) (2000 + eventId % 1_000_000_000L), builder.build());

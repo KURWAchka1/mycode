@@ -15,9 +15,7 @@ final class OrderListAdapter extends BaseAdapter {
     private final Context context;
     private final ArrayList<OrderData> orders = new ArrayList<>();
 
-    OrderListAdapter(Context context) {
-        this.context = context;
-    }
+    OrderListAdapter(Context context) { this.context = context; }
 
     void setOrders(List<OrderData> values) {
         orders.clear();
@@ -25,9 +23,7 @@ final class OrderListAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    OrderData getOrder(int position) {
-        return orders.get(position);
-    }
+    OrderData getOrder(int position) { return orders.get(position); }
 
     @Override public int getCount() { return orders.size(); }
     @Override public Object getItem(int position) { return orders.get(position); }
@@ -86,12 +82,12 @@ final class OrderListAdapter extends BaseAdapter {
             h.date.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             meta.addView(h.date);
 
-            h.problem = Ui.text(context, "Проблема по этой сделке — требуется реакция", 13, Ui.RED, true);
-            LinearLayout.LayoutParams problemParams = new LinearLayout.LayoutParams(
+            h.info = Ui.text(context, "", 13, Ui.MUTED, true);
+            LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            problemParams.topMargin = Ui.dp(context, 10);
-            card.addView(h.problem, problemParams);
+            infoParams.topMargin = Ui.dp(context, 10);
+            card.addView(h.info, infoParams);
 
             convertView = outer;
             h.card = card;
@@ -107,18 +103,36 @@ final class OrderListAdapter extends BaseAdapter {
         h.counterparty.setText(order.counterpartyLabel() + ": " + person);
         h.date.setText(Ui.formatDate(order.paidAt));
 
-        if (order.problemActive) {
+        if (order.rolledBack) {
+            h.status.setText("ВОЗВРАТ");
+            h.status.setTextColor(Ui.RED);
+            h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, 0xFFFFC9C9, 16));
+            h.info.setText("Возврат оформил: " + order.refundActorLabel());
+            h.info.setTextColor(Ui.RED);
+            h.info.setVisibility(View.VISIBLE);
+        } else if (order.problemActive) {
             h.status.setText("ПРОБЛЕМА");
             h.status.setTextColor(Ui.RED);
             h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, 0xFFFFC9C9, 16));
-            h.problem.setVisibility(View.VISIBLE);
-        } else {
-            h.status.setText(order.isSale() ? "ПРОДАЖА" : "ПОКУПКА");
+            h.info.setText("Проблему создал: " + order.problemReporterLabel() + " — требуется реакция");
+            h.info.setTextColor(Ui.RED);
+            h.info.setVisibility(View.VISIBLE);
+        } else if (!order.problemResolvedAt.isEmpty()) {
+            h.status.setText("РЕШЕНО");
             h.status.setTextColor(Ui.GREEN);
             h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
             h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 16));
-            h.problem.setVisibility(View.GONE);
+            h.info.setText("Проблему решил: " + order.problemResolverLabel());
+            h.info.setTextColor(Ui.GREEN);
+            h.info.setVisibility(View.VISIBLE);
+        } else {
+            h.status.setText("ОПЛАЧЕН");
+            h.status.setTextColor(Ui.GREEN);
+            h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 16));
+            h.info.setVisibility(View.GONE);
         }
         return convertView;
     }
@@ -130,6 +144,6 @@ final class OrderListAdapter extends BaseAdapter {
         TextView status;
         TextView counterparty;
         TextView date;
-        TextView problem;
+        TextView info;
     }
 }

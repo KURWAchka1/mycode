@@ -66,12 +66,12 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           grep -F "package: name='app.playerokmonitor'" apk-badging.txt
           grep -F "targetSdkVersion:'36'" apk-badging.txt
-          grep -F "versionName='1.2.0'" apk-badging.txt
+          grep -F "versionName='1.3.0'" apk-badging.txt
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: PlayerokMonitor-1.2.0-sales-purchases
+          name: PlayerokMonitor-1.3.0-actors-refunds
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-badging.txt
