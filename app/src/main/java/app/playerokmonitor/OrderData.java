@@ -2,6 +2,8 @@ package app.playerokmonitor;
 
 import org.json.JSONObject;
 
+import java.util.Locale;
+
 final class OrderData {
     static final String DIRECTION_SALE = "OUT";
     static final String DIRECTION_PURCHASE = "IN";
@@ -124,14 +126,14 @@ final class OrderData {
     }
 
     private static String normalizeDirection(String raw) {
-        String value = raw == null ? "" : raw.trim().toUpperCase();
+        String value = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
         if (value.endsWith(".OUT")) value = "OUT";
         if (value.endsWith(".IN")) value = "IN";
         return DIRECTION_SALE.equals(value) || DIRECTION_PURCHASE.equals(value) ? value : "";
     }
 
     private String actorLabel(String name, String role, String relation) {
-        String rel = relation == null ? "" : relation.trim().toUpperCase();
+        String rel = relation == null ? "" : relation.trim().toUpperCase(Locale.ROOT);
         String cleanName = name == null ? "" : name.trim();
         String cleanRole = role == null ? "" : role.trim();
         if ("SELF".equals(rel)) return "Вы";

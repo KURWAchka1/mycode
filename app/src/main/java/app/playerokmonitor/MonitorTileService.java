@@ -1,5 +1,6 @@
 package app.playerokmonitor;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.drawable.Icon;
@@ -28,7 +29,7 @@ public final class MonitorTileService extends TileService {
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 startActivityAndCollapse(pi);
             } else {
-                startActivityAndCollapse(settings);
+                startLegacySettings(settings);
             }
             return;
         }
@@ -40,6 +41,12 @@ public final class MonitorTileService extends TileService {
         if (enable) startForegroundService(service); else startService(service);
         updateTile();
         GalaxyIntegration.refreshSurfaces(this);
+    }
+
+    @SuppressLint("StartActivityAndCollapseDeprecated")
+    @SuppressWarnings("deprecation")
+    private void startLegacySettings(Intent intent) {
+        startActivityAndCollapse(intent);
     }
 
     private void updateTile() {

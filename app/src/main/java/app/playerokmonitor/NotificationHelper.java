@@ -20,7 +20,6 @@ final class NotificationHelper {
 
     static void ensureChannels(Context context) {
         Ui.configure(context);
-        if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager manager = context.getSystemService(NotificationManager.class);
 
         NotificationChannel service = new NotificationChannel(
