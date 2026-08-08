@@ -95,7 +95,11 @@ final class Ui {
         boolean dark = (activity.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         if (Build.VERSION.SDK_INT >= 30) {
-            WindowInsetsController controller = window.getInsetsController();
+            // PhoneWindow has no DecorView yet when this is called before
+            // setContentView(). Asking the decor directly is null-safe during
+            // Activity creation and still supplies the correct controller.
+            View decor = window.getDecorView();
+            WindowInsetsController controller = decor.getWindowInsetsController();
             if (controller != null) {
                 int flags = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                         | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
