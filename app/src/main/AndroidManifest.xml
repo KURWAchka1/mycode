@@ -24,6 +24,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".OrderDetailActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+
         <service
             android:name=".MonitorService"
             android:exported="false"
@@ -31,7 +34,7 @@
             android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-enabled 24/7 monitoring of the user's Playerok order feed through the user's own VPS, with an ongoing notification and immediate order alerts." />
+                android:value="User-enabled 24/7 monitoring of the user's Playerok order and problem feed through the user's own VPS, with an ongoing notification and immediate alerts." />
         </service>
 
         <receiver

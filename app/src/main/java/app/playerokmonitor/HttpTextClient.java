@@ -16,27 +16,20 @@ final class HttpTextClient {
         connection.setConnectTimeout(10_000);
         connection.setReadTimeout(readTimeoutMs);
         connection.setUseCaches(false);
-        connection.setRequestProperty("Accept", "text/plain");
-        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/1.0");
+        connection.setRequestProperty("Accept", "*/*");
+        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/1.1");
         try {
             int code = connection.getResponseCode();
-            InputStream stream = code >= 200 && code < 300
-                    ? connection.getInputStream()
-                    : connection.getErrorStream();
+            InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
             String body = readFirstLine(stream);
-            if (code < 200 || code >= 300) {
-                throw new IllegalStateException("HTTP " + code + ": " + body);
-            }
+            if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code + ": " + body);
             return body;
-        } finally {
-            connection.disconnect();
-        }
+        } finally { connection.disconnect(); }
     }
 
     private static String readFirstLine(InputStream stream) throws Exception {
         if (stream == null) return "";
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             String line = reader.readLine();
             return line == null ? "" : line;
         }

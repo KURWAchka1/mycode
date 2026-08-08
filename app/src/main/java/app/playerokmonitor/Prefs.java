@@ -8,34 +8,19 @@ final class Prefs {
     private static final String KEY_URL = "pairing_url";
     private static final String KEY_ENABLED = "monitor_enabled";
     private static final String KEY_LAST_ID = "last_event_id";
+    private static final String KEY_ORDERS_REVISION = "orders_revision";
+    private static final String KEY_ORDERS_JSON = "orders_json";
 
     private Prefs() {}
-
-    static SharedPreferences prefs(Context context) {
-        return context.getSharedPreferences(NAME, Context.MODE_PRIVATE);
-    }
-
-    static String getUrl(Context context) {
-        return prefs(context).getString(KEY_URL, "");
-    }
-
-    static void setUrl(Context context, String url) {
-        prefs(context).edit().putString(KEY_URL, url).apply();
-    }
-
-    static boolean isEnabled(Context context) {
-        return prefs(context).getBoolean(KEY_ENABLED, false);
-    }
-
-    static void setEnabled(Context context, boolean enabled) {
-        prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply();
-    }
-
-    static long getLastEventId(Context context) {
-        return prefs(context).getLong(KEY_LAST_ID, 0L);
-    }
-
-    static void setLastEventId(Context context, long id) {
-        prefs(context).edit().putLong(KEY_LAST_ID, id).apply();
-    }
+    static SharedPreferences prefs(Context context) { return context.getSharedPreferences(NAME, Context.MODE_PRIVATE); }
+    static String getUrl(Context context) { return prefs(context).getString(KEY_URL, ""); }
+    static void setUrl(Context context, String url) { prefs(context).edit().putString(KEY_URL, url).apply(); }
+    static boolean isEnabled(Context context) { return prefs(context).getBoolean(KEY_ENABLED, false); }
+    static void setEnabled(Context context, boolean enabled) { prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply(); }
+    static long getLastEventId(Context context) { return prefs(context).getLong(KEY_LAST_ID, 0L); }
+    static void setLastEventId(Context context, long id) { prefs(context).edit().putLong(KEY_LAST_ID, id).apply(); }
+    static long getOrdersRevision(Context context) { return prefs(context).getLong(KEY_ORDERS_REVISION, 0L); }
+    static void setOrdersRevision(Context context, long revision) { prefs(context).edit().putLong(KEY_ORDERS_REVISION, Math.max(0L, revision)).apply(); }
+    static String getOrdersJson(Context context) { return prefs(context).getString(KEY_ORDERS_JSON, "[]"); }
+    static void setOrdersJson(Context context, String json) { prefs(context).edit().putString(KEY_ORDERS_JSON, json == null ? "[]" : json).apply(); }
 }

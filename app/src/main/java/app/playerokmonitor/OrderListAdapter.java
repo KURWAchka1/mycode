@@ -1,0 +1,113 @@
+package app.playerokmonitor;
+
+import android.content.Context;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+final class OrderListAdapter extends BaseAdapter {
+    private final Context context;
+    private final ArrayList<OrderData> orders = new ArrayList<>();
+
+    OrderListAdapter(Context context) { this.context = context; }
+
+    void setOrders(List<OrderData> values) {
+        orders.clear();
+        if (values != null) orders.addAll(values);
+        notifyDataSetChanged();
+    }
+
+    OrderData getOrder(int position) { return orders.get(position); }
+
+    @Override public int getCount() { return orders.size(); }
+    @Override public Object getItem(int position) { return orders.get(position); }
+    @Override public long getItemId(int position) { return position; }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        Holder h;
+        if (convertView == null) {
+            h = new Holder();
+            LinearLayout outer = new LinearLayout(context);
+            outer.setOrientation(LinearLayout.VERTICAL);
+            outer.setPadding(Ui.dp(context, 16), Ui.dp(context, 6), Ui.dp(context, 16), Ui.dp(context, 6));
+
+            LinearLayout card = new LinearLayout(context);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(Ui.dp(context, 16), Ui.dp(context, 14), Ui.dp(context, 16), Ui.dp(context, 14));
+            outer.addView(card, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            LinearLayout top = new LinearLayout(context);
+            top.setOrientation(LinearLayout.HORIZONTAL);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            card.addView(top, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            h.name = Ui.text(context, "", 16, Ui.TEXT, true);
+            top.addView(h.name, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            h.price = Ui.text(context, "", 16, Ui.TEXT, true);
+            h.price.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            top.addView(h.price);
+
+            LinearLayout meta = new LinearLayout(context);
+            meta.setOrientation(LinearLayout.HORIZONTAL);
+            meta.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout.LayoutParams metaParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            metaParams.topMargin = Ui.dp(context, 10);
+            card.addView(meta, metaParams);
+
+            h.status = Ui.text(context, "", 12, Ui.GREEN, true);
+            h.status.setGravity(Gravity.CENTER);
+            h.status.setPadding(Ui.dp(context, 10), Ui.dp(context, 5), Ui.dp(context, 10), Ui.dp(context, 5));
+            meta.addView(h.status);
+            h.buyer = Ui.text(context, "", 13, Ui.MUTED, false);
+            LinearLayout.LayoutParams buyerParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            buyerParams.leftMargin = Ui.dp(context, 10);
+            meta.addView(h.buyer, buyerParams);
+            h.date = Ui.text(context, "", 13, Ui.MUTED, false);
+            h.date.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            meta.addView(h.date);
+
+            h.problem = Ui.text(context, "Покупатель сообщил о проблеме — требуется реакция", 13, Ui.RED, true);
+            LinearLayout.LayoutParams problemParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            problemParams.topMargin = Ui.dp(context, 10);
+            card.addView(h.problem, problemParams);
+
+            convertView = outer;
+            h.card = card;
+            convertView.setTag(h);
+        } else {
+            h = (Holder) convertView.getTag();
+        }
+
+        OrderData order = orders.get(position);
+        h.name.setText(order.displayName());
+        h.price.setText(order.price.isEmpty() ? "—" : order.price);
+        h.buyer.setText(order.buyer.isEmpty() ? "Покупатель —" : "@" + order.buyer);
+        h.date.setText(Ui.formatDate(order.paidAt));
+        if (order.problemActive) {
+            h.status.setText("ПРОБЛЕМА");
+            h.status.setTextColor(Ui.RED);
+            h.status.setBackground(Ui.rounded(context, Ui.RED_BG, 10));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, 0xFFFFC9C9, 16));
+            h.problem.setVisibility(View.VISIBLE);
+        } else {
+            h.status.setText("ОПЛАЧЕН");
+            h.status.setTextColor(Ui.GREEN);
+            h.status.setBackground(Ui.rounded(context, Ui.GREEN_BG, 10));
+            h.card.setBackground(Ui.roundedStroke(context, Ui.CARD, Ui.BORDER, 16));
+            h.problem.setVisibility(View.GONE);
+        }
+        return convertView;
+    }
+
+    private static final class Holder {
+        LinearLayout card;
+        TextView name, price, status, buyer, date, problem;
+    }
+}

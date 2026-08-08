@@ -12,9 +12,8 @@ import android.os.Build;
 
 final class NotificationHelper {
     static final String SERVICE_CHANNEL = "monitor_service_v1";
-    // Notification channel sound settings are persistent. v3 guarantees that
-    // upgrades from 1.0.1 use the new clean 16-bit chime instead of cached v2.
     static final String ORDERS_CHANNEL = "playerok_orders_v3";
+    static final String PROBLEMS_CHANNEL = "playerok_problems_v1";
     static final int SERVICE_NOTIFICATION_ID = 1001;
 
     private NotificationHelper() {}
@@ -33,21 +32,33 @@ final class NotificationHelper {
         service.enableVibration(false);
         manager.createNotificationChannel(service);
 
+        Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.order_alert);
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+
         NotificationChannel orders = new NotificationChannel(
                 ORDERS_CHANNEL,
                 "Новые заказы Playerok",
                 NotificationManager.IMPORTANCE_HIGH
         );
         orders.setDescription("Чистый короткий мягкий сигнал новых оплаченных заказов");
-        Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.order_alert);
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
         orders.setSound(sound, attributes);
         orders.enableVibration(true);
         orders.setVibrationPattern(new long[]{0, 55, 70, 65});
         manager.createNotificationChannel(orders);
+
+        NotificationChannel problems = new NotificationChannel(
+                PROBLEMS_CHANNEL,
+                "Проблемы по заказам Playerok",
+                NotificationManager.IMPORTANCE_HIGH
+        );
+        problems.setDescription("Срочные уведомления, когда покупатель сообщает о проблеме по сделке");
+        problems.setSound(sound, attributes);
+        problems.enableVibration(true);
+        problems.setVibrationPattern(new long[]{0, 90, 80, 90});
+        manager.createNotificationChannel(problems);
     }
 
     static Notification serviceNotification(Context context, String text) {
@@ -71,21 +82,39 @@ final class NotificationHelper {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
-                .addAction(new Notification.Action.Builder(
-                        null, "Остановить", stopPi).build())
+                .addAction(new Notification.Action.Builder(null, "Остановить", stopPi).build())
                 .build();
     }
 
-    static void showOrder(Context context, long eventId, String title, String body) {
+    static void showEvent(
+            Context context,
+            long eventId,
+            String kind,
+            String dealId,
+            String title,
+            String body
+    ) {
         ensureChannels(context);
-        Intent open = new Intent(context, MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if ("PROBLEM_RESOLVED".equals(kind)) return;
+
+        boolean problem = "PROBLEM_CREATED".equals(kind);
+        String channel = problem ? PROBLEMS_CHANNEL : ORDERS_CHANNEL;
+        Intent open;
+        if (dealId != null && !dealId.isEmpty()) {
+            open = new Intent(context, OrderDetailActivity.class)
+                    .putExtra(OrderDetailActivity.EXTRA_DEAL_ID, dealId);
+        } else {
+            open = new Intent(context, MainActivity.class);
+        }
+        open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent openPi = PendingIntent.getActivity(
-                context, (int) (10000 + eventId % 100000), open,
+                context,
+                (int) (10000 + eventId % 100000),
+                open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        Notification notification = new Notification.Builder(context, ORDERS_CHANNEL)
+        Notification.Builder builder = new Notification.Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_stat_order)
                 .setContentTitle(title)
                 .setContentText(body)
@@ -93,11 +122,11 @@ final class NotificationHelper {
                 .setContentIntent(openPi)
                 .setAutoCancel(true)
                 .setCategory(Notification.CATEGORY_MESSAGE)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .build();
+                .setVisibility(Notification.VISIBILITY_PUBLIC);
+        if (problem) builder.setColor(Ui.RED);
 
         NotificationManager manager = context.getSystemService(NotificationManager.class);
-        manager.notify((int) (2000 + eventId % 1_000_000_000L), notification);
+        manager.notify((int) (2000 + eventId % 1_000_000_000L), builder.build());
     }
 
     static void updateService(Context context, String text) {

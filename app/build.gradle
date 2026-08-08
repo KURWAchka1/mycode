@@ -10,8 +10,8 @@ android {
         applicationId 'app.playerokmonitor'
         minSdk 26
         targetSdk 36
-        versionCode 3
-        versionName '1.0.2'
+        versionCode 4
+        versionName '1.1.0'
     }
 
     buildTypes {
@@ -67,37 +67,26 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
         for (int i = 0; i < sampleCount; i++) {
             double t = i / (double) sampleRate
 
-            // First bell: C5. Local phase starts at zero and a smooth attack
-            // prevents clicks or a noisy transient at note onset.
             double note1 = 0.0d
             if (t >= 0.012d && t < 0.36d) {
                 double x = t - 0.012d
                 double attack = smoothstep(x / 0.030d)
                 double decay = Math.exp(-6.8d * x)
                 double release = t > 0.31d ? smoothstep((0.36d - t) / 0.05d) : 1.0d
-                note1 = attack * decay * release *
-                        Math.sin(2.0d * Math.PI * 523.251d * x)
+                note1 = attack * decay * release * Math.sin(2.0d * Math.PI * 523.251d * x)
             }
 
-            // Second bell: G5, slightly delayed and overlapping the first.
             double note2 = 0.0d
             if (t >= 0.135d && t < 0.485d) {
                 double x = t - 0.135d
                 double attack = smoothstep(x / 0.032d)
                 double decay = Math.exp(-6.2d * x)
                 double release = t > 0.425d ? smoothstep((0.485d - t) / 0.060d) : 1.0d
-                note2 = attack * decay * release *
-                        Math.sin(2.0d * Math.PI * 783.991d * x)
+                note2 = attack * decay * release * Math.sin(2.0d * Math.PI * 783.991d * x)
             }
 
-            // Keep the signal comfortably below full scale. No added noise,
-            // high-frequency shimmer or distortion is used.
             double wave = 0.21d * note1 + 0.17d * note2
-
-            // Final master fade makes the last samples converge exactly to zero.
-            if (t > 0.465d) {
-                wave *= smoothstep((durationSeconds - t) / 0.035d)
-            }
+            if (t > 0.465d) wave *= smoothstep((durationSeconds - t) / 0.035d)
 
             int sample = (int) Math.round(Math.max(-1.0d, Math.min(1.0d, wave)) * 32767.0d)
             int offset = i * 2
@@ -123,11 +112,11 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
             writeAscii('WAVE')
             writeAscii('fmt ')
             writeLe32(16)
-            writeLe16(1)                         // PCM
-            writeLe16(1)                         // mono
+            writeLe16(1)
+            writeLe16(1)
             writeLe32(sampleRate)
             writeLe32(sampleRate * bytesPerSample)
-            writeLe16(bytesPerSample)            // block align
+            writeLe16(bytesPerSample)
             writeLe16(bitsPerSample)
             writeAscii('data')
             writeLe32(pcm.length)
