@@ -37,6 +37,29 @@ final class UrlTools {
     static String testUrl(String pairingUrl) { return rebuild(pairingUrl, "/test", 0L, false, null, null); }
     static String cursorUrl(String pairingUrl) { return rebuild(pairingUrl, "/cursor", 0L, false, null, null); }
 
+    static String relistPreviewUrl(String pairingUrl, String dealId) {
+        Uri source = Uri.parse(pairingUrl.trim());
+        Uri.Builder builder = baseBuilder(source, "/relist");
+        copyAuthParams(source, builder);
+        builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        return builder.build().toString();
+    }
+
+    static String relistExecuteUrl(
+            String pairingUrl,
+            String dealId,
+            String priorityId,
+            int priorityPrice
+    ) {
+        Uri source = Uri.parse(pairingUrl.trim());
+        Uri.Builder builder = baseBuilder(source, "/relist");
+        copyAuthParams(source, builder);
+        builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        builder.appendQueryParameter("priority_id", priorityId == null ? "" : priorityId);
+        builder.appendQueryParameter("priority_price", Integer.toString(Math.max(0, priorityPrice)));
+        return builder.build().toString();
+    }
+
     private static String rebuild(String raw, String path, long after, boolean includeAfter, String extraName, String extraValue) {
         Uri source = Uri.parse(raw.trim());
         Uri.Builder builder = baseBuilder(source, path);
@@ -53,7 +76,9 @@ final class UrlTools {
     private static void copyAuthParams(Uri source, Uri.Builder builder) {
         Set<String> names = source.getQueryParameterNames();
         for (String name : names) {
-            if ("after".equals(name) || "mode".equals(name) || "after_rev".equals(name) || "limit".equals(name)) continue;
+            if ("after".equals(name) || "mode".equals(name) || "after_rev".equals(name)
+                    || "limit".equals(name) || "deal_id".equals(name)
+                    || "priority_id".equals(name) || "priority_price".equals(name)) continue;
             for (String value : source.getQueryParameters(name)) builder.appendQueryParameter(name, value);
         }
     }

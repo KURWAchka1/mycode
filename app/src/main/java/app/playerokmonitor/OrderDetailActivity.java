@@ -1,6 +1,7 @@
 package app.playerokmonitor;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Insets;
 import android.graphics.Typeface;
@@ -16,6 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONObject;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -200,6 +203,8 @@ public final class OrderDetailActivity extends Activity {
             note.addView(comment, ccp);
         }
 
+        if (order.isSale()) addRelistCard(order);
+
         Button open = Ui.button(this, "", true);
         if (order.rolledBack) {
             open.setText("Открыть возврат в Playerok");
@@ -240,6 +245,225 @@ public final class OrderDetailActivity extends Activity {
         chat.setTypeface(Typeface.MONOSPACE);
         LinearLayout.LayoutParams chp = matchWrap(); chp.topMargin = Ui.dp(this, 4); ids.addView(chat, chp);
         Ui.reveal(content);
+    }
+
+    private void addRelistCard(OrderData order) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(Ui.dp(this, 18), Ui.dp(this, 17), Ui.dp(this, 18), Ui.dp(this, 17));
+        LinearLayout.LayoutParams params = matchWrap();
+        params.topMargin = Ui.dp(this, 14);
+        content.addView(card, params);
+
+        if (order.isRelisted()) {
+            card.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, Ui.withAlpha(Ui.GREEN, 80), 22));
+            card.addView(Ui.text(this, "Выставлен снова", 18, Ui.GREEN, true));
+            TextView details = Ui.text(
+                    this,
+                    "Исходная карточка и обложка сохранены. Для этого заказа лимит использован.",
+                    14,
+                    Ui.TEXT,
+                    false
+            );
+            LinearLayout.LayoutParams detailsParams = matchWrap();
+            detailsParams.topMargin = Ui.dp(this, 7);
+            card.addView(details, detailsParams);
+            if (!order.relistedAt.isEmpty()) addField(card, "Опубликован", Ui.formatDate(order.relistedAt));
+            addField(card, "Размещение", order.relistPriorityPrice <= 0 ? "Бесплатно" : order.relistPriorityPrice + " ₽");
+            if (!order.relistedItemUrl.isEmpty()) {
+                Button openItem = Ui.button(this, "Открыть товар", false);
+                LinearLayout.LayoutParams buttonParams = matchWrap();
+                buttonParams.topMargin = Ui.dp(this, 14);
+                card.addView(openItem, buttonParams);
+                openItem.setOnClickListener(v -> {
+                    Ui.haptic(v);
+                    openPlayerokUrl(order.relistedItemUrl);
+                });
+            }
+            return;
+        }
+
+        card.setBackground(Ui.roundedStroke(this, Ui.ACCENT_BG, Ui.BORDER, 22));
+        card.addView(Ui.text(this, "Выставить этот товар снова", 18, Ui.ACCENT, true));
+        String description;
+        boolean available = true;
+        if (order.rolledBack) {
+            description = "Недоступно: по заказу оформлен возврат.";
+            available = false;
+        } else if (order.problemActive) {
+            description = "Недоступно, пока по заказу активна проблема.";
+            available = false;
+        } else if (!order.sellerFulfilled) {
+            description = "Станет доступно после того, как вы подтвердите выполнение заказа на Playerok.";
+            available = false;
+        } else if ("PUBLISHING".equalsIgnoreCase(order.relistState)) {
+            description = "Публикация уже выполняется на VPS. Повторный запрос не создаст второй товар.";
+            available = false;
+        } else if ("FAILED".equalsIgnoreCase(order.relistState)) {
+            description = "Предыдущую попытку Playerok не подтвердил. Безопасный повтор продолжит тот же товар.";
+        } else {
+            description = "Та же карточка, описание и обложка. Доступно ровно один раз для этого заказа.";
+        }
+        TextView body = Ui.text(this, description, 14, Ui.TEXT, false);
+        LinearLayout.LayoutParams bodyParams = matchWrap();
+        bodyParams.topMargin = Ui.dp(this, 7);
+        card.addView(body, bodyParams);
+
+        Button relist = Ui.button(this, "Проверить условия", true);
+        relist.setEnabled(available);
+        relist.setAlpha(available ? 1f : 0.55f);
+        LinearLayout.LayoutParams buttonParams = matchWrap();
+        buttonParams.topMargin = Ui.dp(this, 14);
+        card.addView(relist, buttonParams);
+        if (available) {
+            relist.setOnClickListener(v -> {
+                Ui.haptic(v);
+                loadRelistOffer(order, relist);
+            });
+        }
+    }
+
+    private void loadRelistOffer(OrderData order, Button button) {
+        String pairingUrl = Prefs.getUrl(this);
+        String validation = UrlTools.validatePairingUrl(pairingUrl);
+        if (validation != null) {
+            toast(validation);
+            return;
+        }
+        button.setEnabled(false);
+        button.setText("Проверяю Playerok…");
+        network.execute(() -> {
+            try {
+                String raw = HttpTextClient.get(
+                        UrlTools.relistPreviewUrl(pairingUrl, order.dealId),
+                        25_000
+                );
+                RelistOffer offer = RelistOffer.fromJson(raw);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (offer.isPublished()) {
+                        toast("Этот заказ уже был перевыставлен");
+                        sync(false);
+                    } else {
+                        button.setEnabled(true);
+                        button.setText("Проверить условия");
+                        showRelistConfirmation(order, offer, button);
+                    }
+                });
+            } catch (Exception e) {
+                String message = serverMessage(e);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    button.setEnabled(true);
+                    button.setText("Проверить условия");
+                    toast(message);
+                });
+            }
+        });
+    }
+
+    private void showRelistConfirmation(OrderData order, RelistOffer offer, Button button) {
+        StringBuilder message = new StringBuilder();
+        message.append(offer.itemName.isEmpty() ? order.displayName() : offer.itemName);
+        message.append("\n\nРазмещение: ").append(offer.feeLabel());
+        if (offer.priorityPeriodDays > 0) {
+            message.append(" · ").append(offer.priorityPeriodDays).append(" дней");
+        }
+        message.append("\nОбложка, описание и параметры останутся прежними.");
+        message.append("\n\nДля этого заказа товар можно выставить снова только один раз. ");
+        message.append("Повторный тап или сетевой сбой не создадут дубль.");
+        message.append("\n\nНе продолжайте, если это уникальный аккаунт или единичный товар, ");
+        message.append("который нельзя продавать повторно по правилам категории.");
+
+        String positive = offer.priorityPrice <= 0
+                ? "Выставить"
+                : "Выставить за " + offer.priorityPrice + " ₽";
+        new AlertDialog.Builder(this)
+                .setTitle("Подтвердить публикацию")
+                .setMessage(message.toString())
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton(positive, (dialog, which) -> executeRelist(order, offer, button))
+                .show();
+    }
+
+    private void executeRelist(OrderData order, RelistOffer offer, Button button) {
+        String pairingUrl = Prefs.getUrl(this);
+        button.setEnabled(false);
+        button.setText("Выставляю один раз…");
+        network.execute(() -> {
+            try {
+                String raw = HttpTextClient.post(
+                        UrlTools.relistExecuteUrl(
+                                pairingUrl,
+                                order.dealId,
+                                offer.priorityId,
+                                offer.priorityPrice
+                        ),
+                        45_000
+                );
+                RelistOffer result = RelistOffer.fromJson(raw);
+                if (!result.isPublished()) throw new IllegalStateException("Playerok не подтвердил публикацию");
+                OrderData refreshed = null;
+                try {
+                    OrdersRepository.sync(this, pairingUrl);
+                    refreshed = OrdersRepository.findCached(this, dealId);
+                } catch (Exception ignored) {
+                    // The immutable server receipt already proves success. A
+                    // later normal sync will refresh the local order card.
+                }
+                OrderData updated = refreshed;
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (updated != null) render(updated);
+                    showRelistSuccess(result);
+                });
+            } catch (Exception e) {
+                String message = serverMessage(e);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    button.setEnabled(true);
+                    button.setText("Проверить условия");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Не удалось выставить")
+                            .setMessage(message + "\n\nЛимит заказа не расходуется без подтверждённой публикации.")
+                            .setPositiveButton("Понятно", null)
+                            .show();
+                });
+            }
+        });
+    }
+
+    private void showRelistSuccess(RelistOffer result) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this)
+                .setTitle("Товар опубликован")
+                .setMessage("Использована исходная карточка с той же обложкой. Повторное перевыставление для этого заказа заблокировано.")
+                .setNegativeButton("Готово", null);
+        if (!result.itemUrl.isEmpty()) {
+            dialog.setPositiveButton("Открыть товар", (d, which) -> openPlayerokUrl(result.itemUrl));
+        }
+        dialog.show();
+    }
+
+    private void openPlayerokUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            toast("Не удалось открыть Playerok");
+        }
+    }
+
+    private static String serverMessage(Exception error) {
+        String raw = error.getMessage();
+        if (raw == null || raw.trim().isEmpty()) return "Неизвестная ошибка";
+        int jsonStart = raw.indexOf('{');
+        if (jsonStart >= 0) {
+            try {
+                return new JSONObject(raw.substring(jsonStart)).optString("message", raw);
+            } catch (Exception ignored) {
+                // Fall through to the original network message.
+            }
+        }
+        return raw;
     }
 
     private void addField(LinearLayout parent, String label, String value) {

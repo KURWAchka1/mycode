@@ -42,6 +42,13 @@ final class OrderData {
     final String recipientConfirmedByName;
     final String recipientConfirmedByRole;
     final String recipientConfirmedByRelation;
+    final String relistState;
+    final String relistedItemId;
+    final String relistedItemUrl;
+    final int relistPriorityPrice;
+    final String relistPriorityType;
+    final String relistedAt;
+    final String relistError;
     final boolean replySent;
     final long revision;
     final String dealUrl;
@@ -81,6 +88,13 @@ final class OrderData {
             String recipientConfirmedByName,
             String recipientConfirmedByRole,
             String recipientConfirmedByRelation,
+            String relistState,
+            String relistedItemId,
+            String relistedItemUrl,
+            int relistPriorityPrice,
+            String relistPriorityType,
+            String relistedAt,
+            String relistError,
             boolean replySent,
             long revision,
             String dealUrl
@@ -119,6 +133,13 @@ final class OrderData {
         this.recipientConfirmedByName = recipientConfirmedByName;
         this.recipientConfirmedByRole = recipientConfirmedByRole;
         this.recipientConfirmedByRelation = recipientConfirmedByRelation;
+        this.relistState = relistState;
+        this.relistedItemId = relistedItemId;
+        this.relistedItemUrl = relistedItemUrl;
+        this.relistPriorityPrice = relistPriorityPrice;
+        this.relistPriorityType = relistPriorityType;
+        this.relistedAt = relistedAt;
+        this.relistError = relistError;
         this.replySent = replySent;
         this.revision = revision;
         this.dealUrl = dealUrl;
@@ -167,6 +188,13 @@ final class OrderData {
                 o.optString("recipient_confirmed_by_name", ""),
                 o.optString("recipient_confirmed_by_role", ""),
                 o.optString("recipient_confirmed_by_relation", ""),
+                o.optString("relist_state", ""),
+                o.optString("relisted_item_id", ""),
+                o.optString("relisted_item_url", ""),
+                o.optInt("relist_priority_price", 0),
+                o.optString("relist_priority_type", ""),
+                o.optString("relisted_at", ""),
+                o.optString("relist_error", ""),
                 o.optBoolean("reply_sent", false),
                 o.optLong("revision", 0L),
                 dealUrl
@@ -221,8 +249,11 @@ final class OrderData {
     String lifecycleSummary() {
         String first = sellerFulfilled ? "Выполнено ✓" : "Не выполнено";
         String second = recipientConfirmed ? (recipientConfirmationAutomatic ? "Получено авто" : "Получено ✓") : "Не получено";
-        return first + "  •  " + second;
+        String relist = isRelisted() ? "  •  Перевыставлен ✓" : "";
+        return first + "  •  " + second + relist;
     }
+
+    boolean isRelisted() { return "PUBLISHED".equalsIgnoreCase(relistState); }
 
     String displayName() { return itemName.isEmpty() ? "Сделка Playerok" : itemName; }
 }

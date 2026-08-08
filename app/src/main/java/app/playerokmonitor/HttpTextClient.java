@@ -11,14 +11,27 @@ final class HttpTextClient {
     private HttpTextClient() {}
 
     static String get(String url, int readTimeoutMs) throws Exception {
+        return request("GET", url, readTimeoutMs);
+    }
+
+    static String post(String url, int readTimeoutMs) throws Exception {
+        return request("POST", url, readTimeoutMs);
+    }
+
+    private static String request(String method, String url, int readTimeoutMs) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-        connection.setRequestMethod("GET");
+        connection.setRequestMethod(method);
         connection.setConnectTimeout(10_000);
         connection.setReadTimeout(readTimeoutMs);
         connection.setUseCaches(false);
-        connection.setRequestProperty("Accept", "*/*");
-        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/2.0 OneUI");
+        connection.setRequestProperty("Accept", "application/json, text/plain, */*");
+        connection.setRequestProperty("User-Agent", "PlayerokMonitor-Android/2.3 OneUI");
+        if ("POST".equals(method)) {
+            connection.setDoOutput(true);
+            connection.setFixedLengthStreamingMode(0);
+        }
         try {
+            if ("POST".equals(method)) connection.getOutputStream().close();
             int code = connection.getResponseCode();
             InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
             String body = readFirstLine(stream);
