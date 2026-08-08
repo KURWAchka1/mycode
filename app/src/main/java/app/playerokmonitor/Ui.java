@@ -1,10 +1,12 @@
 package app.playerokmonitor;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.time.Instant;
@@ -19,6 +21,7 @@ final class Ui {
     static final int TEXT = Color.rgb(31, 35, 41);
     static final int MUTED = Color.rgb(111, 118, 129);
     static final int ACCENT = Color.rgb(82, 66, 214);
+    static final int ACCENT_BG = Color.rgb(239, 236, 255);
     static final int GREEN = Color.rgb(31, 145, 84);
     static final int GREEN_BG = Color.rgb(232, 247, 238);
     static final int RED = Color.rgb(196, 54, 54);
@@ -54,6 +57,29 @@ final class Ui {
         v.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         return v;
+    }
+
+    static ImageButton iconButton(Context c, int drawableRes, String description) {
+        ImageButton button = new ImageButton(c);
+        button.setImageResource(drawableRes);
+        button.setContentDescription(description);
+        button.setBackground(roundedStroke(c, CARD, BORDER, 12));
+        button.setImageTintList(ColorStateList.valueOf(TEXT));
+        int p = dp(c, 12);
+        button.setPadding(p, p, p, p);
+        button.setScaleType(ImageButton.ScaleType.CENTER_INSIDE);
+        return button;
+    }
+
+    static void styleTab(Context c, TextView tab, boolean selected) {
+        tab.setTextColor(selected ? ACCENT : MUTED);
+        tab.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        tab.setBackground(roundedStroke(
+                c,
+                selected ? ACCENT_BG : CARD,
+                selected ? 0xFFCFC8FF : BORDER,
+                12
+        ));
     }
 
     static String formatDate(String raw) {

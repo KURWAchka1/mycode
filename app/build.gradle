@@ -10,8 +10,8 @@ android {
         applicationId 'app.playerokmonitor'
         minSdk 26
         targetSdk 36
-        versionCode 4
-        versionName '1.1.0'
+        versionCode 5
+        versionName '1.2.0'
     }
 
     buildTypes {
@@ -42,8 +42,8 @@ android {
 }
 
 // Generate a clean, short two-note chime during the build.
-// 16-bit PCM at 44.1 kHz avoids the audible quantization noise of the previous
-// 8-bit file while preserving the same pleasant C5/G5 character.
+// 16-bit PCM at 44.1 kHz avoids audible quantization noise while preserving
+// the same pleasant C5/G5 character.
 def generatedSoundDir = file("$buildDir/generated/res/orderSound/raw")
 def generatedSoundFile = file("$buildDir/generated/res/orderSound/raw/order_alert.wav")
 
@@ -86,7 +86,9 @@ def generateOrderAlert = tasks.register('generateOrderAlert') {
             }
 
             double wave = 0.21d * note1 + 0.17d * note2
-            if (t > 0.465d) wave *= smoothstep((durationSeconds - t) / 0.035d)
+            if (t > 0.465d) {
+                wave *= smoothstep((durationSeconds - t) / 0.035d)
+            }
 
             int sample = (int) Math.round(Math.max(-1.0d, Math.min(1.0d, wave)) * 32767.0d)
             int offset = i * 2
