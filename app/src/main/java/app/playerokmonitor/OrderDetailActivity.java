@@ -143,7 +143,7 @@ public final class OrderDetailActivity extends Activity {
         content.addView(card, cp);
 
         card.addView(Ui.text(this, order.displayName(), 21, Ui.TEXT, true));
-        TextView price = Ui.text(this, order.price.isEmpty() ? "Цена не указана" : order.price, 25, Ui.ACCENT, true);
+        TextView price = Ui.text(this, order.price.isEmpty() ? "Цена не указана" : order.priceSummary(), 25, Ui.ACCENT, true);
         LinearLayout.LayoutParams priceParams = matchWrap();
         priceParams.topMargin = Ui.dp(this, 8);
         card.addView(price, priceParams);
@@ -151,6 +151,13 @@ public final class OrderDetailActivity extends Activity {
         String person = order.counterparty.isEmpty() ? "—" : "@" + order.counterparty;
         addField(card, order.counterpartyLabel(), person);
         addField(card, "Оплачено", Ui.formatDate(order.paidAt));
+        if (
+                order.isSale()
+                        && "PROCESSING".equalsIgnoreCase(order.sellerNetStatus)
+                        && !order.sellerNetAvailableAt.isEmpty()
+        ) {
+            addField(card, "Ожидаемое зачисление", Ui.formatDate(order.sellerNetAvailableAt));
+        }
         addField(
                 card,
                 order.isSale() ? "Выполнение вами" : "Выполнение продавцом",

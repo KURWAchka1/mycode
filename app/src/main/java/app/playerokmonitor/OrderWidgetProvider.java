@@ -133,7 +133,7 @@ public final class OrderWidgetProvider extends AppWidgetProvider {
         } else {
             String name = clean(data.latest.itemName, "Сделка #" + data.latest.dealId);
             String direction = data.latest.isSale() ? "Продажа" : "Покупка";
-            String price = clean(data.latest.price, "без цены");
+            String price = data.latest.widgetPriceSummary();
             views.setTextViewText(R.id.widget_latest_name, name);
             views.setTextViewText(
                     R.id.widget_latest_meta,

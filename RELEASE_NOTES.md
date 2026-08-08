@@ -1,4 +1,10 @@
-# Playerok Monitor 2.3.1 · New Orders Only
+# Playerok Monitor 2.3.2 · Net Seller Income
+
+- Sales now show both the buyer-facing deal price and Playerok's exact net transaction value for the seller.
+- Financial state is explicit: pending, frozen or credited. The widget uses the net amount as its compact price; purchases and refunded deals keep their normal price.
+- Existing sales are backfilled once with rate limiting, while only pending/frozen transactions are refreshed afterward.
+
+## Included from 2.3.1
 
 - Relisting is offered only for orders first seen after this server update. Every order already stored on the VPS at migration time is permanently excluded and hidden in the app.
 

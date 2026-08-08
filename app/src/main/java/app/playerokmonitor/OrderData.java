@@ -2,6 +2,9 @@ package app.playerokmonitor;
 
 import org.json.JSONObject;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 final class OrderData {
@@ -13,6 +16,9 @@ final class OrderData {
     final String direction;
     final String itemName;
     final String price;
+    final String sellerNetAmount;
+    final String sellerNetStatus;
+    final String sellerNetAvailableAt;
     final String counterparty;
     final String buyerComment;
     final String paidAt;
@@ -60,6 +66,9 @@ final class OrderData {
             String direction,
             String itemName,
             String price,
+            String sellerNetAmount,
+            String sellerNetStatus,
+            String sellerNetAvailableAt,
             String counterparty,
             String buyerComment,
             String paidAt,
@@ -106,6 +115,9 @@ final class OrderData {
         this.direction = normalizeDirection(direction);
         this.itemName = itemName;
         this.price = price;
+        this.sellerNetAmount = sellerNetAmount;
+        this.sellerNetStatus = sellerNetStatus;
+        this.sellerNetAvailableAt = sellerNetAvailableAt;
         this.counterparty = counterparty;
         this.buyerComment = buyerComment;
         this.paidAt = paidAt;
@@ -162,6 +174,9 @@ final class OrderData {
                 o.optString("direction", ""),
                 o.optString("item_name", ""),
                 o.optString("price", ""),
+                o.optString("seller_net_amount", ""),
+                o.optString("seller_net_status", ""),
+                o.optString("seller_net_available_at", ""),
                 counterparty,
                 o.optString("buyer_comment", ""),
                 o.optString("paid_at", ""),
@@ -210,6 +225,49 @@ final class OrderData {
         if (value.endsWith(".OUT")) value = "OUT";
         if (value.endsWith(".IN")) value = "IN";
         return DIRECTION_SALE.equals(value) || DIRECTION_PURCHASE.equals(value) ? value : "";
+    }
+
+    private static String formatMoney(String raw) {
+        String clean = raw == null ? "" : raw.trim();
+        if (clean.isEmpty() || clean.contains("₽") || clean.toLowerCase(Locale.ROOT).contains("руб")) {
+            return clean;
+        }
+        try {
+            BigDecimal value = new BigDecimal(clean.replace(" ", "").replace(',', '.'));
+            DecimalFormat format = new DecimalFormat(
+                    "#,##0.##",
+                    DecimalFormatSymbols.getInstance(new Locale("ru", "RU"))
+            );
+            return format.format(value) + " ₽";
+        } catch (NumberFormatException ignored) {
+            return clean + " ₽";
+        }
+    }
+
+    private boolean hasVisibleSellerNet() {
+        if (!isSale() || rolledBack || sellerNetAmount.isEmpty()) return false;
+        String status = sellerNetStatus.toUpperCase(Locale.ROOT);
+        return !"ROLLED_BACK".equals(status) && !"FAILED".equals(status);
+    }
+
+    private String sellerNetLabel() {
+        switch (sellerNetStatus.toUpperCase(Locale.ROOT)) {
+            case "PENDING": return "ожидается";
+            case "PROCESSING": return "в заморозке";
+            case "CONFIRMED": return "зачислено";
+            default: return "к получению";
+        }
+    }
+
+    String priceSummary() {
+        String gross = price.isEmpty() ? "—" : formatMoney(price);
+        if (!hasVisibleSellerNet()) return gross;
+        return gross + "\n(" + sellerNetLabel() + " " + formatMoney(sellerNetAmount) + ")";
+    }
+
+    String widgetPriceSummary() {
+        if (!hasVisibleSellerNet()) return price.isEmpty() ? "без цены" : formatMoney(price);
+        return formatMoney(sellerNetAmount) + " · " + sellerNetLabel();
     }
 
     private String actorLabel(String name, String role, String relation) {

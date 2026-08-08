@@ -98,7 +98,7 @@ final class OrderListAdapter extends BaseAdapter {
 
         OrderData order = orders.get(position);
         h.name.setText(order.displayName());
-        h.price.setText(order.price.isEmpty() ? "—" : order.price);
+        h.price.setText(order.priceSummary());
         String person = order.counterparty.isEmpty() ? "—" : "@" + order.counterparty;
         h.counterparty.setText(order.counterpartyLabel() + ": " + person);
         h.date.setText(Ui.formatDate(order.paidAt));
