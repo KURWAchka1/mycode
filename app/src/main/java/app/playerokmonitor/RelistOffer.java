@@ -13,6 +13,9 @@ final class RelistOffer {
     final String itemUrl;
     final String publishedAt;
     final boolean hasCover;
+    final int itemPrice;
+    final int discountedPrice;
+    final int priorityCalculationPrice;
 
     private RelistOffer(
             String state,
@@ -24,7 +27,10 @@ final class RelistOffer {
             int priorityPeriodDays,
             String itemUrl,
             String publishedAt,
-            boolean hasCover
+            boolean hasCover,
+            int itemPrice,
+            int discountedPrice,
+            int priorityCalculationPrice
     ) {
         this.state = state;
         this.itemName = itemName;
@@ -36,6 +42,9 @@ final class RelistOffer {
         this.itemUrl = itemUrl;
         this.publishedAt = publishedAt;
         this.hasCover = hasCover;
+        this.itemPrice = itemPrice;
+        this.discountedPrice = discountedPrice;
+        this.priorityCalculationPrice = priorityCalculationPrice;
     }
 
     static RelistOffer fromJson(String raw) throws Exception {
@@ -53,10 +62,16 @@ final class RelistOffer {
                 json.optInt("priority_period_days", 0),
                 json.optString("item_url", json.optString("source_item_url", "")),
                 json.optString("published_at", ""),
-                json.optBoolean("has_cover", json.optBoolean("cover_preserved", false))
+                json.optBoolean("has_cover", json.optBoolean("cover_preserved", false)),
+                json.optInt("item_price", 0),
+                json.optInt("discounted_price", 0),
+                json.optInt("priority_calculation_price", 0)
         );
     }
 
     boolean isPublished() { return "PUBLISHED".equalsIgnoreCase(state); }
-    String feeLabel() { return priorityPrice <= 0 ? "Бесплатно" : priorityPrice + " ₽"; }
+    String feeLabel() {
+        String name = priorityName.isEmpty() ? "Premium" : priorityName;
+        return priorityPrice <= 0 ? name + ": бесплатно" : name + ": " + priorityPrice + " ₽";
+    }
 }

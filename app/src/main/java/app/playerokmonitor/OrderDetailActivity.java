@@ -372,9 +372,20 @@ public final class OrderDetailActivity extends Activity {
     private void showRelistConfirmation(OrderData order, RelistOffer offer, Button button) {
         StringBuilder message = new StringBuilder();
         message.append(offer.itemName.isEmpty() ? order.displayName() : offer.itemName);
-        message.append("\n\nРазмещение: ").append(offer.feeLabel());
+        message.append("\n\n").append(offer.feeLabel());
         if (offer.priorityPeriodDays > 0) {
             message.append(" · ").append(offer.priorityPeriodDays).append(" дней");
+        }
+        if (offer.itemPrice > 0) {
+            message.append("\nЦена товара: ").append(offer.itemPrice).append(" ₽");
+            if (offer.discountedPrice > 0 && offer.discountedPrice != offer.itemPrice) {
+                message.append(" · со скидкой сейчас ")
+                        .append(offer.discountedPrice).append(" ₽");
+            }
+        }
+        if (offer.priorityCalculationPrice > 0) {
+            message.append("\nСтоимость Premium получена напрямую от Playerok для цены ")
+                    .append(offer.priorityCalculationPrice).append(" ₽.");
         }
         message.append("\nОбложка, описание и параметры останутся прежними.");
         message.append("\n\nДля этого заказа товар можно выставить снова только один раз. ");
@@ -383,8 +394,8 @@ public final class OrderDetailActivity extends Activity {
         message.append("который нельзя продавать повторно по правилам категории.");
 
         String positive = offer.priorityPrice <= 0
-                ? "Выставить"
-                : "Выставить за " + offer.priorityPrice + " ₽";
+                ? "Выставить с Premium"
+                : "Оплатить Premium · " + offer.priorityPrice + " ₽";
         new AlertDialog.Builder(this)
                 .setTitle("Подтвердить публикацию")
                 .setMessage(message.toString())

@@ -1,4 +1,12 @@
-# Playerok Monitor 2.3.3 · Flexible Auto Replies
+# Playerok Monitor 2.3.4 · Exact Premium Relisting
+
+- Relisting now strictly selects Playerok's `PREMIUM` publication option and can never silently substitute the free `DEFAULT` option.
+- The amount shown in confirmation is taken from Playerok's current `itemPriorityStatuses` response for the exact listing price.
+- After creating the copy, the VPS requests the draft-specific Premium quote again. Any change in price, type or period stops publication and requires a fresh confirmation before Playerok can charge the balance.
+- The confirmation now shows the original pre-discount listing price, the current discounted price, the Premium period and the exact calculation price.
+- Premium is paid through Playerok's `LOCAL` transaction provider only after the user confirms the current amount.
+
+## Included from 2.3.3
 
 - Settings now contain an ordered auto-reply editor: add, edit, remove and save up to eight buyer messages.
 - The exact “Отключить сообщения” switch pauses all server-side replies while preserving every saved text for later re-enabling.
