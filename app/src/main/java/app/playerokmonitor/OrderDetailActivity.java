@@ -384,7 +384,7 @@ public final class OrderDetailActivity extends Activity {
                 true
         ));
 
-        TextView priceLabel = Ui.text(this, "Цена нового объявления", 13, Ui.MUTED, true);
+        TextView priceLabel = Ui.text(this, "Новая цена (необязательно)", 13, Ui.MUTED, true);
         LinearLayout.LayoutParams labelParams = matchWrap();
         labelParams.topMargin = Ui.dp(this, 18);
         form.addView(priceLabel, labelParams);
@@ -392,7 +392,12 @@ public final class OrderDetailActivity extends Activity {
         EditText priceInput = new EditText(this);
         priceInput.setSingleLine(true);
         priceInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        priceInput.setText(Integer.toString(Math.max(1, setup.itemPrice)));
+        if (setup.priceLocked || setup.priceCustomized) {
+            priceInput.setText(Integer.toString(Math.max(1, setup.itemPrice)));
+        } else {
+            priceInput.setText("");
+        }
+        priceInput.setHint("Оставьте пустым — " + Math.max(1, setup.itemPrice) + " ₽");
         priceInput.setTextSize(19);
         priceInput.setTextColor(Ui.TEXT);
         priceInput.setHintTextColor(Ui.MUTED);
@@ -463,12 +468,14 @@ public final class OrderDetailActivity extends Activity {
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 .setOnClickListener(v -> {
                     String rawPrice = priceInput.getText().toString().trim();
-                    int listingPrice;
-                    try {
-                        listingPrice = Integer.parseInt(rawPrice);
-                    } catch (NumberFormatException e) {
-                        priceInput.setError("Введите целую цену в рублях");
-                        return;
+                    int listingPrice = Math.max(1, setup.itemPrice);
+                    if (!rawPrice.isEmpty()) {
+                        try {
+                            listingPrice = Integer.parseInt(rawPrice);
+                        } catch (NumberFormatException e) {
+                            priceInput.setError("Введите целую цену в рублях");
+                            return;
+                        }
                     }
                     if (listingPrice < 1 || listingPrice > 10_000_000) {
                         priceInput.setError("Допустимо от 1 до 10 000 000 ₽");

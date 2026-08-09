@@ -1,4 +1,9 @@
-# Playerok Monitor 2.3.6 · Clear Receipt Status
+# Playerok Monitor 2.3.7 · Smarter Relist Defaults
+
+- The new relisting price field is optional. Leaving it blank reuses the sold item's original pre-discount listing price.
+- A custom price remains visible when editing the confirmation, while an already-created draft continues to show its pinned price.
+
+## Included from 2.3.6
 
 - Removed the misleading duplicate “Получение подтвердил” row from order details.
 - Purchases now communicate receipt unambiguously as “Получение вами”, while sales use “Получение покупателем”.
