@@ -43,7 +43,7 @@ final class NotificationHelper {
                 "Новые заказы Playerok",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        orders.setDescription("Чистый короткий мягкий сигнал новых оплаченных заказов");
+        orders.setDescription("Заметный короткий мягкий сигнал новых оплаченных заказов");
         orders.setSound(sound, attributes);
         orders.enableVibration(true);
         orders.setVibrationPattern(new long[]{0, 55, 70, 65});

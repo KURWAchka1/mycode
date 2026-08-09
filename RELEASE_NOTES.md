@@ -1,4 +1,13 @@
-# Playerok Monitor 2.3.4 · Exact Premium Relisting
+# Playerok Monitor 2.3.5 · Flexible Relisting
+
+- The relisting flow now starts with a dedicated setup step where the new listing price can be entered explicitly.
+- Premium can be switched on or off. The VPS strictly selects `PREMIUM` for paid promotion or `DEFAULT` for ordinary publication and never substitutes one for the other.
+- Playerok conditions are recalculated for the exact chosen price and mode, then shown in a separate final confirmation before publication.
+- Once a draft has been created, its listing price is pinned to the order so retries cannot create a duplicate. Promotion mode may still be changed safely.
+- The published order card records both the chosen listing price and the actual publication fee.
+- The two-note notification chime is substantially louder, with soft limiting and smooth fades to avoid clipping or a sharp, tiring sound.
+
+## Included from 2.3.4
 
 - Relisting now strictly selects Playerok's `PREMIUM` publication option and can never silently substitute the free `DEFAULT` option.
 - The amount shown in confirmation is taken from Playerok's current `itemPriorityStatuses` response for the exact listing price.

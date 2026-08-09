@@ -8,13 +8,16 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -276,6 +279,7 @@ public final class OrderDetailActivity extends Activity {
             detailsParams.topMargin = Ui.dp(this, 7);
             card.addView(details, detailsParams);
             if (!order.relistedAt.isEmpty()) addField(card, "Опубликован", Ui.formatDate(order.relistedAt));
+            if (order.relistListingPrice > 0) addField(card, "Цена объявления", order.relistListingPrice + " ₽");
             addField(card, "Размещение", order.relistPriorityPrice <= 0 ? "Бесплатно" : order.relistPriorityPrice + " ₽");
             if (!order.relistedItemUrl.isEmpty()) {
                 Button openItem = Ui.button(this, "Открыть товар", false);
@@ -307,16 +311,16 @@ public final class OrderDetailActivity extends Activity {
             description = "Публикация уже выполняется на VPS. Повторный запрос не создаст второй товар.";
             available = false;
         } else if ("FAILED".equalsIgnoreCase(order.relistState)) {
-            description = "Предыдущую попытку Playerok не подтвердил. Безопасный повтор продолжит тот же товар.";
+            description = "Черновик сохранён. Можно заново проверить размещение и изменить Premium; второй товар не создастся.";
         } else {
-            description = "Та же карточка, описание и обложка. Доступно ровно один раз для этого заказа.";
+            description = "Перед публикацией выберите новую цену и решите, нужно ли оплачивать Premium.";
         }
         TextView body = Ui.text(this, description, 14, Ui.TEXT, false);
         LinearLayout.LayoutParams bodyParams = matchWrap();
         bodyParams.topMargin = Ui.dp(this, 7);
         card.addView(body, bodyParams);
 
-        Button relist = Ui.button(this, "Проверить условия", true);
+        Button relist = Ui.button(this, "Настроить публикацию", true);
         relist.setEnabled(available);
         relist.setAlpha(available ? 1f : 0.55f);
         LinearLayout.LayoutParams buttonParams = matchWrap();
@@ -325,12 +329,12 @@ public final class OrderDetailActivity extends Activity {
         if (available) {
             relist.setOnClickListener(v -> {
                 Ui.haptic(v);
-                loadRelistOffer(order, relist);
+                loadRelistSetup(order, relist);
             });
         }
     }
 
-    private void loadRelistOffer(OrderData order, Button button) {
+    private void loadRelistSetup(OrderData order, Button button) {
         String pairingUrl = Prefs.getUrl(this);
         String validation = UrlTools.validatePairingUrl(pairingUrl);
         if (validation != null) {
@@ -342,7 +346,162 @@ public final class OrderDetailActivity extends Activity {
         network.execute(() -> {
             try {
                 String raw = HttpTextClient.get(
-                        UrlTools.relistPreviewUrl(pairingUrl, order.dealId),
+                        UrlTools.relistSetupUrl(pairingUrl, order.dealId),
+                        25_000
+                );
+                RelistOffer setup = RelistOffer.fromJson(raw);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (setup.isPublished()) {
+                        toast("Этот заказ уже был перевыставлен");
+                        sync(false);
+                    } else {
+                        button.setEnabled(true);
+                        button.setText("Настроить публикацию");
+                        showRelistSetup(order, setup, button);
+                    }
+                });
+            } catch (Exception e) {
+                String message = serverMessage(e);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    button.setEnabled(true);
+                    button.setText("Настроить публикацию");
+                    toast(message);
+                });
+            }
+        });
+    }
+
+    private void showRelistSetup(OrderData order, RelistOffer setup, Button button) {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        int horizontal = Ui.dp(this, 24);
+        form.setPadding(horizontal, Ui.dp(this, 8), horizontal, 0);
+
+        form.addView(Ui.text(
+                this,
+                setup.itemName.isEmpty() ? order.displayName() : setup.itemName,
+                16,
+                Ui.TEXT,
+                true
+        ));
+
+        TextView priceLabel = Ui.text(this, "Цена нового объявления", 13, Ui.MUTED, true);
+        LinearLayout.LayoutParams labelParams = matchWrap();
+        labelParams.topMargin = Ui.dp(this, 18);
+        form.addView(priceLabel, labelParams);
+
+        EditText priceInput = new EditText(this);
+        priceInput.setSingleLine(true);
+        priceInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        priceInput.setText(Integer.toString(Math.max(1, setup.itemPrice)));
+        priceInput.setTextSize(19);
+        priceInput.setTextColor(Ui.TEXT);
+        priceInput.setHintTextColor(Ui.MUTED);
+        priceInput.setPadding(
+                Ui.dp(this, 16),
+                Ui.dp(this, 13),
+                Ui.dp(this, 16),
+                Ui.dp(this, 13)
+        );
+        priceInput.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 18));
+        priceInput.setEnabled(!setup.priceLocked);
+        LinearLayout.LayoutParams inputParams = matchWrap();
+        inputParams.topMargin = Ui.dp(this, 8);
+        form.addView(priceInput, inputParams);
+
+        if (setup.priceLocked) {
+            TextView locked = Ui.text(
+                    this,
+                    "Черновик уже создан с этой ценой. Она заблокирована, чтобы повтор не создал второй товар.",
+                    12,
+                    Ui.MUTED,
+                    false
+            );
+            LinearLayout.LayoutParams lockedParams = matchWrap();
+            lockedParams.topMargin = Ui.dp(this, 7);
+            form.addView(locked, lockedParams);
+        } else if (setup.sourceItemPrice > 0) {
+            TextView original = Ui.text(
+                    this,
+                    "Цена исходного объявления: " + setup.sourceItemPrice + " ₽",
+                    12,
+                    Ui.MUTED,
+                    false
+            );
+            LinearLayout.LayoutParams originalParams = matchWrap();
+            originalParams.topMargin = Ui.dp(this, 7);
+            form.addView(original, originalParams);
+        }
+
+        Switch premium = new Switch(this);
+        premium.setText("Оплатить Premium-продвижение");
+        premium.setTextColor(Ui.TEXT);
+        premium.setTextSize(15);
+        premium.setGravity(Gravity.CENTER_VERTICAL);
+        premium.setChecked(setup.priorityType.isEmpty() || setup.isPremium());
+        premium.setPadding(0, Ui.dp(this, 12), 0, Ui.dp(this, 4));
+        LinearLayout.LayoutParams premiumParams = matchWrap();
+        premiumParams.topMargin = Ui.dp(this, 12);
+        form.addView(premium, premiumParams);
+
+        TextView premiumHint = Ui.text(
+                this,
+                "Выключите, чтобы использовать обычное размещение без оплаты Premium.",
+                12,
+                Ui.MUTED,
+                false
+        );
+        LinearLayout.LayoutParams hintParams = matchWrap();
+        hintParams.topMargin = Ui.dp(this, 2);
+        form.addView(premiumHint, hintParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Параметры публикации")
+                .setView(form)
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Рассчитать условия", null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String rawPrice = priceInput.getText().toString().trim();
+                    int listingPrice;
+                    try {
+                        listingPrice = Integer.parseInt(rawPrice);
+                    } catch (NumberFormatException e) {
+                        priceInput.setError("Введите целую цену в рублях");
+                        return;
+                    }
+                    if (listingPrice < 1 || listingPrice > 10_000_000) {
+                        priceInput.setError("Допустимо от 1 до 10 000 000 ₽");
+                        return;
+                    }
+                    String priorityType = premium.isChecked() ? "PREMIUM" : "DEFAULT";
+                    dialog.dismiss();
+                    loadRelistOffer(order, button, listingPrice, priorityType);
+                }));
+        dialog.show();
+    }
+
+    private void loadRelistOffer(
+            OrderData order,
+            Button button,
+            int listingPrice,
+            String priorityType
+    ) {
+        String pairingUrl = Prefs.getUrl(this);
+        button.setEnabled(false);
+        button.setText("Рассчитываю условия…");
+        network.execute(() -> {
+            try {
+                String raw = HttpTextClient.get(
+                        UrlTools.relistPreviewUrl(
+                                pairingUrl,
+                                order.dealId,
+                                listingPrice,
+                                priorityType
+                        ),
                         25_000
                 );
                 RelistOffer offer = RelistOffer.fromJson(raw);
@@ -353,7 +512,7 @@ public final class OrderDetailActivity extends Activity {
                         sync(false);
                     } else {
                         button.setEnabled(true);
-                        button.setText("Проверить условия");
+                        button.setText("Настроить публикацию");
                         showRelistConfirmation(order, offer, button);
                     }
                 });
@@ -362,8 +521,13 @@ public final class OrderDetailActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     button.setEnabled(true);
-                    button.setText("Проверить условия");
-                    toast(message);
+                    button.setText("Настроить публикацию");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Не удалось рассчитать")
+                            .setMessage(message)
+                            .setPositiveButton("Изменить параметры", (d, which) -> loadRelistSetup(order, button))
+                            .setNegativeButton("Закрыть", null)
+                            .show();
                 });
             }
         });
@@ -377,15 +541,17 @@ public final class OrderDetailActivity extends Activity {
             message.append(" · ").append(offer.priorityPeriodDays).append(" дней");
         }
         if (offer.itemPrice > 0) {
-            message.append("\nЦена товара: ").append(offer.itemPrice).append(" ₽");
-            if (offer.discountedPrice > 0 && offer.discountedPrice != offer.itemPrice) {
-                message.append(" · со скидкой сейчас ")
-                        .append(offer.discountedPrice).append(" ₽");
+            message.append("\nЦена нового объявления: ").append(offer.itemPrice).append(" ₽");
+            if (offer.sourceItemPrice > 0 && offer.sourceItemPrice != offer.itemPrice) {
+                message.append("\nЦена исходного объявления: ")
+                        .append(offer.sourceItemPrice).append(" ₽");
             }
         }
-        if (offer.priorityCalculationPrice > 0) {
+        if (offer.isPremium() && offer.priorityCalculationPrice > 0) {
             message.append("\nСтоимость Premium получена напрямую от Playerok для цены ")
                     .append(offer.priorityCalculationPrice).append(" ₽.");
+        } else if (!offer.isPremium()) {
+            message.append("\nPremium отключён: сервер выбрал обычный вариант Playerok.");
         }
         message.append("\nОбложка, описание и параметры останутся прежними.");
         message.append("\n\nДля этого заказа товар можно выставить снова только один раз. ");
@@ -393,13 +559,21 @@ public final class OrderDetailActivity extends Activity {
         message.append("\n\nНе продолжайте, если это уникальный аккаунт или единичный товар, ");
         message.append("который нельзя продавать повторно по правилам категории.");
 
-        String positive = offer.priorityPrice <= 0
-                ? "Выставить с Premium"
-                : "Оплатить Premium · " + offer.priorityPrice + " ₽";
+        String positive;
+        if (!offer.isPremium()) {
+            positive = offer.priorityPrice <= 0
+                    ? "Выставить бесплатно"
+                    : "Оплатить размещение · " + offer.priorityPrice + " ₽";
+        } else {
+            positive = offer.priorityPrice <= 0
+                    ? "Выставить с Premium"
+                    : "Оплатить Premium · " + offer.priorityPrice + " ₽";
+        }
         new AlertDialog.Builder(this)
                 .setTitle("Подтвердить публикацию")
                 .setMessage(message.toString())
                 .setNegativeButton("Отмена", null)
+                .setNeutralButton("Изменить", (dialog, which) -> showRelistSetup(order, offer, button))
                 .setPositiveButton(positive, (dialog, which) -> executeRelist(order, offer, button))
                 .show();
     }
@@ -415,7 +589,9 @@ public final class OrderDetailActivity extends Activity {
                                 pairingUrl,
                                 order.dealId,
                                 offer.priorityId,
-                                offer.priorityPrice
+                                offer.priorityPrice,
+                                offer.itemPrice,
+                                offer.priorityType
                         ),
                         45_000
                 );
@@ -440,11 +616,20 @@ public final class OrderDetailActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     button.setEnabled(true);
-                    button.setText("Проверить условия");
+                    button.setText("Настроить публикацию");
                     new AlertDialog.Builder(this)
                             .setTitle("Не удалось выставить")
                             .setMessage(message + "\n\nЛимит заказа не расходуется без подтверждённой публикации.")
-                            .setPositiveButton("Понятно", null)
+                            .setPositiveButton(
+                                    "Проверить снова",
+                                    (d, which) -> loadRelistOffer(
+                                            order,
+                                            button,
+                                            offer.itemPrice,
+                                            offer.priorityType
+                                    )
+                            )
+                            .setNegativeButton("Закрыть", null)
                             .show();
                 });
             }

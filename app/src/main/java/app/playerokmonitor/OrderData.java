@@ -54,6 +54,7 @@ final class OrderData {
     final String relistedItemUrl;
     final int relistPriorityPrice;
     final String relistPriorityType;
+    final int relistListingPrice;
     final String relistedAt;
     final String relistError;
     final boolean replySent;
@@ -104,6 +105,7 @@ final class OrderData {
             String relistedItemUrl,
             int relistPriorityPrice,
             String relistPriorityType,
+            int relistListingPrice,
             String relistedAt,
             String relistError,
             boolean replySent,
@@ -153,6 +155,7 @@ final class OrderData {
         this.relistedItemUrl = relistedItemUrl;
         this.relistPriorityPrice = relistPriorityPrice;
         this.relistPriorityType = relistPriorityType;
+        this.relistListingPrice = relistListingPrice;
         this.relistedAt = relistedAt;
         this.relistError = relistError;
         this.replySent = replySent;
@@ -212,6 +215,7 @@ final class OrderData {
                 o.optString("relisted_item_url", ""),
                 o.optInt("relist_priority_price", 0),
                 o.optString("relist_priority_type", ""),
+                o.optInt("relist_listing_price", 0),
                 o.optString("relisted_at", ""),
                 o.optString("relist_error", ""),
                 o.optBoolean("reply_sent", false),

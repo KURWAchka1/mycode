@@ -14,8 +14,11 @@ final class RelistOffer {
     final String publishedAt;
     final boolean hasCover;
     final int itemPrice;
+    final int sourceItemPrice;
     final int discountedPrice;
     final int priorityCalculationPrice;
+    final boolean priceCustomized;
+    final boolean priceLocked;
 
     private RelistOffer(
             String state,
@@ -29,8 +32,11 @@ final class RelistOffer {
             String publishedAt,
             boolean hasCover,
             int itemPrice,
+            int sourceItemPrice,
             int discountedPrice,
-            int priorityCalculationPrice
+            int priorityCalculationPrice,
+            boolean priceCustomized,
+            boolean priceLocked
     ) {
         this.state = state;
         this.itemName = itemName;
@@ -43,8 +49,11 @@ final class RelistOffer {
         this.publishedAt = publishedAt;
         this.hasCover = hasCover;
         this.itemPrice = itemPrice;
+        this.sourceItemPrice = sourceItemPrice;
         this.discountedPrice = discountedPrice;
         this.priorityCalculationPrice = priorityCalculationPrice;
+        this.priceCustomized = priceCustomized;
+        this.priceLocked = priceLocked;
     }
 
     static RelistOffer fromJson(String raw) throws Exception {
@@ -64,14 +73,19 @@ final class RelistOffer {
                 json.optString("published_at", ""),
                 json.optBoolean("has_cover", json.optBoolean("cover_preserved", false)),
                 json.optInt("item_price", 0),
+                json.optInt("source_item_price", json.optInt("item_price", 0)),
                 json.optInt("discounted_price", 0),
-                json.optInt("priority_calculation_price", 0)
+                json.optInt("priority_calculation_price", 0),
+                json.optBoolean("price_customized", false),
+                json.optBoolean("price_locked", false)
         );
     }
 
     boolean isPublished() { return "PUBLISHED".equalsIgnoreCase(state); }
+    boolean isPremium() { return "PREMIUM".equalsIgnoreCase(priorityType); }
     String feeLabel() {
-        String name = priorityName.isEmpty() ? "Premium" : priorityName;
+        String fallback = isPremium() ? "Premium" : "Обычное размещение";
+        String name = priorityName.isEmpty() ? fallback : priorityName;
         return priorityPrice <= 0 ? name + ": бесплатно" : name + ": " + priorityPrice + " ₽";
     }
 }

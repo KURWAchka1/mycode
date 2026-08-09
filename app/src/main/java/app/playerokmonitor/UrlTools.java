@@ -41,11 +41,27 @@ final class UrlTools {
         return rebuild(pairingUrl, "/poll", 0L, false, "mode", "auto_replies");
     }
 
-    static String relistPreviewUrl(String pairingUrl, String dealId) {
+    static String relistSetupUrl(String pairingUrl, String dealId) {
         Uri source = Uri.parse(pairingUrl.trim());
         Uri.Builder builder = baseBuilder(source, "/relist");
         copyAuthParams(source, builder);
         builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        builder.appendQueryParameter("setup", "1");
+        return builder.build().toString();
+    }
+
+    static String relistPreviewUrl(
+            String pairingUrl,
+            String dealId,
+            int listingPrice,
+            String priorityType
+    ) {
+        Uri source = Uri.parse(pairingUrl.trim());
+        Uri.Builder builder = baseBuilder(source, "/relist");
+        copyAuthParams(source, builder);
+        builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        builder.appendQueryParameter("listing_price", Integer.toString(Math.max(1, listingPrice)));
+        builder.appendQueryParameter("priority_type", priorityType == null ? "PREMIUM" : priorityType);
         return builder.build().toString();
     }
 
@@ -53,7 +69,9 @@ final class UrlTools {
             String pairingUrl,
             String dealId,
             String priorityId,
-            int priorityPrice
+            int priorityPrice,
+            int listingPrice,
+            String priorityType
     ) {
         Uri source = Uri.parse(pairingUrl.trim());
         Uri.Builder builder = baseBuilder(source, "/relist");
@@ -61,6 +79,8 @@ final class UrlTools {
         builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
         builder.appendQueryParameter("priority_id", priorityId == null ? "" : priorityId);
         builder.appendQueryParameter("priority_price", Integer.toString(Math.max(0, priorityPrice)));
+        builder.appendQueryParameter("listing_price", Integer.toString(Math.max(1, listingPrice)));
+        builder.appendQueryParameter("priority_type", priorityType == null ? "PREMIUM" : priorityType);
         return builder.build().toString();
     }
 
@@ -82,7 +102,9 @@ final class UrlTools {
         for (String name : names) {
             if ("after".equals(name) || "mode".equals(name) || "after_rev".equals(name)
                     || "limit".equals(name) || "deal_id".equals(name)
-                    || "priority_id".equals(name) || "priority_price".equals(name)) continue;
+                    || "priority_id".equals(name) || "priority_price".equals(name)
+                    || "listing_price".equals(name) || "priority_type".equals(name)
+                    || "setup".equals(name)) continue;
             for (String value : source.getQueryParameters(name)) builder.appendQueryParameter(name, value);
         }
     }
