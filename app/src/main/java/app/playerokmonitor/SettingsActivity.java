@@ -18,9 +18,12 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,6 +32,14 @@ public final class SettingsActivity extends Activity {
 
     private EditText urlInput;
     private TextView statusText;
+    private Switch replyDisabledToggle;
+    private LinearLayout replyList;
+    private TextView replyStatus;
+    private Button addReplyButton;
+    private final ArrayList<EditText> replyInputs = new ArrayList<>();
+    private int maxReplyMessages = AutoReplyConfig.DEFAULT_MAX_MESSAGES;
+    private boolean loadingReplySettings;
+    private int replyRequestGeneration;
     private final ExecutorService network = Executors.newSingleThreadExecutor();
 
     @Override
@@ -39,6 +50,7 @@ public final class SettingsActivity extends Activity {
         setContentView(buildUi());
         requestNotificationPermissionIfNeeded();
         refreshStatus();
+        loadAutoReplySettings();
     }
 
     private View buildUi() {
@@ -139,6 +151,8 @@ public final class SettingsActivity extends Activity {
         statusText.setPadding(0, Ui.dp(this, 18), 0, 0);
         card.addView(statusText);
 
+        buildAutoReplyCard(root);
+
         TextView note = Ui.text(this,
                 "Переключение вкладок Продажи/Покупки читает локальный кэш Android. Список синхронизируется с SQLite на VPS и не делает запрос к Playerok при каждом переключении.",
                 13, Ui.MUTED, false);
@@ -149,6 +163,201 @@ public final class SettingsActivity extends Activity {
         Ui.reveal(root);
 
         return scroll;
+    }
+
+    private void buildAutoReplyCard(LinearLayout root) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18));
+        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 24));
+        LinearLayout.LayoutParams cardParams = matchWrap();
+        cardParams.topMargin = Ui.dp(this, 16);
+        root.addView(card, cardParams);
+
+        TextView title = Ui.text(this, "Сообщения покупателю", 20, Ui.TEXT, true);
+        card.addView(title, matchWrap());
+
+        TextView description = Ui.text(this,
+                "Сообщения отправляются по порядку после новой оплаты. Пустой список использует стандартный текст.",
+                13, Ui.MUTED, false);
+        card.addView(description, marginTop(5));
+
+        replyDisabledToggle = new Switch(this);
+        replyDisabledToggle.setText("Отключить сообщения");
+        replyDisabledToggle.setTextColor(Ui.TEXT);
+        replyDisabledToggle.setTextSize(16);
+        replyDisabledToggle.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
+        card.addView(replyDisabledToggle, marginTop(10));
+
+        replyList = new LinearLayout(this);
+        replyList.setOrientation(LinearLayout.VERTICAL);
+        card.addView(replyList, matchWrap());
+        addReplyInput(AutoReplyConfig.DEFAULT_MESSAGE);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(actions, marginTop(12));
+
+        addReplyButton = Ui.button(this, "+ Добавить", false);
+        addReplyButton.setOnClickListener(v -> {
+            Ui.haptic(v);
+            if (replyInputs.size() >= maxReplyMessages) {
+                toast("Можно добавить не больше " + maxReplyMessages + " сообщений");
+                return;
+            }
+            addReplyInput("");
+            replyInputs.get(replyInputs.size() - 1).requestFocus();
+        });
+        actions.addView(addReplyButton, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        Button save = Ui.button(this, "Сохранить", true);
+        save.setOnClickListener(v -> { Ui.haptic(v); saveAutoReplySettings(); });
+        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        saveParams.leftMargin = Ui.dp(this, 8);
+        actions.addView(save, saveParams);
+
+        replyStatus = Ui.text(this, "Загружаю настройки с VPS…", 13, Ui.MUTED, false);
+        card.addView(replyStatus, marginTop(12));
+
+        replyDisabledToggle.setOnCheckedChangeListener((button, disabled) -> {
+            if (loadingReplySettings) return;
+            replyStatus.setText(disabled
+                    ? "Отключаю отправку. Тексты останутся сохранены…"
+                    : "Включаю отправку для новых заказов…");
+            saveAutoReplySettings();
+        });
+    }
+
+    private void addReplyInput(String value) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+
+        EditText input = new EditText(this);
+        input.setText(value == null ? "" : value);
+        input.setHint("Текст сообщения");
+        input.setTextColor(Ui.TEXT);
+        input.setHintTextColor(Ui.MUTED);
+        input.setTextSize(15);
+        input.setMinLines(2);
+        input.setMaxLines(5);
+        input.setGravity(Gravity.TOP | Gravity.START);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        row.addView(input, inputParams);
+
+        Button remove = Ui.button(this, "Удалить", false);
+        LinearLayout.LayoutParams removeParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        removeParams.leftMargin = Ui.dp(this, 8);
+        row.addView(remove, removeParams);
+        remove.setOnClickListener(v -> {
+            Ui.haptic(v);
+            replyInputs.remove(input);
+            replyList.removeView(row);
+            if (replyInputs.isEmpty()) addReplyInput("");
+            updateAddReplyButton();
+        });
+
+        replyInputs.add(input);
+        LinearLayout.LayoutParams rowParams = matchWrap();
+        if (replyList.getChildCount() > 0) rowParams.topMargin = Ui.dp(this, 8);
+        replyList.addView(row, rowParams);
+        updateAddReplyButton();
+    }
+
+    private void showReplyMessages(List<String> messages) {
+        replyList.removeAllViews();
+        replyInputs.clear();
+        if (messages == null || messages.isEmpty()) {
+            addReplyInput(AutoReplyConfig.DEFAULT_MESSAGE);
+        } else {
+            for (String message : messages) addReplyInput(message);
+        }
+        updateAddReplyButton();
+    }
+
+    private void updateAddReplyButton() {
+        if (addReplyButton != null) addReplyButton.setEnabled(replyInputs.size() < maxReplyMessages);
+    }
+
+    private ArrayList<String> collectReplyMessages() {
+        ArrayList<String> messages = new ArrayList<>();
+        for (EditText input : replyInputs) messages.add(input.getText().toString());
+        return messages;
+    }
+
+    private void loadAutoReplySettings() {
+        String url = urlInput.getText().toString().trim();
+        String validation = UrlTools.validatePairingUrl(url);
+        if (validation != null) {
+            replyStatus.setText("Сначала сохраните корректный Pairing URL");
+            return;
+        }
+        final int generation = ++replyRequestGeneration;
+        network.execute(() -> {
+            try {
+                AutoReplyConfig config = AutoReplyConfig.fromJson(
+                        HttpTextClient.get(UrlTools.autoRepliesUrl(url), 15_000));
+                runOnUiThread(() -> {
+                    if (generation != replyRequestGeneration) return;
+                    applyAutoReplyConfig(config, "Настройки загружены с VPS");
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    if (generation == replyRequestGeneration)
+                        replyStatus.setText("Не удалось загрузить: " + e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void saveAutoReplySettings() {
+        String url = urlInput.getText().toString().trim();
+        String validation = UrlTools.validatePairingUrl(url);
+        if (validation != null) {
+            replyStatus.setText(validation);
+            return;
+        }
+        final boolean enabled = !replyDisabledToggle.isChecked();
+        final ArrayList<String> messages = collectReplyMessages();
+        final int generation = ++replyRequestGeneration;
+        replyStatus.setText(enabled ? "Сохраняю сообщения…" : "Отключаю сообщения…");
+        network.execute(() -> {
+            try {
+                String request = AutoReplyConfig.requestJson(enabled, messages);
+                AutoReplyConfig config = AutoReplyConfig.fromJson(HttpTextClient.postJson(
+                        UrlTools.autoRepliesUrl(url), request, 15_000));
+                runOnUiThread(() -> {
+                    if (generation != replyRequestGeneration) return;
+                    applyAutoReplyConfig(config, config.enabled
+                            ? "Сообщения включены · сохранено: " + config.messages.size()
+                            : "Сообщения отключены · тексты сохранены");
+                    toast(config.enabled ? "Сообщения сохранены" : "Отправка сообщений отключена");
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    if (generation == replyRequestGeneration)
+                        replyStatus.setText("Не удалось сохранить: " + e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void applyAutoReplyConfig(AutoReplyConfig config, String status) {
+        loadingReplySettings = true;
+        maxReplyMessages = config.maxMessages;
+        replyDisabledToggle.setChecked(!config.enabled);
+        showReplyMessages(config.messages);
+        replyStatus.setText(status);
+        loadingReplySettings = false;
     }
 
     private LinearLayout.LayoutParams matchWrap() {
@@ -182,6 +391,7 @@ public final class SettingsActivity extends Activity {
         Intent service = new Intent(this, MonitorService.class).setAction(MonitorService.ACTION_START);
         startForegroundService(service);
         refreshStatus();
+        loadAutoReplySettings();
         toast("Мониторинг запущен");
     }
 

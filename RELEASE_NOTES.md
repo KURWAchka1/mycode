@@ -1,4 +1,13 @@
-# Playerok Monitor 2.3.2 · Net Seller Income
+# Playerok Monitor 2.3.3 · Flexible Auto Replies
+
+- Settings now contain an ordered auto-reply editor: add, edit, remove and save up to eight buyer messages.
+- The exact “Отключить сообщения” switch pauses all server-side replies while preserving every saved text for later re-enabling.
+- Leaving every field blank safely restores the existing VPS default: “Ожидайте, пожалуйста. Продавец скоро приступит к выполнению Вашего заказа.”
+- Orders first seen while replies are disabled are never queued for catch-up, so turning the switch back on cannot create a notification flood.
+- Each order pins its own message sequence. Retries verify each part inside that order’s chat interval and skip anything already sent after a partial timeout.
+- Relisting now preserves the original pre-discount price and accepts a free draft publication option when it is no more expensive than the confirmed source option.
+
+## Included from 2.3.2
 
 - Sales now show both the buyer-facing deal price and Playerok's exact net transaction value for the seller.
 - Financial state is explicit: pending, frozen or credited. The widget uses the net amount as its compact price; purchases and refunded deals keep their normal price.

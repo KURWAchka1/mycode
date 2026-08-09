@@ -37,6 +37,10 @@ final class UrlTools {
     static String testUrl(String pairingUrl) { return rebuild(pairingUrl, "/test", 0L, false, null, null); }
     static String cursorUrl(String pairingUrl) { return rebuild(pairingUrl, "/cursor", 0L, false, null, null); }
 
+    static String autoRepliesUrl(String pairingUrl) {
+        return rebuild(pairingUrl, "/poll", 0L, false, "mode", "auto_replies");
+    }
+
     static String relistPreviewUrl(String pairingUrl, String dealId) {
         Uri source = Uri.parse(pairingUrl.trim());
         Uri.Builder builder = baseBuilder(source, "/relist");
