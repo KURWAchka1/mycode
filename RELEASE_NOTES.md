@@ -1,4 +1,10 @@
-# Playerok Monitor 2.3.5 · Flexible Relisting
+# Playerok Monitor 2.3.6 · Clear Receipt Status
+
+- Removed the misleading duplicate “Получение подтвердил” row from order details.
+- Purchases now communicate receipt unambiguously as “Получение вами”, while sales use “Получение покупателем”.
+- The confirmation timestamp remains visible, and automatic confirmation is still labelled explicitly.
+
+## Included from 2.3.5
 
 - The relisting flow now starts with a dedicated setup step where the new listing price can be entered explicitly.
 - Premium can be switched on or off. The VPS strictly selects `PREMIUM` for paid promotion or `DEFAULT` for ordinary publication and never substitutes one for the other.

@@ -179,9 +179,6 @@ public final class OrderDetailActivity extends Activity {
         if (order.recipientConfirmed && !order.recipientConfirmedAt.isEmpty()) {
             addField(card, "Получение подтверждено", Ui.formatDate(order.recipientConfirmedAt));
         }
-        if (order.recipientConfirmed && !order.recipientConfirmedByRelation.isEmpty()) {
-            addField(card, "Получение подтвердил", order.recipientConfirmationActorLabel());
-        }
         if (order.isSale()) {
             addField(card, "Автоответ", order.replySent ? "Отправлен" : "Ожидает отправки");
         }

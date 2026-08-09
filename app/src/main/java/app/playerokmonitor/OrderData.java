@@ -297,7 +297,6 @@ final class OrderData {
     String problemResolverLabel() { return actorLabel(problemResolvedByName, problemResolvedByRole, problemResolvedByRelation); }
     String refundActorLabel() { return actorLabel(rolledBackByName, rolledBackByRole, rolledBackByRelation); }
     String fulfillmentActorLabel() { return actorLabel(sellerFulfilledByName, sellerFulfilledByRole, sellerFulfilledByRelation); }
-    String recipientConfirmationActorLabel() { return actorLabel(recipientConfirmedByName, recipientConfirmedByRole, recipientConfirmedByRelation); }
 
     String fulfillmentSummary() {
         if (isSale()) return sellerFulfilled ? "Выполнение подтверждено вами" : "Выполнение вами не подтверждено";
