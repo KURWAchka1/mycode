@@ -29,6 +29,13 @@ Playerok Monitor 1.1 uses an original WPF implementation. No UI source was copie
 - Useful patterns: glanceable dashboard, clear separation of quick actions and state, settings rows with descriptions and right-aligned switches, adaptive two-column layouts.
 - Applied here: compact statistics summary, locally calculated chart, structured state panel, and settings rows that keep labels, explanations and switches aligned.
 
+## Windows iconography and emoji
+
+- Official icon guidance: https://learn.microsoft.com/en-us/windows/apps/design/iconography/segoe-fluent-icons-font
+- Windows typography guidance: https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/typography
+- WPF colour emoji renderer: https://github.com/samhocevar/emoji.wpf
+- Applied here: Windows 11 Fluent glyphs at documented optical sizes, plus COLR/CPAL colour emoji rendering for order content and editable automatic messages.
+
 ## Deliberately avoided
 
 - mobile-style oversized headers and cards;

@@ -14,6 +14,8 @@ using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
+using EmojiRichTextBox = Emoji.Wpf.RichTextBox;
+using EmojiTextBlock = Emoji.Wpf.TextBlock;
 
 namespace PlayerokMonitor.Desktop;
 
@@ -22,7 +24,7 @@ public partial class MainWindow : Window
     private readonly DesktopStateStore _store = new();
     private readonly WindowsNotifier _notifier = new();
     private readonly ObservableCollection<Order> _visibleOrders = [];
-    private readonly List<System.Windows.Controls.TextBox> _messageBoxes = [];
+    private readonly List<EmojiRichTextBox> _messageBoxes = [];
     private DesktopState _state = new();
     private MonitorCoordinator? _monitor;
     private TrayService? _tray;
@@ -103,15 +105,29 @@ public partial class MainWindow : Window
     {
         var now = DateTimeOffset.Now;
         ApplyOrders([
-            new Order { DealId = "preview-new", Direction = "OUT", ItemName = "100 BC в дни x2 · без привязки", Price = "249", SellerNetAmount = "224", SellerNetStatus = "PROCESSING", Counterparty = "galaxy_buyer", PaidAt = now.AddMinutes(-8).ToString("O"), ReplyMode = "SLEEP", SleepReplySent = true, WakeReplyAvailable = true },
-            new Order { DealId = "preview-sale", Direction = "OUT", ItemName = "Игровая валюта · быстрая выдача", Price = "590", SellerNetAmount = "531", SellerNetStatus = "CONFIRMED", Counterparty = "buyer_ok", PaidAt = now.AddDays(-1).ToString("O"), SellerFulfilled = true, RecipientConfirmed = true },
-            new Order { DealId = "preview-buy", Direction = "IN", ItemName = "Подписка на месяц", Price = "399", Counterparty = "seller_pro", PaidAt = now.AddDays(-2).ToString("O"), SellerFulfilled = true }
+            new Order { DealId = "preview-new", Direction = "OUT", ItemName = "🎮 100 BC в дни x2 · без привязки", Price = "249", SellerNetAmount = "224", SellerNetStatus = "PROCESSING", Counterparty = "galaxy_buyer", PaidAt = now.AddMinutes(-8).ToString("O"), ReplyMode = "SLEEP", SleepReplySent = true, WakeReplyAvailable = true },
+            new Order { DealId = "preview-sale", Direction = "OUT", ItemName = "⚡ Игровая валюта · быстрая выдача", Price = "590", SellerNetAmount = "531", SellerNetStatus = "CONFIRMED", Counterparty = "buyer_ok", PaidAt = now.AddDays(-1).ToString("O"), SellerFulfilled = true, RecipientConfirmed = true },
+            new Order { DealId = "preview-buy", Direction = "IN", ItemName = "✨ Подписка на месяц", Price = "399", Counterparty = "seller_pro", PaidAt = now.AddDays(-2).ToString("O"), SellerFulfilled = true }
         ]);
         SelectFilter("new");
+        if (section.Equals("settings", StringComparison.OrdinalIgnoreCase) || section.Equals("sleep", StringComparison.OrdinalIgnoreCase))
+        {
+            SleepStartBox.SelectedItem = "00:00";
+            SleepEndBox.SelectedItem = "08:00";
+            SleepTimezoneBox.SelectedItem = "Europe/Moscow";
+            FulfillmentMessageBox.Text = "✅ Заказ выполнен. Подтвердите получение, пожалуйста.";
+            SleepMessageBox.Text = "🌙 Возможно, продавец сейчас спит. Ответит после пробуждения.";
+            if (_messageBoxes.Count == 0) AddMessageRow("Спасибо за заказ! 🎉 Ожидайте сообщение продавца.");
+        }
         if (section.Equals("command", StringComparison.OrdinalIgnoreCase))
         {
             SelectSection("orders");
             OpenCommandPalette();
+        }
+        else if (section.Equals("sleep", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectSection("settings");
+            Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(640), System.Windows.Threading.DispatcherPriority.Loaded);
         }
         else SelectSection(section);
     }
@@ -202,7 +218,7 @@ public partial class MainWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.Children.Add(new TextBlock { Text = label, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 12 });
-        var text = new TextBlock { Text = value, FontSize = 12, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, MaxWidth = 310, TextWrapping = TextWrapping.Wrap };
+        var text = new EmojiTextBlock { Text = value, FontSize = 12, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, MaxWidth = 310, TextWrapping = TextWrapping.Wrap };
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
         DetailFields.Children.Add(grid);
@@ -223,8 +239,8 @@ public partial class MainWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.Children.Add(new Ellipse { Width = 7, Height = 7, Fill = new SolidColorBrush(colors), HorizontalAlignment = System.Windows.HorizontalAlignment.Left, VerticalAlignment = System.Windows.VerticalAlignment.Top, Margin = new Thickness(0, 5, 0, 0) });
         var stack = new StackPanel();
-        stack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = new SolidColorBrush(colors) });
-        stack.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) });
+        stack.Children.Add(new EmojiTextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = new SolidColorBrush(colors) });
+        stack.Children.Add(new EmojiTextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) });
         Grid.SetColumn(stack, 1);
         grid.Children.Add(stack);
         DetailFields.Children.Add(new Border { BorderBrush = (Brush)FindResource("DividerBrush"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 10, 0, 0), Margin = new Thickness(0, 10, 0, 0), Child = grid });
@@ -313,8 +329,17 @@ public partial class MainWindow : Window
         var grid = new Grid { Margin = new Thickness(0, 0, 0, 8) };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var box = new System.Windows.Controls.TextBox { Text = text, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 58 };
-        var remove = new Button { Content = "×", Width = 36, Height = 36, Padding = new Thickness(0), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Удалить сообщение", Style = (Style)FindResource("IconButton") };
+        var box = new EmojiRichTextBox { Text = text, AcceptsReturn = true, MinHeight = 58 };
+        var remove = new Button
+        {
+            Content = new TextBlock { Text = "\uE74D", FontSize = 16, Style = (Style)FindResource("FluentIcon") },
+            Width = 36,
+            Height = 36,
+            Padding = new Thickness(0),
+            Margin = new Thickness(8, 0, 0, 0),
+            ToolTip = "Удалить сообщение",
+            Style = (Style)FindResource("IconButton")
+        };
         remove.Click += (_, _) => { _messageBoxes.Remove(box); MessagesPanel.Children.Remove(grid); if (_messageBoxes.Count == 0) AddMessageRow(""); };
         grid.Children.Add(box);
         Grid.SetColumn(remove, 1);
@@ -465,8 +490,7 @@ public partial class MainWindow : Window
     private void UpdateMaximizeGlyph()
     {
         var maximized = WindowState == WindowState.Maximized;
-        MaximizeGlyph.Visibility = maximized ? Visibility.Collapsed : Visibility.Visible;
-        RestoreGlyph.Visibility = maximized ? Visibility.Visible : Visibility.Collapsed;
+        MaximizeIcon.Text = maximized ? "\uE923" : "\uE922";
         MaximizeButton.ToolTip = maximized ? "Восстановить" : "Развернуть";
     }
 

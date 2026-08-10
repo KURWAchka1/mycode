@@ -11,7 +11,7 @@
     <StartupObject>PlayerokMonitor.Desktop.App</StartupObject>
     <AssemblyName>PlayerokMonitor.Desktop</AssemblyName>
     <RootNamespace>PlayerokMonitor.Desktop</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PlayerokMonitor.Core\PlayerokMonitor.Core.csproj" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+    <PackageReference Include="Emoji.Wpf" Version="0.3.4" />
     <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup Condition="Exists('..\..\assets\app.ico')">

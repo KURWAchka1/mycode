@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:local="clr-namespace:PlayerokMonitor.Desktop"
+        xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         Title="Playerok Monitor"
         Width="1280"
         Height="820"
@@ -40,19 +41,13 @@
                     <TextBlock Text="Playerok Monitor" Margin="9,0,0,0" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Grid.Column="1" x:Name="MinimizeButton" Style="{StaticResource WindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeButton_Click" ToolTip="Свернуть">
-                    <Border Width="10" Height="1" Background="{StaticResource TextBrush}"/>
+                    <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE921;" FontSize="12"/>
                 </Button>
                 <Button Grid.Column="2" x:Name="MaximizeButton" Style="{StaticResource WindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MaximizeButton_Click" ToolTip="Развернуть">
-                    <Grid Width="11" Height="11">
-                        <Border x:Name="MaximizeGlyph" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
-                        <Grid x:Name="RestoreGlyph" Visibility="Collapsed">
-                            <Border Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
-                            <Border Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="{StaticResource ChromeBrush}" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
-                        </Grid>
-                    </Grid>
+                    <TextBlock x:Name="MaximizeIcon" Style="{StaticResource FluentIcon}" Text="&#xE922;" FontSize="12"/>
                 </Button>
                 <Button Grid.Column="3" Style="{StaticResource CloseWindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="CloseButton_Click" ToolTip="Закрыть">
-                    <Path Data="M0,0 L10,10 M10,0 L0,10" Width="10" Height="10" Stroke="{StaticResource TextBrush}" StrokeThickness="1" Stretch="Fill"/>
+                    <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE8BB;" FontSize="12"/>
                 </Button>
             </Grid>
         </Border>
@@ -79,17 +74,17 @@
                     </Border>
                     <StackPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,17,0,0">
                         <Button x:Name="OrdersNav" Style="{StaticResource NavButton}" Click="OrdersNav_Click" ToolTip="Заказы  ·  Ctrl+1">
-                            <Path Data="{StaticResource OrdersIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                            <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE8FD;"/>
                         </Button>
                         <Button x:Name="StatsNav" Style="{StaticResource NavButton}" Click="StatsNav_Click" ToolTip="Статистика  ·  Ctrl+2">
-                            <Path Data="{StaticResource StatsIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                            <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE907;"/>
                         </Button>
                         <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="SettingsNav_Click" ToolTip="Настройки  ·  Ctrl+,">
-                            <Path Data="{StaticResource SettingsIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                            <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE713;"/>
                         </Button>
                     </StackPanel>
                     <Button Grid.Row="2" Style="{StaticResource NavButton}" Click="CommandPaletteButton_Click" ToolTip="Быстрые команды  ·  Ctrl+K">
-                        <Path Data="{StaticResource CommandIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                        <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE71D;"/>
                     </Button>
                 </Grid>
             </Border>
@@ -119,9 +114,11 @@
                                 <Button x:Name="InstallUpdateButton" Style="{StaticResource AccentButton}" Content="Обновить" Padding="9,4" MinHeight="26" Margin="8,0,0,0" Click="InstallUpdateButton_Click"/>
                             </StackPanel>
                         </Border>
-                        <Button Grid.Column="2" Style="{StaticResource SubtleButton}" Content="Ctrl K" FontSize="11" Foreground="{StaticResource MutedBrush}" Padding="10,5" MinHeight="30" Margin="0,0,6,0" Click="CommandPaletteButton_Click" ToolTip="Открыть быстрые команды"/>
+                        <Button Grid.Column="2" Style="{StaticResource SubtleButton}" Foreground="{StaticResource MutedBrush}" Padding="9,5" MinHeight="30" Margin="0,0,6,0" Click="CommandPaletteButton_Click" ToolTip="Открыть быстрые команды">
+                            <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE92E;" FontSize="16"/><TextBlock Text="Ctrl K" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                        </Button>
                         <Button Grid.Column="3" x:Name="RefreshButton" Style="{StaticResource IconButton}" Click="RefreshButton_Click" ToolTip="Обновить  ·  F5">
-                            <Path Data="{StaticResource RefreshIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="18" Height="18" Stretch="Uniform"/>
+                            <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE72C;" FontSize="20"/>
                         </Button>
                     </Grid>
                 </Border>
@@ -148,7 +145,7 @@
                                 </StackPanel>
                                 <Grid Grid.Column="2" x:Name="SearchContainer" Width="240" VerticalAlignment="Center">
                                     <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" Padding="34,7,10,7" ToolTip="Поиск по товару, пользователю или номеру"/>
-                                    <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource SubtleBrush}" StrokeThickness="1.7" Width="15" Height="15" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                    <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE721;" FontSize="16" Foreground="{StaticResource SubtleBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
                                     <TextBlock x:Name="SearchHint" Text="Поиск заказов" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="35,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                                 </Grid>
                             </Grid>
@@ -200,7 +197,7 @@
                                             <Grid MinHeight="49">
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                 <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <emoji:TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                                         <TextBlock Text="{Binding DirectionLabel}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
                                                         <TextBlock Text="  ·  " Foreground="{StaticResource SubtleBrush}" FontSize="11"/>
@@ -216,7 +213,7 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                                 <StackPanel x:Name="EmptyOrders" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
-                                    <Path Data="{StaticResource CheckIcon}" Stroke="{StaticResource GreenBrush}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="24" Height="24" Stretch="Uniform"/>
+                                    <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE930;" FontSize="24" Foreground="{StaticResource GreenBrush}"/>
                                     <TextBlock x:Name="EmptyOrdersText" Text="Новых заказов нет" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
                                     <TextBlock Text="Можно выдохнуть" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                 </StackPanel>
@@ -233,11 +230,11 @@
                                         </StackPanel>
                                         <StackPanel x:Name="OrderDetails" Visibility="Collapsed">
                                             <TextBlock x:Name="DetailDirection" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold"/>
-                                            <TextBlock x:Name="DetailTitle" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <emoji:TextBlock x:Name="DetailTitle" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                             <TextBlock x:Name="DetailPrice" FontSize="16" FontWeight="SemiBold" Margin="0,7,0,0"/>
                                             <WrapPanel Margin="0,14,0,0">
                                                 <Button x:Name="OpenDealButton" Margin="0,0,7,7" Click="OpenDealButton_Click">
-                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="Открыть Playerok"/><Path Data="{StaticResource ExternalIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.5" Width="13" Height="13" Margin="7,0,0,0"/></StackPanel>
+                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="Открыть Playerok"/><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE8A7;" FontSize="16" Margin="7,0,0,0"/></StackPanel>
                                                 </Button>
                                                 <Button x:Name="WakeButton" Style="{StaticResource AccentButton}" Content="Я проснулся" Margin="0,0,7,7" Click="WakeButton_Click" Visibility="Collapsed"/>
                                                 <Button x:Name="RelistButton" Style="{StaticResource AccentButton}" Content="Выставить снова" Margin="0,0,7,7" Click="RelistButton_Click" Visibility="Collapsed"/>
@@ -324,22 +321,22 @@
                                     <TextBlock Text="После оплаты" FontWeight="SemiBold" Margin="0,14,0,7"/>
                                     <TextBlock Text="Можно добавить до восьми сообщений. Пустое первое поле использует серверный текст по умолчанию." Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <StackPanel x:Name="MessagesPanel"/>
-                                    <Button Style="{StaticResource SubtleButton}" Content="＋  Добавить сообщение" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddMessageButton_Click"/>
+                                    <Button Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Margin="0,2,0,0" Padding="7,5" Click="AddMessageButton_Click"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE710;" FontSize="16"/><TextBlock Text="Добавить сообщение" Margin="7,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
 
                                     <TextBlock Text="После подтверждения выполнения вами" FontWeight="SemiBold" Margin="0,16,0,7"/>
-                                    <TextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"/>
+                                    <emoji:RichTextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" MinHeight="64"/>
                                     <TextBlock x:Name="FulfillmentHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
 
                                     <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,16,0,14"/>
-                                    <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Режим сна" FontWeight="SemiBold"/><TextBlock Text="Предупреждать покупателя, что продавец может спать" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="SleepEnabledCheck" VerticalAlignment="Center"/></Grid>
-                                    <Grid Margin="0,4,0,0">
-                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="1.55*"/></Grid.ColumnDefinitions>
-                                        <StackPanel><TextBlock Text="Начало" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepStartBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
-                                        <StackPanel Grid.Column="2"><TextBlock Text="Конец" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepEndBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
-                                        <StackPanel Grid.Column="4"><TextBlock Text="Часовой пояс" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepTimezoneBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
+                                    <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Режим сна" FontWeight="SemiBold"/><TextBlock Text="Предупреждать покупателя, что продавец может спать" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="SleepEnabledCheck" VerticalAlignment="Center"/></Grid>
+                                    <Grid Margin="0,2,0,0" HorizontalAlignment="Left">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="116"/><ColumnDefinition Width="7"/><ColumnDefinition Width="116"/><ColumnDefinition Width="7"/><ColumnDefinition Width="236"/></Grid.ColumnDefinitions>
+                                        <StackPanel><TextBlock Text="С" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepStartBox" Style="{StaticResource CompactComboBox}" Tag="&#xE917;"/></StackPanel>
+                                        <StackPanel Grid.Column="2"><TextBlock Text="До" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepEndBox" Style="{StaticResource CompactComboBox}" Tag="&#xE917;"/></StackPanel>
+                                        <StackPanel Grid.Column="4"><TextBlock Text="Часовой пояс" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepTimezoneBox" Style="{StaticResource CompactComboBox}" Tag="&#xE909;"/></StackPanel>
                                     </Grid>
                                     <TextBlock Text="Сообщение во время сна" FontWeight="SemiBold" Margin="0,14,0,7"/>
-                                    <TextBox x:Name="SleepMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"/>
+                                    <emoji:RichTextBox x:Name="SleepMessageBox" AcceptsReturn="True" MinHeight="64"/>
                                     <TextBlock x:Name="SleepHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                                         <Button Style="{StaticResource AccentButton}" Content="Сохранить сообщения" Click="SaveRepliesButton_Click"/>
@@ -347,7 +344,7 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="Playerok Monitor 1.1.1 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
+                            <TextBlock Text="Playerok Monitor 1.1.2 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -362,7 +359,7 @@
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <Grid>
                         <TextBox x:Name="CommandSearchBox" Padding="36,8,34,8" TextChanged="CommandSearchBox_TextChanged" KeyDown="CommandSearchBox_KeyDown"/>
-                        <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7" Width="16" Height="16" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                        <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE721;" FontSize="16" Foreground="{StaticResource MutedBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
                         <TextBlock x:Name="CommandSearchHint" Text="Команда или раздел" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                         <Button Style="{StaticResource SubtleButton}" Content="Esc" FontSize="10" Foreground="{StaticResource MutedBrush}" Padding="5,2" MinHeight="20" HorizontalAlignment="Right" Margin="0,0,8,0" Click="CloseCommandPaletteButton_Click"/>
                     </Grid>
