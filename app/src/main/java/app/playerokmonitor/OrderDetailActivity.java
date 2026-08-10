@@ -184,7 +184,15 @@ public final class OrderDetailActivity extends Activity {
             addField(card, "Получение подтверждено", Ui.formatDate(order.recipientConfirmedAt));
         }
         if (order.isSale()) {
-            addField(card, "Автоответ", order.replySent ? "Отправлен" : "Ожидает отправки");
+            String replyState;
+            if (order.wakeReplySent) {
+                replyState = "Отправлен после пробуждения";
+            } else if ("SLEEP".equalsIgnoreCase(order.replyMode) && order.sleepReplySent) {
+                replyState = "Отправлено предупреждение о сне";
+            } else {
+                replyState = order.replySent ? "Отправлен" : "Ожидает отправки";
+            }
+            addField(card, "Автоответ", replyState);
         }
         if (!order.problemReportedAt.isEmpty()) {
             addField(card, "Проблема создана", Ui.formatDate(order.problemReportedAt));
@@ -214,6 +222,7 @@ public final class OrderDetailActivity extends Activity {
             note.addView(comment, ccp);
         }
 
+        if (order.isSale() && order.sleepReplySent) addWakeCard(order);
         if (order.isSale() && order.relistEligible) addRelistCard(order);
 
         Button open = Ui.button(this, "", true);
@@ -256,6 +265,107 @@ public final class OrderDetailActivity extends Activity {
         chat.setTypeface(Typeface.MONOSPACE);
         LinearLayout.LayoutParams chp = matchWrap(); chp.topMargin = Ui.dp(this, 4); ids.addView(chat, chp);
         Ui.reveal(content);
+    }
+
+    private void addWakeCard(OrderData order) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(Ui.dp(this, 18), Ui.dp(this, 17), Ui.dp(this, 18), Ui.dp(this, 17));
+        LinearLayout.LayoutParams params = matchWrap();
+        params.topMargin = Ui.dp(this, 14);
+        content.addView(card, params);
+
+        if (order.wakeReplySent) {
+            card.setBackground(Ui.roundedStroke(this, Ui.GREEN_BG, Ui.withAlpha(Ui.GREEN, 80), 22));
+            card.addView(Ui.text(this, "Вы сообщили о пробуждении", 18, Ui.GREEN, true));
+            TextView body = Ui.text(
+                    this,
+                    "Покупателю отправлены обычные сообщения после оплаты. Повторно они не отправятся.",
+                    14,
+                    Ui.TEXT,
+                    false
+            );
+            card.addView(body, marginTop(7));
+            return;
+        }
+
+        card.setBackground(Ui.roundedStroke(this, Ui.ACCENT_BG, Ui.BORDER, 22));
+        card.addView(Ui.text(this, "Покупатель предупреждён", 18, Ui.ACCENT, true));
+        String description;
+        if (order.wakeReplyAvailable && order.wakeReplyRequested) {
+            description = "Предыдущая отправка не завершилась подтверждённо. Её можно безопасно повторить — сервер не продублирует уже доставленный текст.";
+        } else if (order.wakeReplyAvailable) {
+            description = "Заказ пришёл во время возможного сна. Когда будете готовы заняться им, отправьте покупателю обычные сообщения после оплаты.";
+        } else {
+            description = "Обычное сообщение больше не требуется: заказ уже выполнен, получен или возвращён.";
+        }
+        TextView body = Ui.text(this, description, 14, Ui.TEXT, false);
+        card.addView(body, marginTop(7));
+
+        if (!order.wakeReplyAvailable) return;
+        Button wake = Ui.button(
+                this,
+                order.wakeReplyRequested ? "Повторить отправку" : "Я проснулся",
+                true
+        );
+        card.addView(wake, marginTop(14));
+        wake.setOnClickListener(v -> {
+            Ui.haptic(v);
+            showWakeConfirmation(order, wake);
+        });
+    }
+
+    private void showWakeConfirmation(OrderData order, Button button) {
+        new AlertDialog.Builder(this)
+                .setTitle("Сообщить о пробуждении?")
+                .setMessage("Покупателю отправятся ваши обычные сообщения «После оплаты». Для этого заказа действие выполняется без дублей.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Отправить", (dialog, which) -> sendWakeReply(order, button))
+                .show();
+    }
+
+    private void sendWakeReply(OrderData order, Button button) {
+        String pairingUrl = Prefs.getUrl(this);
+        String validation = UrlTools.validatePairingUrl(pairingUrl);
+        if (validation != null) {
+            toast(validation);
+            return;
+        }
+        button.setEnabled(false);
+        button.setText("Сообщаю покупателю…");
+        network.execute(() -> {
+            try {
+                String raw = HttpTextClient.post(
+                        UrlTools.wakeUrl(pairingUrl, order.dealId),
+                        25_000
+                );
+                JSONObject result = new JSONObject(raw);
+                if (!result.optBoolean("ok", false)) {
+                    throw new IllegalStateException(result.optString(
+                            "message", "VPS не подтвердил отправку"));
+                }
+                OrdersRepository.sync(this, pairingUrl);
+                OrderData updated = OrdersRepository.findCached(this, dealId);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (updated != null) render(updated);
+                    toast(result.optString("message", "Покупатель получил сообщение"));
+                });
+            } catch (Exception e) {
+                String message = serverMessage(e);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    button.setEnabled(true);
+                    button.setText(order.wakeReplyRequested ? "Повторить отправку" : "Я проснулся");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Не удалось отправить")
+                            .setMessage(message + "\n\nПовторный запрос безопасен и не создаст дубль.")
+                            .setPositiveButton("Понятно", null)
+                            .show();
+                    sync(false);
+                });
+            }
+        });
     }
 
     private void addRelistCard(OrderData order) {
@@ -704,6 +814,12 @@ public final class OrderDetailActivity extends Activity {
         return new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private LinearLayout.LayoutParams marginTop(int dp) {
+        LinearLayout.LayoutParams params = matchWrap();
+        params.topMargin = Ui.dp(this, dp);
+        return params;
     }
 
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_SHORT).show(); }

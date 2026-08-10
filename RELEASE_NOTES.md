@@ -1,4 +1,12 @@
-# Playerok Monitor 2.3.12 · Aligned Tabs
+# Playerok Monitor 2.3.13 · Sleep & Wake
+
+- Settings now include an optional sleep interval, native time pickers, the saved timezone and a configurable buyer message with the same blank-field default behavior as the existing message editor.
+- A new sale paid during that interval receives only the sleep notice. The normal post-payment sequence is deferred until you open that order and confirm “Я проснулся”.
+- Wake requests are serialized and journaled on the VPS. Repeated taps, timeouts, app restarts and partially delivered multi-message sequences cannot create duplicate messages.
+- Historical orders are permanently excluded from this feature, and the global “Отключить сообщения” switch also disables sleep notices.
+- Orders clearly show whether the buyer received the sleep notice or the normal sequence after waking.
+
+## Included from 2.3.12
 
 - Disabled baseline alignment in the horizontal tab row and bottom-aligned every tab container.
 - The selected indicator now stays on one shared horizontal line whether a tab label uses one or two lines.

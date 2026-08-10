@@ -58,6 +58,11 @@ final class OrderData {
     final String relistedAt;
     final String relistError;
     final boolean replySent;
+    final String replyMode;
+    final boolean sleepReplySent;
+    final boolean wakeReplyRequested;
+    final boolean wakeReplyAvailable;
+    final boolean wakeReplySent;
     final long revision;
     final String dealUrl;
 
@@ -109,6 +114,11 @@ final class OrderData {
             String relistedAt,
             String relistError,
             boolean replySent,
+            String replyMode,
+            boolean sleepReplySent,
+            boolean wakeReplyRequested,
+            boolean wakeReplyAvailable,
+            boolean wakeReplySent,
             long revision,
             String dealUrl
     ) {
@@ -159,6 +169,11 @@ final class OrderData {
         this.relistedAt = relistedAt;
         this.relistError = relistError;
         this.replySent = replySent;
+        this.replyMode = replyMode;
+        this.sleepReplySent = sleepReplySent;
+        this.wakeReplyRequested = wakeReplyRequested;
+        this.wakeReplyAvailable = wakeReplyAvailable;
+        this.wakeReplySent = wakeReplySent;
         this.revision = revision;
         this.dealUrl = dealUrl;
     }
@@ -219,6 +234,11 @@ final class OrderData {
                 o.optString("relisted_at", ""),
                 o.optString("relist_error", ""),
                 o.optBoolean("reply_sent", false),
+                o.optString("reply_mode", ""),
+                o.optBoolean("sleep_reply_sent", false),
+                o.optBoolean("wake_reply_requested", false),
+                o.optBoolean("wake_reply_available", false),
+                o.optBoolean("wake_reply_sent", false),
                 o.optLong("revision", 0L),
                 dealUrl
         );

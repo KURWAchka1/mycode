@@ -3,6 +3,7 @@ package app.playerokmonitor;
 import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationManager;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Insets;
@@ -10,6 +11,7 @@ import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.format.DateFormat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
@@ -24,6 +26,8 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.time.ZoneId;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,6 +41,14 @@ public final class SettingsActivity extends Activity {
     private TextView replyStatus;
     private Button addReplyButton;
     private EditText fulfillmentReplyInput;
+    private Switch sleepReplyToggle;
+    private Button sleepStartButton;
+    private Button sleepEndButton;
+    private TextView sleepTimezoneText;
+    private EditText sleepReplyInput;
+    private String sleepStart = "00:00";
+    private String sleepEnd = "08:00";
+    private String sleepTimezone = "Europe/Moscow";
     private final ArrayList<EditText> replyInputs = new ArrayList<>();
     private String replyDefaultMessage = AutoReplyConfig.DEFAULT_MESSAGE;
     private int maxReplyMessages = AutoReplyConfig.DEFAULT_MAX_MESSAGES;
@@ -191,7 +203,7 @@ public final class SettingsActivity extends Activity {
         card.addView(title, matchWrap());
 
         TextView description = Ui.text(this,
-                "Настройте два момента общения с покупателем. Пустое поле не отключает сообщение: серый фоновый текст становится действующим значением по умолчанию.",
+                "Настройте оплату, возможный сон и завершение заказа. Пустое поле не отключает сообщение: серый фоновый текст становится действующим значением по умолчанию.",
                 13, Ui.MUTED, false);
         card.addView(description, marginTop(5));
 
@@ -239,6 +251,77 @@ public final class SettingsActivity extends Activity {
         Ui.styleInput(this, fulfillmentReplyInput);
         card.addView(fulfillmentReplyInput, marginTop(8));
 
+        TextView sleepTitle = Ui.text(this, "Когда я могу спать", 16, Ui.TEXT, true);
+        card.addView(sleepTitle, marginTop(18));
+
+        TextView sleepDescription = Ui.text(this,
+                "Если новый заказ оплачен в этот промежуток, покупатель получит только предупреждение о возможном сне. Обычные сообщения после оплаты уйдут, когда вы нажмёте «Я проснулся» в заказе.",
+                13, Ui.MUTED, false);
+        card.addView(sleepDescription, marginTop(3));
+
+        sleepReplyToggle = new Switch(this);
+        sleepReplyToggle.setText("Предупреждать покупателя");
+        sleepReplyToggle.setTextColor(Ui.TEXT);
+        sleepReplyToggle.setTextSize(16);
+        sleepReplyToggle.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
+        card.addView(sleepReplyToggle, marginTop(8));
+
+        LinearLayout timeRow = new LinearLayout(this);
+        timeRow.setOrientation(LinearLayout.HORIZONTAL);
+        timeRow.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(timeRow, marginTop(4));
+
+        sleepStartButton = Ui.button(this, "С 00:00", false);
+        sleepStartButton.setOnClickListener(v -> {
+            Ui.haptic(v);
+            showSleepTimePicker(true);
+        });
+        timeRow.addView(sleepStartButton, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        sleepEndButton = Ui.button(this, "До 08:00", false);
+        sleepEndButton.setOnClickListener(v -> {
+            Ui.haptic(v);
+            showSleepTimePicker(false);
+        });
+        LinearLayout.LayoutParams endTimeParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        endTimeParams.leftMargin = Ui.dp(this, 8);
+        timeRow.addView(sleepEndButton, endTimeParams);
+
+        LinearLayout timezoneRow = new LinearLayout(this);
+        timezoneRow.setOrientation(LinearLayout.HORIZONTAL);
+        timezoneRow.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(timezoneRow, marginTop(8));
+        sleepTimezoneText = Ui.text(this, "Часовой пояс: " + sleepTimezone, 13, Ui.MUTED, false);
+        timezoneRow.addView(sleepTimezoneText, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        Button deviceTimezone = Ui.button(this, "С телефона", false);
+        deviceTimezone.setOnClickListener(v -> {
+            Ui.haptic(v);
+            sleepTimezone = ZoneId.systemDefault().getId();
+            sleepTimezoneText.setText("Часовой пояс: " + sleepTimezone);
+            replyStatus.setText("Часовой пояс изменён · нажмите «Сохранить»");
+        });
+        timezoneRow.addView(deviceTimezone, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        sleepReplyInput = new EditText(this);
+        sleepReplyInput.setText("");
+        sleepReplyInput.setHint(AutoReplyConfig.DEFAULT_SLEEP_MESSAGE);
+        sleepReplyInput.setTextColor(Ui.TEXT);
+        sleepReplyInput.setHintTextColor(Ui.MUTED);
+        sleepReplyInput.setTextSize(15);
+        sleepReplyInput.setMinLines(3);
+        sleepReplyInput.setMaxLines(6);
+        sleepReplyInput.setGravity(Gravity.TOP | Gravity.START);
+        sleepReplyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        Ui.styleInput(this, sleepReplyInput);
+        card.addView(sleepReplyInput, marginTop(8));
+
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
         card.addView(actions, marginTop(12));
@@ -271,6 +354,55 @@ public final class SettingsActivity extends Activity {
                     : "Включаю отправку для новых заказов…");
             saveAutoReplySettings();
         });
+        sleepReplyToggle.setOnCheckedChangeListener((button, enabled) -> {
+            updateSleepControls();
+            if (!loadingReplySettings) {
+                replyStatus.setText("Режим сна изменён · нажмите «Сохранить»");
+            }
+        });
+        updateSleepControls();
+    }
+
+    private void showSleepTimePicker(boolean start) {
+        String value = start ? sleepStart : sleepEnd;
+        String[] parts = value.split(":", 2);
+        int hour = 0;
+        int minute = 0;
+        try {
+            hour = Integer.parseInt(parts[0]);
+            minute = Integer.parseInt(parts[1]);
+        } catch (Exception ignored) {
+            // The server already validates values; this is only a safe UI fallback.
+        }
+        new TimePickerDialog(
+                this,
+                (picker, selectedHour, selectedMinute) -> {
+                    String formatted = String.format(
+                            Locale.ROOT, "%02d:%02d", selectedHour, selectedMinute);
+                    if (start) sleepStart = formatted; else sleepEnd = formatted;
+                    refreshSleepTimeButtons();
+                    replyStatus.setText("Время сна изменено · нажмите «Сохранить»");
+                },
+                hour,
+                minute,
+                DateFormat.is24HourFormat(this)
+        ).show();
+    }
+
+    private void refreshSleepTimeButtons() {
+        if (sleepStartButton != null) sleepStartButton.setText("С " + sleepStart);
+        if (sleepEndButton != null) sleepEndButton.setText("До " + sleepEnd);
+    }
+
+    private void updateSleepControls() {
+        if (sleepReplyToggle == null) return;
+        boolean enabled = sleepReplyToggle.isChecked();
+        View[] controls = {sleepStartButton, sleepEndButton, sleepTimezoneText, sleepReplyInput};
+        for (View control : controls) {
+            if (control == null) continue;
+            control.setEnabled(enabled);
+            control.setAlpha(enabled ? 1f : 0.5f);
+        }
     }
 
     private void addReplyInput(String value) {
@@ -380,12 +512,26 @@ public final class SettingsActivity extends Activity {
         final boolean enabled = !replyDisabledToggle.isChecked();
         final ArrayList<String> messages = collectReplyMessages();
         final String fulfillmentMessage = fulfillmentReplyInput.getText().toString();
+        final boolean sleepEnabled = sleepReplyToggle.isChecked();
+        if (sleepEnabled && sleepStart.equals(sleepEnd)) {
+            replyStatus.setText("Начало и конец периода сна должны отличаться");
+            toast("Укажите промежуток сна, а не одну точку");
+            return;
+        }
+        final String sleepMessage = sleepReplyInput.getText().toString();
         final int generation = ++replyRequestGeneration;
         replyStatus.setText(enabled ? "Сохраняю сообщения…" : "Отключаю сообщения…");
         network.execute(() -> {
             try {
                 String request = AutoReplyConfig.requestJson(
-                        enabled, messages, fulfillmentMessage);
+                        enabled,
+                        messages,
+                        fulfillmentMessage,
+                        sleepEnabled,
+                        sleepStart,
+                        sleepEnd,
+                        sleepTimezone,
+                        sleepMessage);
                 AutoReplyConfig config = AutoReplyConfig.fromJson(HttpTextClient.postJson(
                         UrlTools.autoRepliesUrl(url), request, 15_000));
                 runOnUiThread(() -> {
@@ -412,6 +558,15 @@ public final class SettingsActivity extends Activity {
         showReplyMessages(config.messages);
         fulfillmentReplyInput.setText(config.fulfillmentMessage);
         fulfillmentReplyInput.setHint(config.defaultFulfillmentMessage);
+        sleepStart = config.sleepStart;
+        sleepEnd = config.sleepEnd;
+        sleepTimezone = config.sleepTimezone;
+        sleepReplyToggle.setChecked(config.sleepEnabled);
+        sleepReplyInput.setText(config.sleepMessage);
+        sleepReplyInput.setHint(config.defaultSleepMessage);
+        sleepTimezoneText.setText("Часовой пояс: " + sleepTimezone);
+        refreshSleepTimeButtons();
+        updateSleepControls();
         replyStatus.setText(status);
         loadingReplySettings = false;
     }

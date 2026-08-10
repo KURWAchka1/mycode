@@ -41,6 +41,14 @@ final class UrlTools {
         return rebuild(pairingUrl, "/poll", 0L, false, "mode", "auto_replies");
     }
 
+    static String wakeUrl(String pairingUrl, String dealId) {
+        Uri source = Uri.parse(pairingUrl.trim());
+        Uri.Builder builder = baseBuilder(source, "/wake");
+        copyAuthParams(source, builder);
+        builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        return builder.build().toString();
+    }
+
     static String relistSetupUrl(String pairingUrl, String dealId) {
         Uri source = Uri.parse(pairingUrl.trim());
         Uri.Builder builder = baseBuilder(source, "/relist");

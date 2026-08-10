@@ -127,6 +127,21 @@ grep -F "Playerok Заказы" <<<"$DARK_WINDOW_XML"
 adb pull /sdcard/playerok-window-dark.xml android16-main-dark.xml >/dev/null
 adb exec-out screencap -p > android16-main-dark.png
 
+# The sleep editor is a native settings section: it must remain reachable in
+# the same large-text-safe scroll container and expose the configured interval.
+adb shell am start -W -n "$PACKAGE/.SettingsActivity" >/dev/null
+sleep 2
+for _ in 1 2 3 4; do adb shell input swipe 540 2050 540 700 350; done
+sleep 1
+adb shell uiautomator dump /sdcard/playerok-settings-sleep.xml >/dev/null
+SETTINGS_XML="$(adb shell cat /sdcard/playerok-settings-sleep.xml | tr -d '\r')"
+grep -F "Когда я могу спать" <<<"$SETTINGS_XML"
+grep -F "Предупреждать покупателя" <<<"$SETTINGS_XML"
+grep -F "С 00:00" <<<"$SETTINGS_XML"
+grep -F "До 08:00" <<<"$SETTINGS_XML"
+adb pull /sdcard/playerok-settings-sleep.xml android16-settings-sleep.xml >/dev/null
+adb exec-out screencap -p > android16-settings-sleep.png
+
 if adb logcat -d -b crash | grep -F "$PACKAGE"; then
     echo "ERROR: application crash detected" >&2
     exit 1
