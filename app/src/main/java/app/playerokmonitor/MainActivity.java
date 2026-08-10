@@ -12,11 +12,9 @@ import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -380,33 +378,26 @@ public final class MainActivity extends Activity {
     }
 
     private void installTabSwipe(View... surfaces) {
-        int minimumVelocity = ViewConfiguration.get(this).getScaledMinimumFlingVelocity();
         int minimumDistance = Ui.dp(this, 72);
-        GestureDetector detector = new GestureDetector(this,
-                new GestureDetector.SimpleOnGestureListener() {
-                    @Override public boolean onDown(MotionEvent event) { return true; }
-
-                    @Override
-                    public boolean onFling(
-                            MotionEvent start,
-                            MotionEvent end,
-                            float velocityX,
-                            float velocityY
-                    ) {
-                        if (start == null || end == null) return false;
-                        float horizontal = end.getX() - start.getX();
-                        float vertical = end.getY() - start.getY();
-                        if (Math.abs(horizontal) < minimumDistance
-                                || Math.abs(horizontal) <= Math.abs(vertical) * 1.25f
-                                || Math.abs(velocityX) < minimumVelocity) {
-                            return false;
-                        }
-                        moveToAdjacentTab(horizontal < 0 ? 1 : -1);
-                        return true;
-                    }
-                });
+        float[] startX = new float[1];
+        float[] startY = new float[1];
+        boolean[] tracking = new boolean[1];
         View.OnTouchListener listener = (view, event) -> {
-            detector.onTouchEvent(event);
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                startX[0] = event.getX();
+                startY[0] = event.getY();
+                tracking[0] = true;
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP && tracking[0]) {
+                float horizontal = event.getX() - startX[0];
+                float vertical = event.getY() - startY[0];
+                tracking[0] = false;
+                if (Math.abs(horizontal) >= minimumDistance
+                        && Math.abs(horizontal) > Math.abs(vertical) * 1.25f) {
+                    moveToAdjacentTab(horizontal < 0 ? 1 : -1);
+                }
+            } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                tracking[0] = false;
+            }
             return false;
         };
         for (View surface : surfaces) surface.setOnTouchListener(listener);
