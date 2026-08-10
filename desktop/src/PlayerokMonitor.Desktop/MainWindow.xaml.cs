@@ -139,6 +139,9 @@ public partial class MainWindow : Window
         else SelectSection(section);
     }
 
+    internal double SearchInsertionOffset => SearchBox.GetRectFromCharacterIndex(0).X;
+    internal double CommandSearchInsertionOffset => CommandSearchBox.GetRectFromCharacterIndex(0).X;
+
     private void ApplyFilter()
     {
         var search = SearchBox.Text.Trim();

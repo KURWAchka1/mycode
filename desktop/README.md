@@ -17,7 +17,7 @@
 ```powershell
 dotnet run --project tests/PlayerokMonitor.Core.Tests/PlayerokMonitor.Core.Tests.csproj -c Release
 dotnet publish src/PlayerokMonitor.Desktop/PlayerokMonitor.Desktop.csproj -c Release -r win-x64 --self-contained true -o publish
-vpk pack --packId PlayerokMonitorDesktop --packVersion 1.1.3 --packDir publish --mainExe PlayerokMonitor.Desktop.exe
+vpk pack --packId PlayerokMonitorDesktop --packVersion 1.1.4 --packDir publish --mainExe PlayerokMonitor.Desktop.exe
 ```
 
 Установщик и пакеты обновлений выпускаются workflow `desktop.yml`. Настройки хранятся в `%LocalAppData%\PlayerokMonitor`; Pairing URL защищён Windows DPAPI.

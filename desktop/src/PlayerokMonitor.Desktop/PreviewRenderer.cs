@@ -19,6 +19,7 @@ internal static class PreviewRenderer
         window.Measure(new System.Windows.Size(window.ActualWidth, window.ActualHeight));
         window.Arrange(new System.Windows.Rect(0, 0, window.ActualWidth, window.ActualHeight));
         window.UpdateLayout();
+        VerifySearchInsertionOffset(window, section);
         var dpi = VisualTreeHelper.GetDpi(window);
         var bitmap = new RenderTargetBitmap((int)(window.ActualWidth * dpi.DpiScaleX), (int)(window.ActualHeight * dpi.DpiScaleY), dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
         bitmap.Render(window);
@@ -28,5 +29,19 @@ internal static class PreviewRenderer
         using var output = File.Create(destination);
         encoder.Save(output);
         window.Close();
+    }
+
+    private static void VerifySearchInsertionOffset(MainWindow window, string section)
+    {
+        var insertionOffset = section.ToLowerInvariant() switch
+        {
+            "search" => window.SearchInsertionOffset,
+            "command" => window.CommandSearchInsertionOffset,
+            _ => double.NaN
+        };
+        if (!double.IsNaN(insertionOffset) && insertionOffset is < 30 or > 44)
+        {
+            throw new InvalidDataException($"Search insertion point is misplaced at {insertionOffset:N1} DIPs");
+        }
     }
 }

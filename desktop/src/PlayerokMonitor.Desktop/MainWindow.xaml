@@ -349,7 +349,7 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="Playerok Monitor 1.1.3 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
+                            <TextBlock Text="Playerok Monitor 1.1.4 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

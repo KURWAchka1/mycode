@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  DESKTOP_VERSION: 1.1.3
-  DESKTOP_TAG: desktop-v1.1.3
+  DESKTOP_VERSION: 1.1.4
+  DESKTOP_TAG: desktop-v1.1.4
 
 jobs:
   build-test-package:
@@ -53,6 +53,17 @@ jobs:
         run: |
           $process = Start-Process -FilePath ./desktop/publish/PlayerokMonitor.Desktop.exe -ArgumentList '--smoke-test' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Application smoke test failed: $($process.ExitCode)" }
+
+      - name: Verify search field layouts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ./desktop/ui-smoke | Out-Null
+          foreach ($section in @('search', 'command')) {
+            $output = (Resolve-Path ./desktop/ui-smoke).Path + "\$section.png"
+            $arguments = @('--render-preview', "`"$output`"", '--preview-section', $section, '--preview-width', '1280', '--preview-height', '820')
+            $process = Start-Process -FilePath ./desktop/publish/PlayerokMonitor.Desktop.exe -ArgumentList $arguments -Wait -PassThru
+            if ($process.ExitCode -ne 0 -or !(Test-Path $output)) { throw "Search layout smoke test failed: $section" }
+          }
 
       - name: Install Velopack packager
         shell: pwsh
