@@ -86,6 +86,8 @@ jobs:
             android16-main-default.xml
             android16-main-large-text.png
             android16-main-large-text.xml
+            android16-main-large-text-scrolled.png
+            android16-main-large-text-scrolled.xml
             android16-main-dark.png
             android16-main-dark.xml
           if-no-files-found: error

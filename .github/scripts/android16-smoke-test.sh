@@ -55,9 +55,18 @@ adb shell uiautomator dump /sdcard/playerok-window-large-text.xml >/dev/null
 LARGE_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$LARGE_WINDOW_XML"
 grep -F "Продажи" <<<"$LARGE_WINDOW_XML"
-grep -F "Покупки" <<<"$LARGE_WINDOW_XML"
 adb pull /sdcard/playerok-window-large-text.xml android16-main-large-text.xml >/dev/null
 adb exec-out screencap -p > android16-main-large-text.png
+
+# The third label intentionally moves off-screen instead of being squeezed.
+# Swipe the adaptive tab row and confirm that it remains reachable in full.
+adb shell input swipe 900 1500 180 1500 450
+sleep 1
+adb shell uiautomator dump /sdcard/playerok-window-large-text-scrolled.xml >/dev/null
+SCROLLED_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text-scrolled.xml | tr -d '\r')"
+grep -F "Покупки" <<<"$SCROLLED_WINDOW_XML"
+adb pull /sdcard/playerok-window-large-text-scrolled.xml android16-main-large-text-scrolled.xml >/dev/null
+adb exec-out screencap -p > android16-main-large-text-scrolled.png
 
 # The user's Galaxy runs the dark palette. Exercise the night resources and
 # transparent controls as a separate launch instead of trusting theme XML.
