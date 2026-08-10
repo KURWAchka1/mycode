@@ -16,9 +16,13 @@ public sealed class StatisticsChart : FrameworkElement
     public void SetData(IReadOnlyList<DailyStatistic> points)
     {
         _points = points;
-        _animation.Restart();
         CompositionTarget.Rendering -= OnRendering;
-        CompositionTarget.Rendering += OnRendering;
+        if (SystemParameters.ClientAreaAnimation)
+        {
+            _animation.Restart();
+            CompositionTarget.Rendering += OnRendering;
+        }
+        else _animation.Reset();
         InvalidateVisual();
     }
 
@@ -48,7 +52,7 @@ public sealed class StatisticsChart : FrameworkElement
             var y = plot.Top + plot.Height * row / 3d;
             drawingContext.DrawLine(gridPen, new WpfPoint(plot.Left, y), new WpfPoint(plot.Right, y));
         }
-        var fill = new LinearGradientBrush(MediaColor.FromRgb(78, 155, 255), MediaColor.FromRgb(68, 216, 139), 90);
+        var fill = new LinearGradientBrush(MediaColor.FromRgb(114, 169, 249), MediaColor.FromRgb(88, 214, 141), 90);
         fill.Freeze();
         for (var index = 0; index < _points.Count; index++)
         {
@@ -58,7 +62,7 @@ public sealed class StatisticsChart : FrameworkElement
             drawingContext.DrawRoundedRectangle(fill, null, new Rect(x, plot.Bottom - height, barWidth, height), 5, 5);
             if (index % 3 == 0 || index == _points.Count - 1)
             {
-                var label = new FormattedText(_points[index].Day.ToString("dd.MM"), System.Globalization.CultureInfo.GetCultureInfo("ru-RU"), System.Windows.FlowDirection.LeftToRight, new Typeface("Segoe UI"), 10, new SolidColorBrush(MediaColor.FromRgb(174, 181, 194)), VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                var label = new FormattedText(_points[index].Day.ToString("dd.MM"), System.Globalization.CultureInfo.GetCultureInfo("ru-RU"), System.Windows.FlowDirection.LeftToRight, new Typeface("Segoe UI Variable Text"), 10, new SolidColorBrush(MediaColor.FromRgb(164, 171, 182)), VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 drawingContext.DrawText(label, new WpfPoint(x, plot.Bottom + 8));
             }
         }

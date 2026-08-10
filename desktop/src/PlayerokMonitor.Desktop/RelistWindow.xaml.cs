@@ -18,7 +18,6 @@ public partial class RelistWindow : Window
         _order = order;
         InitializeComponent();
         Loaded += RelistWindow_Loaded;
-        MouseLeftButtonDown += (_, e) => { if (e.ButtonState == System.Windows.Input.MouseButtonState.Pressed && e.GetPosition(this).Y < 48) DragMove(); };
     }
 
     private async void RelistWindow_Loaded(object sender, RoutedEventArgs e)

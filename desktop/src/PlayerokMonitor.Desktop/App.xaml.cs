@@ -22,7 +22,11 @@ public partial class App : System.Windows.Application
         if (previewIndex >= 0 && previewIndex + 1 < args.Length)
         {
             var sectionIndex = Array.FindIndex(args, value => value.Equals("--preview-section", StringComparison.OrdinalIgnoreCase));
-            PreviewRenderer.Render(args[previewIndex + 1], sectionIndex >= 0 && sectionIndex + 1 < args.Length ? args[sectionIndex + 1] : "orders");
+            var widthIndex = Array.FindIndex(args, value => value.Equals("--preview-width", StringComparison.OrdinalIgnoreCase));
+            var heightIndex = Array.FindIndex(args, value => value.Equals("--preview-height", StringComparison.OrdinalIgnoreCase));
+            var width = widthIndex >= 0 && widthIndex + 1 < args.Length && double.TryParse(args[widthIndex + 1], out var parsedWidth) ? parsedWidth : 1280;
+            var height = heightIndex >= 0 && heightIndex + 1 < args.Length && double.TryParse(args[heightIndex + 1], out var parsedHeight) ? parsedHeight : 820;
+            PreviewRenderer.Render(args[previewIndex + 1], sectionIndex >= 0 && sectionIndex + 1 < args.Length ? args[sectionIndex + 1] : "orders", width, height);
             return;
         }
         app.Run();

@@ -4,12 +4,15 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using PlayerokMonitor.Core;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
 
 namespace PlayerokMonitor.Desktop;
@@ -26,20 +29,32 @@ public partial class MainWindow : Window
     private DesktopUpdateService.UpdateInfo? _pendingUpdate;
     private List<Order> _allOrders = [];
     private string _filter = "new";
+    private string _section = "orders";
     private bool _connected;
     private bool _exiting;
     private AutoReplySettings? _replySettings;
     private readonly bool _previewMode;
+    private readonly List<CommandEntry> _commands =
+    [
+        new("new", "Новые заказы", "Открыть очередь невыполненных заказов", "Ctrl+1"),
+        new("sales", "Продажи", "Показать все продажи", ""),
+        new("purchases", "Покупки", "Показать покупки", ""),
+        new("stats", "Статистика", "Открыть локальную статистику за 14 дней", "Ctrl+2"),
+        new("settings", "Настройки", "Подключение, Windows и автосообщения", "Ctrl+,"),
+        new("refresh", "Обновить заказы", "Запросить актуальный снимок вручную", "F5")
+    ];
 
     public MainWindow(bool previewMode = false)
     {
         _previewMode = previewMode;
         InitializeComponent();
         OrdersList.ItemsSource = _visibleOrders;
+        CommandList.ItemsSource = _commands;
         if (!previewMode) Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
-        StateChanged += (_, _) => MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+        StateChanged += (_, _) => UpdateMaximizeGlyph();
         ConfigureTimeZones();
+        ApplyAdaptiveLayout(Width);
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -79,6 +94,7 @@ public partial class MainWindow : Window
         _allOrders = orders.OrderByDescending(order => order.PaidAtValue ?? DateTimeOffset.MinValue).ToList();
         ApplyFilter();
         RenderStatistics();
+        UpdatePageHeader();
         _tray?.Update(_allOrders.Count(order => order.IsNew), _connected);
         if (!string.IsNullOrWhiteSpace(selectedId)) OrdersList.SelectedItem = _visibleOrders.FirstOrDefault(order => order.DealId == selectedId);
     }
@@ -92,7 +108,12 @@ public partial class MainWindow : Window
             new Order { DealId = "preview-buy", Direction = "IN", ItemName = "Подписка на месяц", Price = "399", Counterparty = "seller_pro", PaidAt = now.AddDays(-2).ToString("O"), SellerFulfilled = true }
         ]);
         SelectFilter("new");
-        SelectSection(section);
+        if (section.Equals("command", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectSection("orders");
+            OpenCommandPalette();
+        }
+        else SelectSection(section);
     }
 
     private void ApplyFilter()
@@ -177,11 +198,11 @@ public partial class MainWindow : Window
 
     private void AddField(string label, string value)
     {
-        var grid = new Grid { Margin = new Thickness(0, 12, 0, 0) };
+        var grid = new Grid { Margin = new Thickness(0, 8, 0, 0) };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(new TextBlock { Text = label, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 13 });
-        var text = new TextBlock { Text = value, FontSize = 13, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, MaxWidth = 310, TextWrapping = TextWrapping.Wrap };
+        grid.Children.Add(new TextBlock { Text = label, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 12 });
+        var text = new TextBlock { Text = value, FontSize = 12, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, MaxWidth = 310, TextWrapping = TextWrapping.Wrap };
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
         DetailFields.Children.Add(grid);
@@ -191,16 +212,22 @@ public partial class MainWindow : Window
     {
         var colors = tone switch
         {
-            "green" => (Color.FromArgb(34, 70, 216, 135), Color.FromRgb(70, 216, 135)),
-            "red" => (Color.FromArgb(34, 255, 111, 125), Color.FromRgb(255, 111, 125)),
-            "amber" => (Color.FromArgb(34, 255, 199, 102), Color.FromRgb(255, 199, 102)),
-            "blue" => (Color.FromArgb(34, 77, 154, 255), Color.FromRgb(77, 154, 255)),
-            _ => (Color.FromArgb(22, 255, 255, 255), Color.FromRgb(174, 181, 194))
+            "green" => Color.FromRgb(88, 214, 141),
+            "red" => Color.FromRgb(242, 123, 133),
+            "amber" => Color.FromRgb(232, 185, 95),
+            "blue" => Color.FromRgb(114, 169, 249),
+            _ => Color.FromRgb(164, 171, 182)
         };
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.Children.Add(new Ellipse { Width = 7, Height = 7, Fill = new SolidColorBrush(colors), HorizontalAlignment = System.Windows.HorizontalAlignment.Left, VerticalAlignment = System.Windows.VerticalAlignment.Top, Margin = new Thickness(0, 5, 0, 0) });
         var stack = new StackPanel();
-        stack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(colors.Item2) });
-        stack.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 12, Margin = new Thickness(0, 4, 0, 0) });
-        DetailFields.Children.Add(new Border { Background = new SolidColorBrush(colors.Item1), BorderBrush = new SolidColorBrush(Color.FromArgb(65, colors.Item2.R, colors.Item2.G, colors.Item2.B)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(15), Padding = new Thickness(13), Margin = new Thickness(0, 12, 0, 0), Child = stack });
+        stack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = new SolidColorBrush(colors) });
+        stack.Children.Add(new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) });
+        Grid.SetColumn(stack, 1);
+        grid.Children.Add(stack);
+        DetailFields.Children.Add(new Border { BorderBrush = (Brush)FindResource("DividerBrush"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 10, 0, 0), Margin = new Thickness(0, 10, 0, 0), Child = grid });
     }
 
     private void SetConnectionStatus(string text, bool online)
@@ -208,20 +235,26 @@ public partial class MainWindow : Window
         _connected = online;
         ConnectionText.Text = text;
         ConnectionDot.Fill = (Brush)FindResource(online ? "GreenBrush" : "AmberBrush");
-        ConnectionPill.Background = new SolidColorBrush(online ? Color.FromArgb(24, 70, 216, 135) : Color.FromArgb(24, 255, 199, 102));
+        ConnectionPill.Background = new SolidColorBrush(online ? Color.FromArgb(28, 88, 214, 141) : Color.FromArgb(28, 232, 185, 95));
+        ConnectionPill.ToolTip = text;
         _tray?.Update(_allOrders.Count(order => order.IsNew), online);
     }
 
     private void SelectSection(string section)
     {
+        _section = section;
         OrdersView.Visibility = section == "orders" ? Visibility.Visible : Visibility.Collapsed;
         StatsView.Visibility = section == "stats" ? Visibility.Visible : Visibility.Collapsed;
         SettingsView.Visibility = section == "settings" ? Visibility.Visible : Visibility.Collapsed;
-        OrdersNav.Background = section == "orders" ? (Brush)FindResource("AccentSoftBrush") : Brushes.Transparent;
-        StatsNav.Background = section == "stats" ? (Brush)FindResource("AccentSoftBrush") : Brushes.Transparent;
-        SettingsNav.Background = section == "settings" ? (Brush)FindResource("AccentSoftBrush") : Brushes.Transparent;
-        PageTitle.Text = section switch { "stats" => "Статистика", "settings" => "Настройки", _ => "Заказы" };
-        PageSubtitle.Text = section switch { "stats" => "Только полезные показатели из локального снимка", "settings" => "Подключение, Windows и сообщения", _ => "Новые заказы, продажи и покупки" };
+        foreach (var button in new[] { OrdersNav, StatsNav, SettingsNav })
+        {
+            button.Background = Brushes.Transparent;
+            button.Foreground = (Brush)FindResource("MutedBrush");
+        }
+        var selected = section switch { "stats" => StatsNav, "settings" => SettingsNav, _ => OrdersNav };
+        selected.Background = (Brush)FindResource("AccentSoftBrush");
+        selected.Foreground = (Brush)FindResource("AccentBrush");
+        UpdatePageHeader();
         if (section == "settings" && _replySettings is null) _ = LoadRepliesAsync();
         if (section == "stats") RenderStatistics();
     }
@@ -229,9 +262,14 @@ public partial class MainWindow : Window
     private void SelectFilter(string filter)
     {
         _filter = filter;
-        foreach (var button in new[] { NewTab, SalesTab, PurchasesTab, AllTab }) button.Background = Brushes.Transparent;
+        foreach (var button in new[] { NewTab, SalesTab, PurchasesTab, AllTab })
+        {
+            button.Background = Brushes.Transparent;
+            button.Foreground = (Brush)FindResource("MutedBrush");
+        }
         var selected = filter switch { "sales" => SalesTab, "purchases" => PurchasesTab, "all" => AllTab, _ => NewTab };
         selected.Background = (Brush)FindResource("AccentSoftBrush");
+        selected.Foreground = (Brush)FindResource("TextBrush");
         ApplyFilter();
     }
 
@@ -239,10 +277,9 @@ public partial class MainWindow : Window
     {
         if (_monitor is null) return;
         RefreshButton.IsEnabled = false;
-        RefreshButton.Content = "…";
         try { await _monitor.RefreshAsync(); }
         catch (Exception error) { ShowError("Не удалось обновить", error.Message); }
-        finally { RefreshButton.IsEnabled = true; RefreshButton.Content = "↻"; }
+        finally { RefreshButton.IsEnabled = true; }
     }
 
     private async Task LoadRepliesAsync()
@@ -277,7 +314,7 @@ public partial class MainWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var box = new System.Windows.Controls.TextBox { Text = text, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 58 };
-        var remove = new Button { Content = "×", Width = 40, Height = 40, Padding = new Thickness(0), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Удалить сообщение" };
+        var remove = new Button { Content = "×", Width = 36, Height = 36, Padding = new Thickness(0), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Удалить сообщение", Style = (Style)FindResource("IconButton") };
         remove.Click += (_, _) => { _messageBoxes.Remove(box); MessagesPanel.Children.Remove(grid); if (_messageBoxes.Count == 0) AddMessageRow(""); };
         grid.Children.Add(box);
         Grid.SetColumn(remove, 1);
@@ -414,6 +451,152 @@ public partial class MainWindow : Window
         catch (Exception error) { ShowError("Не удалось обновить", error.Message); InstallUpdateButton.IsEnabled = true; InstallUpdateButton.Content = "Повторить"; }
     }
 
+    private void UpdatePageHeader()
+    {
+        PageTitle.Text = _section switch { "stats" => "Статистика", "settings" => "Настройки", _ => "Заказы" };
+        PageSubtitle.Text = _section switch
+        {
+            "stats" => "Локально · последние 14 дней",
+            "settings" => "Подключение, Windows и сообщения",
+            _ => $"Новых: {_allOrders.Count(order => order.IsNew)}  ·  продаж: {_allOrders.Count(order => order.IsSale)}  ·  покупок: {_allOrders.Count(order => order.IsPurchase)}"
+        };
+    }
+
+    private void UpdateMaximizeGlyph()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        MaximizeGlyph.Visibility = maximized ? Visibility.Collapsed : Visibility.Visible;
+        RestoreGlyph.Visibility = maximized ? Visibility.Visible : Visibility.Collapsed;
+        MaximizeButton.ToolTip = maximized ? "Восстановить" : "Развернуть";
+    }
+
+    private void ApplyAdaptiveLayout(double windowWidth)
+    {
+        var compact = windowWidth < 980;
+        NavigationColumn.Width = new GridLength(compact ? 54 : 62);
+        SearchContainer.Width = compact ? 178 : 240;
+        PageSubtitle.Visibility = windowWidth < 860 ? Visibility.Collapsed : Visibility.Visible;
+        StatsMetricsGrid.Columns = windowWidth < 1040 ? 2 : 4;
+
+        if (windowWidth < 840)
+        {
+            OrderListColumn.MinWidth = 270;
+            OrderDetailColumn.MinWidth = 300;
+            OrderListColumn.Width = new GridLength(45, GridUnitType.Star);
+            OrderDetailColumn.Width = new GridLength(55, GridUnitType.Star);
+            Grid.SetColumn(StatsStatusPanel, 0);
+            Grid.SetRow(StatsStatusPanel, 1);
+            StatsStatusPanel.Margin = new Thickness(0, 10, 0, 0);
+            StatsContentGrid.ColumnDefinitions[1].Width = new GridLength(0);
+            StatsContentGrid.ColumnDefinitions[2].Width = new GridLength(0);
+        }
+        else
+        {
+            OrderListColumn.MinWidth = 300;
+            OrderDetailColumn.MinWidth = 340;
+            OrderListColumn.Width = new GridLength(42, GridUnitType.Star);
+            OrderDetailColumn.Width = new GridLength(58, GridUnitType.Star);
+            Grid.SetColumn(StatsStatusPanel, 2);
+            Grid.SetRow(StatsStatusPanel, 0);
+            StatsStatusPanel.Margin = new Thickness(0);
+            StatsContentGrid.ColumnDefinitions[1].Width = new GridLength(10);
+            StatsContentGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+        }
+    }
+
+    private void OpenCommandPalette()
+    {
+        CommandSearchBox.Clear();
+        CommandList.ItemsSource = _commands;
+        CommandList.SelectedIndex = 0;
+        CommandPaletteOverlay.Visibility = Visibility.Visible;
+        Dispatcher.BeginInvoke(() => CommandSearchBox.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void CloseCommandPalette()
+    {
+        CommandPaletteOverlay.Visibility = Visibility.Collapsed;
+        Focus();
+    }
+
+    private void FilterCommands()
+    {
+        var query = CommandSearchBox.Text.Trim();
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? _commands
+            : _commands.Where(command => command.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                || command.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
+        CommandList.ItemsSource = matches;
+        CommandList.SelectedIndex = matches.Count > 0 ? 0 : -1;
+        CommandSearchHint.Visibility = string.IsNullOrEmpty(CommandSearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void ExecuteCommand(CommandEntry? command)
+    {
+        if (command is null) return;
+        CloseCommandPalette();
+        switch (command.Id)
+        {
+            case "new": SelectSection("orders"); SelectFilter("new"); break;
+            case "sales": SelectSection("orders"); SelectFilter("sales"); break;
+            case "purchases": SelectSection("orders"); SelectFilter("purchases"); break;
+            case "stats": SelectSection("stats"); break;
+            case "settings": SelectSection("settings"); break;
+            case "refresh": _ = RefreshOrdersAsync(); break;
+        }
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (CommandPaletteOverlay.Visibility == Visibility.Visible && e.Key == Key.Escape)
+        {
+            CloseCommandPalette();
+            e.Handled = true;
+            return;
+        }
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.K)
+        {
+            OpenCommandPalette();
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.D1)
+        {
+            SelectSection("orders"); SelectFilter("new"); e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.D2)
+        {
+            SelectSection("stats"); e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.OemComma)
+        {
+            SelectSection("settings"); e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.F)
+        {
+            SelectSection("orders"); SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true;
+        }
+        else if (e.Key == Key.F5)
+        {
+            _ = RefreshOrdersAsync(); e.Handled = true;
+        }
+    }
+
+    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) => ApplyAdaptiveLayout(e.NewSize.Width);
+    private void CommandPaletteButton_Click(object sender, RoutedEventArgs e) => OpenCommandPalette();
+    private void CloseCommandPaletteButton_Click(object sender, RoutedEventArgs e) => CloseCommandPalette();
+    private void CommandSearchBox_TextChanged(object sender, TextChangedEventArgs e) => FilterCommands();
+    private void CommandSearchBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Down && CommandList.Items.Count > 0) { CommandList.Focus(); CommandList.SelectedIndex = Math.Max(0, CommandList.SelectedIndex); e.Handled = true; }
+        else if (e.Key == Key.Enter) { ExecuteCommand(CommandList.SelectedItem as CommandEntry); e.Handled = true; }
+    }
+    private void CommandList_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { ExecuteCommand(CommandList.SelectedItem as CommandEntry); e.Handled = true; }
+        else if (e.Key == Key.Escape) { CloseCommandPalette(); e.Handled = true; }
+    }
+    private void CommandList_MouseDoubleClick(object sender, MouseButtonEventArgs e) => ExecuteCommand(CommandList.SelectedItem as CommandEntry);
+
     private static void ShowError(string title, string message) => MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
     private void OrdersList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RenderOrder(OrdersList.SelectedItem as Order);
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed; if (IsLoaded) ApplyFilter(); }
@@ -462,4 +645,6 @@ public partial class MainWindow : Window
         Close();
         System.Windows.Application.Current.Shutdown();
     }
+
+    private sealed record CommandEntry(string Id, string Title, string Description, string Shortcut);
 }

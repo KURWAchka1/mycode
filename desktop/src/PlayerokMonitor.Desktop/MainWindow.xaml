@@ -3,226 +3,385 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:local="clr-namespace:PlayerokMonitor.Desktop"
-        Title="Playerok Monitor" Width="1280" Height="820" MinWidth="980" MinHeight="650"
-        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResizeWithGrip"
-        Background="{StaticResource PageBrush}">
+        Title="Playerok Monitor"
+        Width="1280"
+        Height="820"
+        MinWidth="780"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="{StaticResource PageBrush}"
+        PreviewKeyDown="MainWindow_PreviewKeyDown"
+        SizeChanged="MainWindow_SizeChanged">
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="44" ResizeBorderThickness="7" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+        <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="7" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
-    <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="*"/></Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#0D1016" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Compact native-feeling title bar. -->
+        <Border Grid.Row="0" Background="{StaticResource ChromeBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="46"/><ColumnDefinition Width="46"/><ColumnDefinition Width="52"/></Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Border Width="24" Height="24" CornerRadius="8" Background="{StaticResource AccentBrush}">
-                        <TextBlock Text="P" FontWeight="Bold" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="46"/>
+                    <ColumnDefinition Width="46"/>
+                    <ColumnDefinition Width="46"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="13,0,0,0">
+                    <Border Width="21" Height="21" CornerRadius="6" Background="{StaticResource AccentBrush}">
+                        <TextBlock Text="P" Foreground="#08111E" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <TextBlock Text="Playerok Monitor" Margin="10,0,0,0" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="Playerok Monitor" Margin="9,0,0,0" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                 </StackPanel>
-                <Button Grid.Column="1" x:Name="MinimizeButton" Content="—" FontSize="15" Padding="0" BorderThickness="0" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeButton_Click"/>
-                <Button Grid.Column="2" x:Name="MaximizeButton" Content="□" FontSize="15" Padding="0" BorderThickness="0" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MaximizeButton_Click"/>
-                <Button Grid.Column="3" Content="×" FontSize="20" Padding="0" BorderThickness="0" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="CloseButton_Click"/>
+                <Button Grid.Column="1" x:Name="MinimizeButton" Style="{StaticResource WindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeButton_Click" ToolTip="Свернуть">
+                    <Border Width="10" Height="1" Background="{StaticResource TextBrush}"/>
+                </Button>
+                <Button Grid.Column="2" x:Name="MaximizeButton" Style="{StaticResource WindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MaximizeButton_Click" ToolTip="Развернуть">
+                    <Grid Width="11" Height="11">
+                        <Border x:Name="MaximizeGlyph" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
+                        <Grid x:Name="RestoreGlyph" Visibility="Collapsed">
+                            <Border Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
+                            <Border Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="{StaticResource ChromeBrush}" BorderBrush="{StaticResource TextBrush}" BorderThickness="1"/>
+                        </Grid>
+                    </Grid>
+                </Button>
+                <Button Grid.Column="3" Style="{StaticResource CloseWindowButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="CloseButton_Click" ToolTip="Закрыть">
+                    <Path Data="M0,0 L10,10 M10,0 L0,10" Width="10" Height="10" Stroke="{StaticResource TextBrush}" StrokeThickness="1" Stretch="Fill"/>
+                </Button>
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="226"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <Border Background="#0D1016" BorderBrush="#20FFFFFF" BorderThickness="0,0,1,0">
-                <Grid Margin="16,22,16,16">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="PLAYEROK" Foreground="{StaticResource MutedBrush}" FontWeight="Bold" FontSize="11"/>
-                        <TextBlock Text="Заказы" FontWeight="Bold" FontSize="27" Margin="0,2,0,0"/>
-                    </StackPanel>
-                    <Border Grid.Row="1" x:Name="ConnectionPill" Background="#1836D57B" CornerRadius="14" Padding="10,7" Margin="0,20,0,18">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse x:Name="ConnectionDot" Width="8" Height="8" Fill="{StaticResource GreenBrush}" Margin="0,0,8,0"/>
-                            <TextBlock x:Name="ConnectionText" Text="Подключение…" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
+        <Grid Grid.Row="1" x:Name="MainLayout">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavigationColumn" Width="62"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Collapsed navigation rail: 49–62 px is the established desktop compact mode. -->
+            <Border Background="{StaticResource ChromeBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0">
+                <Grid Margin="9,12,9,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="ConnectionPill" Width="34" Height="25" CornerRadius="8" Background="#182DD17B" ToolTip="Состояние подключения">
+                        <Grid>
+                            <Ellipse x:Name="ConnectionDot" Width="8" Height="8" Fill="{StaticResource GreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="ConnectionText" Text="Подключение…" Visibility="Collapsed"/>
+                        </Grid>
                     </Border>
-                    <StackPanel Grid.Row="2">
-                        <Button x:Name="OrdersNav" Style="{StaticResource NavButton}" Click="OrdersNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="▦" FontSize="17" Width="30"/><TextBlock Text="Заказы"/></StackPanel></Button>
-                        <Button x:Name="StatsNav" Style="{StaticResource NavButton}" Click="StatsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="⌁" FontSize="18" Width="30"/><TextBlock Text="Статистика"/></StackPanel></Button>
-                        <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="SettingsNav_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="⚙" FontSize="17" Width="30"/><TextBlock Text="Настройки"/></StackPanel></Button>
+                    <StackPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,17,0,0">
+                        <Button x:Name="OrdersNav" Style="{StaticResource NavButton}" Click="OrdersNav_Click" ToolTip="Заказы  ·  Ctrl+1">
+                            <Path Data="{StaticResource OrdersIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                        </Button>
+                        <Button x:Name="StatsNav" Style="{StaticResource NavButton}" Click="StatsNav_Click" ToolTip="Статистика  ·  Ctrl+2">
+                            <Path Data="{StaticResource StatsIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                        </Button>
+                        <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="SettingsNav_Click" ToolTip="Настройки  ·  Ctrl+,">
+                            <Path Data="{StaticResource SettingsIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                        </Button>
                     </StackPanel>
-                    <StackPanel Grid.Row="3">
-                        <TextBlock Text="DESKTOP · WINDOWS 11" FontSize="10" FontWeight="Bold" Foreground="#738096"/>
-                        <TextBlock Text="Версия 1.0.0" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"/>
-                    </StackPanel>
+                    <Button Grid.Row="2" Style="{StaticResource NavButton}" Click="CommandPaletteButton_Click" ToolTip="Быстрые команды  ·  Ctrl+K">
+                        <Path Data="{StaticResource CommandIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="21" Height="21" Stretch="Uniform"/>
+                    </Button>
                 </Grid>
             </Border>
 
-            <Grid Grid.Column="1" Margin="28,20,28,24">
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock x:Name="PageTitle" Text="Заказы" FontSize="30" FontWeight="Bold"/>
-                        <TextBlock x:Name="PageSubtitle" Text="Новые заказы, продажи и покупки" Foreground="{StaticResource MutedBrush}" FontSize="13" Margin="0,3,0,0"/>
-                    </StackPanel>
-                    <Border Grid.Column="1" x:Name="UpdateBanner" Visibility="Collapsed" Background="#263E91FF" BorderBrush="#554D9AFF" BorderThickness="1" CornerRadius="15" Padding="12,8" Margin="0,0,10,0">
-                        <StackPanel Orientation="Horizontal"><TextBlock x:Name="UpdateText" Text="Доступно обновление" VerticalAlignment="Center"/><Button x:Name="InstallUpdateButton" Style="{StaticResource AccentButton}" Content="Обновить" Padding="12,6" Margin="10,0,0,0" Click="InstallUpdateButton_Click"/></StackPanel>
-                    </Border>
-                    <Button Grid.Column="2" x:Name="RefreshButton" Content="↻" FontSize="23" Width="46" Height="46" Padding="0" Click="RefreshButton_Click" ToolTip="Обновить список"/>
-                </Grid>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="58"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                <Grid Grid.Row="1" Margin="0,20,0,0">
-                    <Grid x:Name="OrdersView">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
+                <!-- One compact command bar; no oversized hero header. -->
+                <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1" Background="{StaticResource PanelBrush}">
+                    <Grid Margin="18,0,12,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="PageTitle" Text="Заказы" FontSize="20" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="PageSubtitle" Text="Новые, продажи и покупки" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,1,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" x:Name="UpdateBanner" Visibility="Collapsed" Background="{StaticResource AccentSoftBrush}" BorderBrush="#526FA7E8" BorderThickness="1" CornerRadius="8" Padding="10,5" Margin="0,0,8,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="NewTab" Style="{StaticResource TabButton}" Content="Новые" Click="NewTab_Click"/>
-                                <Button x:Name="SalesTab" Style="{StaticResource TabButton}" Content="Продажи" Click="SalesTab_Click"/>
-                                <Button x:Name="PurchasesTab" Style="{StaticResource TabButton}" Content="Покупки" Click="PurchasesTab_Click"/>
-                                <Button x:Name="AllTab" Style="{StaticResource TabButton}" Content="Все" Click="AllTab_Click"/>
+                                <TextBlock x:Name="UpdateText" Text="Доступно обновление" FontSize="12" VerticalAlignment="Center"/>
+                                <Button x:Name="InstallUpdateButton" Style="{StaticResource AccentButton}" Content="Обновить" Padding="9,4" MinHeight="26" Margin="8,0,0,0" Click="InstallUpdateButton_Click"/>
                             </StackPanel>
-                            <Grid Grid.Column="2">
-                                <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" Padding="12,8" ToolTip="Поиск по товару или пользователю"/>
-                                <TextBlock x:Name="SearchHint" Text="Поиск по заказам" Foreground="#788493" FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                            </Grid>
-                        </Grid>
-                        <Grid Grid.Row="1" Margin="0,14,0,0">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="44*" MinWidth="360"/><ColumnDefinition Width="14"/><ColumnDefinition Width="56*" MinWidth="430"/></Grid.ColumnDefinitions>
-                            <Border Style="{StaticResource Card}" Padding="7">
-                                <Grid>
-                                    <ListBox x:Name="OrdersList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="OrdersList_SelectionChanged">
-                                        <ListBox.Resources>
-                                            <Style TargetType="ListBoxItem">
-                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                                <Setter Property="Padding" Value="0"/>
-                                                <Setter Property="Margin" Value="0,0,0,6"/>
-                                                <Setter Property="Background" Value="Transparent"/>
-                                                <Setter Property="BorderThickness" Value="0"/>
-                                                <Setter Property="Template">
-                                                    <Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="ItemRoot" Background="{TemplateBinding Background}" CornerRadius="16" Padding="14"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource AccentSoftBrush}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ItemRoot" Property="Background" Value="#16FFFFFF"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </ListBox.Resources>
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                    <StackPanel>
-                                                        <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                                            <TextBlock Text="{Binding DirectionLabel}" Foreground="{StaticResource AccentBrush}" FontSize="12" FontWeight="SemiBold"/>
-                                                            <TextBlock Text="  ·  " Foreground="{StaticResource MutedBrush}"/>
-                                                            <TextBlock Text="{Binding PaidAtDisplay}" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
-                                                        </StackPanel>
-                                                        <TextBlock Text="{Binding StateLabel}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,4,0,0"/>
-                                                    </StackPanel>
-                                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" Margin="12,0,0,0">
-                                                        <TextBlock Text="{Binding PriceDisplay}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Right"/>
-                                                        <TextBlock Text="{Binding CounterpartyDisplay}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,7,0,0" HorizontalAlignment="Right"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-                                    <StackPanel x:Name="EmptyOrders" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
-                                        <Border Width="52" Height="52" CornerRadius="18" Background="#14FFFFFF"><TextBlock Text="✓" FontSize="26" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
-                                        <TextBlock x:Name="EmptyOrdersText" Text="Новых заказов нет" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,13,0,0"/>
-                                        <TextBlock Text="Всё выполнено" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                    </StackPanel>
+                        </Border>
+                        <Button Grid.Column="2" Style="{StaticResource SubtleButton}" Content="Ctrl K" FontSize="11" Foreground="{StaticResource MutedBrush}" Padding="10,5" MinHeight="30" Margin="0,0,6,0" Click="CommandPaletteButton_Click" ToolTip="Открыть быстрые команды"/>
+                        <Button Grid.Column="3" x:Name="RefreshButton" Style="{StaticResource IconButton}" Click="RefreshButton_Click" ToolTip="Обновить  ·  F5">
+                            <Path Data="{StaticResource RefreshIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="18" Height="18" Stretch="Uniform"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <!-- ORDERS -->
+                    <Grid x:Name="OrdersView">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1" Background="{StaticResource PageBrush}">
+                            <Grid Margin="14,0,14,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="240"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="NewTab" Style="{StaticResource TabButton}" Content="Новые" Click="NewTab_Click"/>
+                                    <Button x:Name="SalesTab" Style="{StaticResource TabButton}" Content="Продажи" Click="SalesTab_Click"/>
+                                    <Button x:Name="PurchasesTab" Style="{StaticResource TabButton}" Content="Покупки" Click="PurchasesTab_Click"/>
+                                    <Button x:Name="AllTab" Style="{StaticResource TabButton}" Content="Все" Click="AllTab_Click"/>
+                                </StackPanel>
+                                <Grid Grid.Column="2" x:Name="SearchContainer" Width="240" VerticalAlignment="Center">
+                                    <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" Padding="34,7,10,7" ToolTip="Поиск по товару, пользователю или номеру"/>
+                                    <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource SubtleBrush}" StrokeThickness="1.7" Width="15" Height="15" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                    <TextBlock x:Name="SearchHint" Text="Поиск заказов" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="35,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                                 </Grid>
-                            </Border>
-                            <Border Grid.Column="2" Style="{StaticResource Card}">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <StackPanel>
-                                        <StackPanel x:Name="NoSelection" HorizontalAlignment="Center" Margin="0,110,0,0">
-                                            <TextBlock Text="Выберите заказ" FontSize="19" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Здесь появятся детали и доступные действия" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="OrderListColumn" Width="42*" MinWidth="300"/>
+                                <ColumnDefinition x:Name="OrderDividerColumn" Width="1"/>
+                                <ColumnDefinition x:Name="OrderDetailColumn" Width="58*" MinWidth="340"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Background="{StaticResource PanelBrush}">
+                                <ListBox x:Name="OrdersList" Margin="5,6,4,6" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="OrdersList_SelectionChanged">
+                                    <ListBox.Resources>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Grid Margin="0,1">
+                                                            <Border x:Name="SelectionRail" Width="3" Margin="2,10,0,10" HorizontalAlignment="Left" Background="{StaticResource AccentBrush}" CornerRadius="2" Visibility="Collapsed"/>
+                                                            <Border x:Name="ItemRoot" Margin="7,0,3,0" Background="{TemplateBinding Background}" CornerRadius="8" Padding="11,9">
+                                                                <ContentPresenter/>
+                                                            </Border>
+                                                        </Grid>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsSelected" Value="True">
+                                                                <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource SelectedBrush}"/>
+                                                                <Setter TargetName="SelectionRail" Property="Visibility" Value="Visible"/>
+                                                            </Trigger>
+                                                            <MultiTrigger>
+                                                                <MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsSelected" Value="False"/></MultiTrigger.Conditions>
+                                                                <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource ElevatedBrush}"/>
+                                                            </MultiTrigger>
+                                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ItemRoot" Property="BorderBrush" Value="{StaticResource AccentBrush}"/><Setter TargetName="ItemRoot" Property="BorderThickness" Value="1"/></Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.Resources>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid MinHeight="49">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                        <TextBlock Text="{Binding DirectionLabel}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="  ·  " Foreground="{StaticResource SubtleBrush}" FontSize="11"/>
+                                                        <TextBlock Text="{Binding StateLabel}" Foreground="{StaticResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="190"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                                    <TextBlock Text="{Binding PriceDisplay}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding CounterpartyDisplay}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Right" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <StackPanel x:Name="EmptyOrders" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <Path Data="{StaticResource CheckIcon}" Stroke="{StaticResource GreenBrush}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="24" Height="24" Stretch="Uniform"/>
+                                    <TextBlock x:Name="EmptyOrdersText" Text="Новых заказов нет" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                                    <TextBlock Text="Можно выдохнуть" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Grid.Column="1" Background="{StaticResource DividerBrush}"/>
+
+                            <Grid Grid.Column="2" Background="{StaticResource PageBrush}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <Grid Margin="22,18,20,22">
+                                        <StackPanel x:Name="NoSelection" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Выберите заказ" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Статусы и действия появятся здесь" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,4,0,0"/>
                                         </StackPanel>
                                         <StackPanel x:Name="OrderDetails" Visibility="Collapsed">
-                                            <TextBlock x:Name="DetailDirection" Foreground="{StaticResource AccentBrush}" FontSize="12" FontWeight="Bold"/>
-                                            <TextBlock x:Name="DetailTitle" FontSize="24" FontWeight="Bold" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                            <TextBlock x:Name="DetailPrice" FontSize="18" FontWeight="SemiBold" Margin="0,9,0,0"/>
-                                            <WrapPanel Margin="0,16,0,0">
-                                                <Button x:Name="OpenDealButton" Content="Открыть Playerok" Margin="0,0,8,8" Click="OpenDealButton_Click"/>
-                                                <Button x:Name="WakeButton" Style="{StaticResource AccentButton}" Content="Я проснулся" Margin="0,0,8,8" Click="WakeButton_Click" Visibility="Collapsed"/>
-                                                <Button x:Name="RelistButton" Style="{StaticResource AccentButton}" Content="Выставить снова" Margin="0,0,8,8" Click="RelistButton_Click" Visibility="Collapsed"/>
+                                            <TextBlock x:Name="DetailDirection" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold"/>
+                                            <TextBlock x:Name="DetailTitle" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock x:Name="DetailPrice" FontSize="16" FontWeight="SemiBold" Margin="0,7,0,0"/>
+                                            <WrapPanel Margin="0,14,0,0">
+                                                <Button x:Name="OpenDealButton" Margin="0,0,7,7" Click="OpenDealButton_Click">
+                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="Открыть Playerok"/><Path Data="{StaticResource ExternalIcon}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.5" Width="13" Height="13" Margin="7,0,0,0"/></StackPanel>
+                                                </Button>
+                                                <Button x:Name="WakeButton" Style="{StaticResource AccentButton}" Content="Я проснулся" Margin="0,0,7,7" Click="WakeButton_Click" Visibility="Collapsed"/>
+                                                <Button x:Name="RelistButton" Style="{StaticResource AccentButton}" Content="Выставить снова" Margin="0,0,7,7" Click="RelistButton_Click" Visibility="Collapsed"/>
                                             </WrapPanel>
-                                            <StackPanel x:Name="DetailFields" Margin="0,6,0,0"/>
+                                            <StackPanel x:Name="DetailFields" Margin="0,4,0,0"/>
                                         </StackPanel>
-                                    </StackPanel>
+                                    </Grid>
                                 </ScrollViewer>
-                            </Border>
+                            </Grid>
                         </Grid>
                     </Grid>
 
+                    <!-- STATISTICS: useful information, calculated and animated locally. -->
                     <ScrollViewer x:Name="StatsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <UniformGrid Columns="4">
-                                <Border Style="{StaticResource Card}" Margin="0,0,10,0"><StackPanel><TextBlock Text="Чистыми" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="StatNet" Text="0 ₽" FontSize="26" FontWeight="Bold" Margin="0,7,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}" Margin="0,0,10,0"><StackPanel><TextBlock Text="Продажи" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="StatSales" Text="0" FontSize="26" FontWeight="Bold" Margin="0,7,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}" Margin="0,0,10,0"><StackPanel><TextBlock Text="Средний доход" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="StatAverage" Text="0 ₽" FontSize="26" FontWeight="Bold" Margin="0,7,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Завершение" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="StatCompletion" Text="0%" FontSize="26" FontWeight="Bold" Margin="0,7,0,0"/></StackPanel></Border>
+                        <Grid Margin="18,16,18,20">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <UniformGrid x:Name="StatsMetricsGrid" Columns="4">
+                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Чистыми · 14 дней" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatNet" Text="0 ₽" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Продажи" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatSales" Text="0" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Средний доход" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatAverage" Text="0 ₽" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
+                                <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Завершение" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatCompletion" Text="0%" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
                             </UniformGrid>
-                            <Grid Margin="0,14,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <Border Style="{StaticResource Card}">
-                                    <StackPanel><TextBlock Text="Доход за 14 дней" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="Рассчитывается локально из загруженных заказов" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,3,0,12"/><local:StatisticsChart x:Name="RevenueChart" Height="290"/></StackPanel>
+                            <Grid x:Name="StatsContentGrid" Grid.Row="1" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2.2*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <Border x:Name="StatsChartPanel" Style="{StaticResource Card}">
+                                    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><StackPanel><TextBlock Text="Динамика дохода" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="14 дней · без запросов к VPS" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><local:StatisticsChart x:Name="RevenueChart" Grid.Row="1" Height="300" Margin="0,10,0,0"/></Grid>
                                 </Border>
-                                <Border Grid.Column="2" Style="{StaticResource Card}">
+                                <Border x:Name="StatsStatusPanel" Grid.Column="2" Style="{StaticResource Card}">
                                     <StackPanel>
-                                        <TextBlock Text="Состояние заказов" FontSize="18" FontWeight="SemiBold"/>
-                                        <Grid Margin="0,22,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Нужно выполнить" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatNew" FontSize="17" FontWeight="Bold"/></Grid>
-                                        <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Активные проблемы" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatProblems" FontSize="17" FontWeight="Bold" Foreground="{StaticResource RedBrush}"/></Grid>
-                                        <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Возвраты" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatReturns" FontSize="17" FontWeight="Bold" Foreground="{StaticResource AmberBrush}"/></Grid>
-                                        <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Покупки" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatPurchases" FontSize="17" FontWeight="Bold"/></Grid>
+                                        <TextBlock Text="Состояние" FontSize="15" FontWeight="SemiBold"/>
+                                        <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Нужно выполнить" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatNew" FontSize="15" FontWeight="SemiBold"/></Grid>
+                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Проблемы" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatProblems" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/></Grid>
+                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Возвраты" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatReturns" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource AmberBrush}"/></Grid>
+                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Покупки" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatPurchases" FontSize="15" FontWeight="SemiBold"/></Grid>
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                        </StackPanel>
+                        </Grid>
                     </ScrollViewer>
 
+                    <!-- SETTINGS: compact rows, descriptions on the left and actions on the right. -->
                     <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel MaxWidth="880" HorizontalAlignment="Left">
+                        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="18,16,18,28">
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
-                                    <TextBlock Text="Подключение" FontSize="19" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Тот же Pairing URL, что используется на Android. Токен хранится зашифрованным для текущего пользователя Windows." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,14"/>
+                                    <TextBlock Text="Подключение" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Используется тот же Pairing URL, что и на Android. Токен зашифрован для текущего пользователя Windows." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,3,0,12"/>
                                     <TextBox x:Name="PairingUrlBox"/>
-                                    <WrapPanel Margin="0,12,0,0"><Button Style="{StaticResource AccentButton}" Content="Проверить и сохранить" Click="SaveConnectionButton_Click"/><Button Content="Тест уведомления" Margin="8,0,0,0" Click="TestNotificationButton_Click"/></WrapPanel>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Style="{StaticResource AccentButton}" Content="Проверить и сохранить" Click="SaveConnectionButton_Click"/>
+                                        <Button Content="Тест уведомления" Margin="7,0,0,0" Click="TestNotificationButton_Click"/>
+                                    </WrapPanel>
                                 </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="Windows" FontSize="19" FontWeight="SemiBold"/>
-                                    <CheckBox x:Name="MonitoringCheck" Content="Мониторинг включён" Margin="0,16,0,0"/>
-                                    <CheckBox x:Name="NotificationsCheck" Content="Показывать системные уведомления" Margin="0,12,0,0"/>
-                                    <CheckBox x:Name="AutoStartCheck" Content="Запускать вместе с Windows" Margin="0,12,0,0"/>
-                                    <CheckBox x:Name="CloseToTrayCheck" Content="Сворачивать в область уведомлений при закрытии" Margin="0,12,0,0"/>
-                                    <Button Content="Сохранить настройки Windows" HorizontalAlignment="Left" Margin="0,16,0,0" Click="SaveWindowsSettingsButton_Click"/>
+                                    <TextBlock Text="Приложение" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Мониторинг" FontWeight="SemiBold"/><TextBlock Text="Получать новые события в фоне" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="MonitoringCheck" VerticalAlignment="Center"/></Grid>
+                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
+                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Системные уведомления" FontWeight="SemiBold"/><TextBlock Text="Показывать события в центре уведомлений Windows" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="NotificationsCheck" VerticalAlignment="Center"/></Grid>
+                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
+                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Автозапуск" FontWeight="SemiBold"/><TextBlock Text="Запускать Playerok Monitor вместе с Windows" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="AutoStartCheck" VerticalAlignment="Center"/></Grid>
+                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
+                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Закрытие в трей" FontWeight="SemiBold"/><TextBlock Text="Оставлять мониторинг активным после закрытия окна" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="CloseToTrayCheck" VerticalAlignment="Center"/></Grid>
+                                    <Button Content="Сохранить параметры" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveWindowsSettingsButton_Click"/>
                                 </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                                 <StackPanel>
-                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Автосообщения" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="Общие для Android и Windows — сервер остаётся единственным отправителем." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"/></StackPanel><Button Grid.Column="1" Content="Загрузить" Padding="12,7" Click="LoadRepliesButton_Click"/></Grid>
-                                    <CheckBox x:Name="DisableRepliesCheck" Content="Отключить все сообщения" Margin="0,18,0,0"/>
-                                    <TextBlock Text="После оплаты" FontWeight="SemiBold" Margin="0,18,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel><TextBlock Text="Автосообщения" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="Общие с Android · отправителем остаётся сервер" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel>
+                                        <Button Grid.Column="1" Style="{StaticResource SubtleButton}" Content="Загрузить заново" Padding="9,5" MinHeight="30" Click="LoadRepliesButton_Click"/>
+                                    </Grid>
+                                    <Grid Margin="0,14,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Отключить все сообщения" FontWeight="SemiBold"/><TextBlock Text="Тексты сохранятся и вернутся после включения" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="DisableRepliesCheck" VerticalAlignment="Center"/></Grid>
+                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
+
+                                    <TextBlock Text="После оплаты" FontWeight="SemiBold" Margin="0,14,0,7"/>
+                                    <TextBlock Text="Можно добавить до восьми сообщений. Пустое первое поле использует серверный текст по умолчанию." Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <StackPanel x:Name="MessagesPanel"/>
-                                    <Button Content="＋ Добавить сообщение" HorizontalAlignment="Left" Margin="0,9,0,0" Click="AddMessageButton_Click"/>
-                                    <TextBlock Text="После подтверждения мной выполнения" FontWeight="SemiBold" Margin="0,20,0,8"/>
-                                    <TextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"/>
-                                    <TextBlock x:Name="FulfillmentHint" Foreground="#728096" FontSize="12" TextWrapping="Wrap" Margin="3,5,3,0"/>
-                                    <Border Height="1" Background="#24FFFFFF" Margin="0,22,0,18"/>
-                                    <CheckBox x:Name="SleepEnabledCheck" Content="Предупреждать покупателя, когда продавец может спать"/>
-                                    <Grid Margin="0,13,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition Width="1.5*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Начало" Foreground="{StaticResource MutedBrush}" FontSize="12"/><ComboBox x:Name="SleepStartBox" IsEditable="True" Margin="0,5,0,0"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Конец" Foreground="{StaticResource MutedBrush}" FontSize="12"/><ComboBox x:Name="SleepEndBox" IsEditable="True" Margin="0,5,0,0"/></StackPanel><StackPanel Grid.Column="4"><TextBlock Text="Часовой пояс" Foreground="{StaticResource MutedBrush}" FontSize="12"/><ComboBox x:Name="SleepTimezoneBox" IsEditable="True" Margin="0,5,0,0"/></StackPanel></Grid>
-                                    <TextBlock Text="Сообщение во время сна" FontWeight="SemiBold" Margin="0,18,0,8"/>
-                                    <TextBox x:Name="SleepMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"/>
-                                    <TextBlock x:Name="SleepHint" Foreground="#728096" FontSize="12" TextWrapping="Wrap" Margin="3,5,3,0"/>
-                                    <Button Style="{StaticResource AccentButton}" Content="Сохранить автосообщения" HorizontalAlignment="Left" Margin="0,20,0,0" Click="SaveRepliesButton_Click"/>
-                                    <TextBlock x:Name="RepliesStatus" Foreground="{StaticResource MutedBrush}" Margin="0,10,0,0"/>
+                                    <Button Style="{StaticResource SubtleButton}" Content="＋  Добавить сообщение" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddMessageButton_Click"/>
+
+                                    <TextBlock Text="После подтверждения выполнения вами" FontWeight="SemiBold" Margin="0,16,0,7"/>
+                                    <TextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"/>
+                                    <TextBlock x:Name="FulfillmentHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
+
+                                    <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,16,0,14"/>
+                                    <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Режим сна" FontWeight="SemiBold"/><TextBlock Text="Предупреждать покупателя, что продавец может спать" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="SleepEnabledCheck" VerticalAlignment="Center"/></Grid>
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="1.55*"/></Grid.ColumnDefinitions>
+                                        <StackPanel><TextBlock Text="Начало" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepStartBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Grid.Column="2"><TextBlock Text="Конец" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepEndBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Grid.Column="4"><TextBlock Text="Часовой пояс" Foreground="{StaticResource MutedBrush}" FontSize="11"/><ComboBox x:Name="SleepTimezoneBox" IsEditable="True" Margin="0,4,0,0"/></StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Сообщение во время сна" FontWeight="SemiBold" Margin="0,14,0,7"/>
+                                    <TextBox x:Name="SleepMessageBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"/>
+                                    <TextBlock x:Name="SleepHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                        <Button Style="{StaticResource AccentButton}" Content="Сохранить сообщения" Click="SaveRepliesButton_Click"/>
+                                        <TextBlock x:Name="RepliesStatus" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
+                            <TextBlock Text="Playerok Monitor 1.1.0 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
             </Grid>
+        </Grid>
+
+        <!-- Keyboard-first command palette. It is lazy in use and produces no server requests by itself. -->
+        <Grid x:Name="CommandPaletteOverlay" Grid.RowSpan="2" Visibility="Collapsed" Background="#8A080A0D" Panel.ZIndex="1000">
+            <Border Width="520" MaxHeight="460" Margin="0,94,0,0" VerticalAlignment="Top" Background="{StaticResource ElevatedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="8">
+                <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="8" Opacity="0.45"/></Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <Grid>
+                        <TextBox x:Name="CommandSearchBox" Padding="36,8,34,8" TextChanged="CommandSearchBox_TextChanged" KeyDown="CommandSearchBox_KeyDown"/>
+                        <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7" Width="16" Height="16" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                        <TextBlock x:Name="CommandSearchHint" Text="Команда или раздел" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                        <Button Style="{StaticResource SubtleButton}" Content="Esc" FontSize="10" Foreground="{StaticResource MutedBrush}" Padding="5,2" MinHeight="20" HorizontalAlignment="Right" Margin="0,0,8,0" Click="CloseCommandPaletteButton_Click"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Text="БЫСТРЫЕ ДЕЙСТВИЯ" Foreground="{StaticResource SubtleBrush}" FontSize="10" FontWeight="Bold" Margin="8,10,0,5"/>
+                    <ListBox Grid.Row="2" x:Name="CommandList" Background="Transparent" BorderThickness="0" MouseDoubleClick="CommandList_MouseDoubleClick" KeyDown="CommandList_KeyDown">
+                        <ListBox.Resources>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,1"/>
+                                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Root" Padding="10,8" CornerRadius="7" Background="Transparent"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Root" Property="Background" Value="{StaticResource SelectedBrush}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+                            </Style>
+                        </ListBox.Resources>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding Shortcut}" Foreground="{StaticResource SubtleBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0,2,0"/></Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

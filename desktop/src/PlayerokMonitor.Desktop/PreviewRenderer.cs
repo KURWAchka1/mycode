@@ -8,9 +8,9 @@ namespace PlayerokMonitor.Desktop;
 
 internal static class PreviewRenderer
 {
-    public static void Render(string destination, string section)
+    public static void Render(string destination, string section, double width = 1280, double height = 820)
     {
-        var window = new MainWindow(true) { Width = 1280, Height = 820, WindowStartupLocation = WindowStartupLocation.Manual, Left = -3000, Top = -3000 };
+        var window = new MainWindow(true) { Width = width, Height = height, WindowStartupLocation = WindowStartupLocation.Manual, Left = -3000, Top = -3000 };
         window.Show();
         window.LoadPreviewData(section);
         window.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);

@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  DESKTOP_VERSION: 1.0.0
-  DESKTOP_TAG: desktop-v1.0.0
+  DESKTOP_VERSION: 1.1.0
+  DESKTOP_TAG: desktop-v1.1.0
 
 jobs:
   build-test-package:
@@ -64,8 +64,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Force ./desktop/Releases | Out-Null
-          gh release download $env:DESKTOP_TAG --pattern 'PlayerokMonitorDesktop-*-full.nupkg' --dir ./desktop/Releases 2>$null
-          if ($LASTEXITCODE -ne 0) { Write-Host 'First desktop release: full package only'; $global:LASTEXITCODE = 0 }
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=20" | ConvertFrom-Json
+          $previous = $releases |
+            Where-Object { $_.tag_name -like 'desktop-v*' -and $_.tag_name -ne $env:DESKTOP_TAG } |
+            Sort-Object { [version]($_.tag_name -replace '^desktop-v', '') } -Descending |
+            Select-Object -First 1
+          if ($previous) {
+            Write-Host "Using $($previous.tag_name) as delta base"
+            gh release download $previous.tag_name --pattern 'PlayerokMonitorDesktop-*-full.nupkg' --dir ./desktop/Releases
+          } else {
+            Write-Host 'First desktop release: full package only'
+          }
 
       - name: Build updating Setup.exe
         shell: pwsh
@@ -81,6 +90,13 @@ jobs:
           --runtime win-x64
           --outputDir ./desktop/Releases
           --releaseNotes ./desktop/RELEASE_NOTES.md
+
+      - name: Keep only current packages in this release
+        shell: pwsh
+        run: |
+          Get-ChildItem ./desktop/Releases/*-full.nupkg |
+            Where-Object { $_.Name -notlike "*-$env:DESKTOP_VERSION-full.nupkg" } |
+            Remove-Item -Force
 
       - name: Verify installer and update feed
         shell: pwsh
