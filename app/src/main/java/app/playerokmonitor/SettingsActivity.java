@@ -58,6 +58,7 @@ public final class SettingsActivity extends Activity {
     private View buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(Ui.BG);
+        scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         int p = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
@@ -70,10 +71,11 @@ public final class SettingsActivity extends Activity {
             int left = p, top = p, right = p, bottom = p;
             if (Build.VERSION.SDK_INT >= 30) {
                 Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                Insets ime = insets.getInsets(WindowInsets.Type.ime());
                 left += bars.left;
                 top += bars.top;
                 right += bars.right;
-                bottom += bars.bottom;
+                bottom += Math.max(bars.bottom, ime.bottom);
             } else {
                 left += insets.getSystemWindowInsetLeft();
                 top += insets.getSystemWindowInsetTop();
@@ -93,13 +95,13 @@ public final class SettingsActivity extends Activity {
         back.setOnClickListener(v -> { Ui.haptic(v); finish(); });
         head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
-        TextView title = Ui.text(this, "Настройки", 32, Ui.TEXT, true);
+        TextView title = Ui.text(this, "Настройки", 30, Ui.TEXT, true);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         titleParams.leftMargin = Ui.dp(this, 10);
         head.addView(title, titleParams);
 
         TextView subtitle = Ui.text(this,
-                "Pairing URL остаётся тем же. Через него приложение получает уведомления и список сделок.",
+                "Подключение, уведомления и сообщения покупателю — в одном месте.",
                 14, Ui.MUTED, false);
         LinearLayout.LayoutParams sub = matchWrap();
         sub.topMargin = Ui.dp(this, 14);
@@ -107,17 +109,24 @@ public final class SettingsActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
-        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
+        card.setPadding(Ui.dp(this, 20), Ui.dp(this, 19), Ui.dp(this, 20), Ui.dp(this, 18));
+        card.setBackground(Ui.hero(this));
+        Ui.elevate(card, 2);
         LinearLayout.LayoutParams cardParams = matchWrap();
         cardParams.topMargin = Ui.dp(this, 16);
         root.addView(card, cardParams);
+
+        TextView connectionTitle = Ui.text(this, "Подключение к VPS", 20, Ui.TEXT, true);
+        card.addView(connectionTitle);
+        TextView connectionHint = Ui.text(this,
+                "Pairing URL не меняется при обновлении приложения.", 13, Ui.MUTED, false);
+        card.addView(connectionHint, marginTop(4));
 
         TextView label = new TextView(this);
         label.setText("Pairing URL");
         label.setTextColor(Ui.TEXT);
         label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        card.addView(label);
+        card.addView(label, marginTop(16));
 
         urlInput = new EditText(this);
         urlInput.setSingleLine(false);
@@ -127,7 +136,8 @@ public final class SettingsActivity extends Activity {
         urlInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_VARIATION_URI |
                 android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        card.addView(urlInput, matchWrap());
+        Ui.styleInput(this, urlInput);
+        card.addView(urlInput, marginTop(8));
 
         Button saveStart = Ui.button(this, "Сохранить и запустить мониторинг", true);
         saveStart.setOnClickListener(v -> { Ui.haptic(v); saveAndStart(); });
@@ -171,7 +181,8 @@ public final class SettingsActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18));
-        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 24));
+        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 26));
+        Ui.elevate(card, 1);
         LinearLayout.LayoutParams cardParams = matchWrap();
         cardParams.topMargin = Ui.dp(this, 16);
         root.addView(card, cardParams);
@@ -225,11 +236,11 @@ public final class SettingsActivity extends Activity {
         fulfillmentReplyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
                 android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        Ui.styleInput(this, fulfillmentReplyInput);
         card.addView(fulfillmentReplyInput, marginTop(8));
 
         LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        actions.setGravity(Gravity.CENTER_VERTICAL);
+        actions.setOrientation(LinearLayout.VERTICAL);
         card.addView(actions, marginTop(12));
 
         addReplyButton = Ui.button(this, "+ Сообщение после оплаты", false);
@@ -242,14 +253,12 @@ public final class SettingsActivity extends Activity {
             addReplyInput("");
             replyInputs.get(replyInputs.size() - 1).requestFocus();
         });
-        actions.addView(addReplyButton, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        actions.addView(addReplyButton, matchWrap());
 
         Button save = Ui.button(this, "Сохранить", true);
         save.setOnClickListener(v -> { Ui.haptic(v); saveAutoReplySettings(); });
-        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        saveParams.leftMargin = Ui.dp(this, 8);
+        LinearLayout.LayoutParams saveParams = matchWrap();
+        saveParams.topMargin = Ui.dp(this, 4);
         actions.addView(save, saveParams);
 
         replyStatus = Ui.text(this, "Загружаю настройки с VPS…", 13, Ui.MUTED, false);
@@ -266,8 +275,7 @@ public final class SettingsActivity extends Activity {
 
     private void addReplyInput(String value) {
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.VERTICAL);
 
         EditText input = new EditText(this);
         input.setText(value == null ? "" : value);
@@ -280,15 +288,16 @@ public final class SettingsActivity extends Activity {
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
                 android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        Ui.styleInput(this, input);
+        LinearLayout.LayoutParams inputParams = matchWrap();
         row.addView(input, inputParams);
 
         Button remove = Ui.button(this, "Удалить", false);
         LinearLayout.LayoutParams removeParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        removeParams.leftMargin = Ui.dp(this, 8);
+        removeParams.gravity = Gravity.END;
+        removeParams.topMargin = Ui.dp(this, 2);
         row.addView(remove, removeParams);
         remove.setOnClickListener(v -> {
             Ui.haptic(v);

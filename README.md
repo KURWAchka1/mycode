@@ -9,7 +9,7 @@ Android client for the Playerok Monitor VPS service.
 - dedicated high-importance order notification channel
 - deterministic custom notification sound generated during the Gradle build
 - system silent/vibrate/DND/channel sound settings remain authoritative
-- CI builds, installs and launches the APK in an Android 16 emulator before uploading the artifact
+- CI builds, installs and launches the APK in an Android 16 emulator, then repeats the UI check at 200% system text size
 
 ## Build
 
@@ -17,4 +17,4 @@ Android client for the Playerok Monitor VPS service.
 gradle :app:assembleDebug
 ```
 
-The CI artifact is named `PlayerokMonitor-Android16-debug`.
+The CI artifact is named `PlayerokMonitor-2.3.9-OneUI85` and includes default/large-text screenshots alongside the APK.

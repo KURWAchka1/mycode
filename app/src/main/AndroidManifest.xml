@@ -38,8 +38,14 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".OrderDetailActivity" android:exported="false" />
-        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity
+            android:name=".OrderDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".MonitorService"

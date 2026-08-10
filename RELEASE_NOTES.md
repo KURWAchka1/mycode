@@ -1,4 +1,14 @@
-# Playerok Monitor 2.3.8 · New Orders & Fulfillment Reply
+# Playerok Monitor 2.3.9 · One UI Workspace
+
+- The main screen is rebuilt around Samsung's viewing/interaction split: a compact title, one calm live-status focus block, clear deal navigation and a useful empty state.
+- Every icon and secondary action now uses a transparent background with a restrained One UI ripple. Primary actions use only a translucent blue wash and outline instead of a black button slab.
+- “Новые заказы” no longer has a hard-coded height. Tabs expand with the system font, keep the full label visible and are smoke-tested at 200% text size.
+- Order cards now prioritize status, product name and payout without squeezing the title. A slim semantic rail distinguishes new, fulfilled, completed, problem and refund states.
+- Dark mode uses layered charcoal-blue surfaces rather than pure-black controls, while light mode uses the same hierarchy and contrast.
+- Settings and relisting inputs resize above the on-screen keyboard, add an IME-aware bottom inset and scroll the focused field into view.
+- CI captures both default and 200%-text Android 16 screenshots in addition to linting, installing and launching the APK.
+
+## Included from 2.3.8
 
 - The app now opens on a dedicated “Новые заказы” tab containing only active sales that you have not yet marked as fulfilled.
 - A separate configurable buyer message is sent only after you confirm fulfillment of your own sale. Fulfillment by another seller in your purchases is explicitly excluded.

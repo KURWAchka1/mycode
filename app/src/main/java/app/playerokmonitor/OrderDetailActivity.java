@@ -12,6 +12,7 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -47,6 +48,7 @@ public final class OrderDetailActivity extends Activity {
     private View buildRoot() {
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(Ui.BG);
+        scroll.setFillViewport(true);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         int p = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
@@ -58,10 +60,11 @@ public final class OrderDetailActivity extends Activity {
             int left = p, top = p, right = p, bottom = p;
             if (Build.VERSION.SDK_INT >= 30) {
                 Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                Insets ime = insets.getInsets(WindowInsets.Type.ime());
                 left += bars.left;
                 top += bars.top;
                 right += bars.right;
-                bottom += bars.bottom;
+                bottom += Math.max(bars.bottom, ime.bottom);
             }
             v.setPadding(left, top, right, bottom);
             return insets;
@@ -82,7 +85,7 @@ public final class OrderDetailActivity extends Activity {
         head.addView(back, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
         String titleText = order == null ? "Сделка" : (order.isSale() ? "Моя продажа" : "Моя покупка");
-        TextView title = Ui.text(this, titleText, 32, Ui.TEXT, true);
+        TextView title = Ui.text(this, titleText, 30, Ui.TEXT, true);
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         tp.leftMargin = Ui.dp(this, 10);
         head.addView(title, tp);
@@ -139,8 +142,9 @@ public final class OrderDetailActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16), Ui.dp(this, 16));
-        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
+        card.setPadding(Ui.dp(this, 19), Ui.dp(this, 19), Ui.dp(this, 19), Ui.dp(this, 19));
+        card.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 24));
+        Ui.elevate(card, 1);
         LinearLayout.LayoutParams cp = matchWrap();
         cp.topMargin = Ui.dp(this, 14);
         content.addView(card, cp);
@@ -237,7 +241,7 @@ public final class OrderDetailActivity extends Activity {
         LinearLayout ids = new LinearLayout(this);
         ids.setOrientation(LinearLayout.VERTICAL);
         ids.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
-        ids.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
+        ids.setBackground(Ui.roundedStroke(this, android.graphics.Color.TRANSPARENT, Ui.BORDER, 20));
         LinearLayout.LayoutParams ip = matchWrap();
         ip.topMargin = Ui.dp(this, 14);
         content.addView(ids, ip);
@@ -399,15 +403,7 @@ public final class OrderDetailActivity extends Activity {
         }
         priceInput.setHint("Оставьте пустым — " + Math.max(1, setup.itemPrice) + " ₽");
         priceInput.setTextSize(19);
-        priceInput.setTextColor(Ui.TEXT);
-        priceInput.setHintTextColor(Ui.MUTED);
-        priceInput.setPadding(
-                Ui.dp(this, 16),
-                Ui.dp(this, 13),
-                Ui.dp(this, 16),
-                Ui.dp(this, 13)
-        );
-        priceInput.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 18));
+        Ui.styleInput(this, priceInput);
         priceInput.setEnabled(!setup.priceLocked);
         LinearLayout.LayoutParams inputParams = matchWrap();
         inputParams.topMargin = Ui.dp(this, 8);
@@ -486,6 +482,9 @@ public final class OrderDetailActivity extends Activity {
                     loadRelistOffer(order, button, listingPrice, priorityType);
                 }));
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
     }
 
     private void loadRelistOffer(

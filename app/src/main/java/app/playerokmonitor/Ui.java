@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
@@ -17,6 +18,7 @@ import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -48,6 +50,8 @@ final class Ui {
     static int AMBER;
     static int AMBER_BG;
     static int BORDER;
+    static int HERO_START;
+    static int HERO_END;
 
     private Ui() {}
 
@@ -55,24 +59,26 @@ final class Ui {
         boolean dark = (context.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         if (dark) {
-            BG = Color.BLACK;
-            CARD = Color.rgb(28, 28, 30);
-            SURFACE_2 = Color.rgb(43, 43, 46);
+            BG = Color.rgb(10, 12, 17);
+            CARD = Color.rgb(20, 24, 32);
+            SURFACE_2 = Color.rgb(28, 33, 43);
             TEXT = Color.rgb(247, 247, 248);
-            MUTED = Color.rgb(174, 174, 180);
+            MUTED = Color.rgb(171, 177, 190);
             ACCENT = Color.rgb(62, 145, 255);      // One UI primary, dark
-            ACCENT_BG = Color.rgb(18, 48, 82);
+            ACCENT_BG = Color.rgb(22, 48, 82);
             GREEN = Color.rgb(80, 210, 130);
-            GREEN_BG = Color.rgb(20, 62, 39);
+            GREEN_BG = Color.rgb(20, 55, 38);
             RED = Color.rgb(255, 105, 105);
-            RED_BG = Color.rgb(79, 29, 31);
+            RED_BG = Color.rgb(69, 29, 34);
             AMBER = Color.rgb(255, 190, 73);
-            AMBER_BG = Color.rgb(72, 51, 17);
-            BORDER = Color.rgb(57, 57, 61);
+            AMBER_BG = Color.rgb(65, 48, 22);
+            BORDER = Color.rgb(45, 51, 64);
+            HERO_START = Color.rgb(23, 43, 75);
+            HERO_END = Color.rgb(18, 25, 39);
         } else {
-            BG = Color.rgb(247, 247, 247);
+            BG = Color.rgb(246, 247, 250);
             CARD = Color.WHITE;
-            SURFACE_2 = Color.rgb(239, 240, 242);
+            SURFACE_2 = Color.rgb(236, 239, 245);
             TEXT = Color.rgb(37, 37, 37);
             MUTED = Color.rgb(104, 104, 109);
             ACCENT = Color.rgb(0, 114, 222);       // One UI primary, light
@@ -83,7 +89,9 @@ final class Ui {
             RED_BG = Color.rgb(255, 234, 235);
             AMBER = Color.rgb(156, 94, 0);
             AMBER_BG = Color.rgb(255, 245, 218);
-            BORDER = Color.rgb(226, 226, 230);
+            BORDER = Color.rgb(222, 226, 234);
+            HERO_START = Color.rgb(220, 237, 255);
+            HERO_END = Color.rgb(241, 246, 255);
         }
     }
 
@@ -138,6 +146,16 @@ final class Ui {
         return new RippleDrawable(ColorStateList.valueOf(withAlpha(ACCENT, 36)), content, mask);
     }
 
+    static GradientDrawable hero(Context c) {
+        GradientDrawable drawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{HERO_START, HERO_END}
+        );
+        drawable.setCornerRadius(dp(c, 28));
+        drawable.setStroke(dp(c, 1), withAlpha(ACCENT, 56));
+        return drawable;
+    }
+
     static int withAlpha(int color, int alpha) {
         return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
     }
@@ -157,7 +175,8 @@ final class Ui {
         button.setImageResource(drawableRes);
         button.setContentDescription(description);
         button.setTooltipText(description);
-        button.setBackground(ripple(c, CARD, BORDER, 18));
+        button.setBackgroundTintList(null);
+        button.setBackground(ripple(c, Color.TRANSPARENT, Color.TRANSPARENT, 22));
         button.setImageTintList(ColorStateList.valueOf(TEXT));
         int p = dp(c, 13);
         button.setPadding(p, p, p, p);
@@ -171,21 +190,44 @@ final class Ui {
         button.setTextSize(15);
         button.setAllCaps(false);
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        button.setTextColor(primary ? Color.WHITE : TEXT);
-        button.setBackground(ripple(c, primary ? ACCENT : SURFACE_2,
-                primary ? ACCENT : BORDER, 18));
+        button.setTextColor(primary ? ACCENT : TEXT);
+        button.setCompoundDrawableTintList(ColorStateList.valueOf(primary ? ACCENT : TEXT));
+        button.setBackgroundTintList(null);
+        button.setStateListAnimator(null);
+        button.setBackground(ripple(c,
+                primary ? withAlpha(ACCENT, 22) : Color.TRANSPARENT,
+                primary ? withAlpha(ACCENT, 105) : Color.TRANSPARENT,
+                18));
         button.setMinHeight(dp(c, 52));
-        button.setPadding(dp(c, 18), 0, dp(c, 18), 0);
+        button.setPadding(dp(c, 18), dp(c, 8), dp(c, 18), dp(c, 8));
         return button;
     }
 
     static void styleTab(Context c, TextView tab, boolean selected) {
         tab.setTextColor(selected ? ACCENT : MUTED);
         tab.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        tab.setBackground(ripple(c,
-                selected ? ACCENT_BG : SURFACE_2,
-                selected ? withAlpha(ACCENT, 90) : BORDER,
-                18));
+        tab.setBackground(ripple(c, Color.TRANSPARENT, Color.TRANSPARENT, 18));
+        GradientDrawable indicator = rounded(c, selected ? ACCENT : Color.TRANSPARENT, 2);
+        indicator.setSize(dp(c, 24), dp(c, 3));
+        tab.setCompoundDrawablesWithIntrinsicBounds(null, null, null, indicator);
+        tab.setCompoundDrawablePadding(dp(c, 7));
+    }
+
+    static void styleInput(Context c, EditText input) {
+        input.setTextColor(TEXT);
+        input.setHintTextColor(MUTED);
+        input.setBackgroundTintList(null);
+        input.setBackground(ripple(c, Color.TRANSPARENT, BORDER, 18));
+        input.setPadding(dp(c, 16), dp(c, 12), dp(c, 16), dp(c, 12));
+        input.setOnFocusChangeListener((view, focused) -> {
+            if (!focused) return;
+            view.postDelayed(() -> view.requestRectangleOnScreen(
+                    new Rect(0, 0, view.getWidth(), view.getHeight()), true), 180L);
+        });
+    }
+
+    static void elevate(View view, int dp) {
+        if (Build.VERSION.SDK_INT >= 21) view.setElevation(Ui.dp(view.getContext(), dp));
     }
 
     static void haptic(View view) {

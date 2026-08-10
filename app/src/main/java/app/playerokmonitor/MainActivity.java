@@ -11,7 +11,10 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -30,6 +33,10 @@ public final class MainActivity extends Activity {
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private OrderListAdapter adapter;
     private TextView statusChip;
+    private TextView heroTitle;
+    private TextView heroBody;
+    private LinearLayout emptyState;
+    private TextView emptyTitle;
     private TextView emptyText;
     private TextView newOrdersTab;
     private TextView salesTab;
@@ -60,9 +67,9 @@ public final class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.BG);
         int side = Ui.dp(this, Ui.isWide(this) ? 48 : 24);
-        root.setPadding(side, Ui.dp(this, 12), side, Ui.dp(this, 12));
+        root.setPadding(side, Ui.dp(this, 10), side, Ui.dp(this, 12));
         root.setOnApplyWindowInsetsListener((v, insets) -> {
-            int left = side, top = Ui.dp(this, 12), right = side, bottom = Ui.dp(this, 16);
+            int left = side, top = Ui.dp(this, 10), right = side, bottom = Ui.dp(this, 16);
             if (Build.VERSION.SDK_INT >= 30) {
                 Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
                 left += bars.left;
@@ -82,20 +89,22 @@ public final class MainActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(0, Ui.dp(this, 6), 0, Ui.dp(this, 10));
+        header.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
         root.addView(header, matchWrap());
 
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        titleBlock.addView(Ui.text(this, "Playerok Monitor", 34, Ui.TEXT, true));
-        TextView subtitle = Ui.text(this, "Новые заказы, продажи и покупки", 14, Ui.MUTED, false);
-        LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(
+        TextView eyebrow = Ui.text(this, "PLAYEROK", 12, Ui.ACCENT, true);
+        eyebrow.setLetterSpacing(0.12f);
+        titleBlock.addView(eyebrow);
+        TextView screenTitle = Ui.text(this, "Заказы", 34, Ui.TEXT, true);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        subParams.topMargin = Ui.dp(this, 2);
-        titleBlock.addView(subtitle, subParams);
+        titleParams.topMargin = Ui.dp(this, 1);
+        titleBlock.addView(screenTitle, titleParams);
 
         ImageButton settings = Ui.iconButton(this, R.drawable.ic_nav_settings, "Настройки");
         settings.setOnClickListener(v -> {
@@ -104,51 +113,75 @@ public final class MainActivity extends Activity {
         });
         header.addView(settings, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));
 
-        LinearLayout tools = new LinearLayout(this);
-        tools.setOrientation(LinearLayout.HORIZONTAL);
-        tools.setGravity(Gravity.CENTER_VERTICAL);
-        tools.setPadding(Ui.dp(this, 14), Ui.dp(this, 11), Ui.dp(this, 10), Ui.dp(this, 11));
-        tools.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
-        root.addView(tools, matchWrap());
+        LinearLayout hero = new LinearLayout(this);
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setPadding(Ui.dp(this, 20), Ui.dp(this, 16), Ui.dp(this, 12), Ui.dp(this, 18));
+        hero.setBackground(Ui.hero(this));
+        Ui.elevate(hero, 2);
+        LinearLayout.LayoutParams heroParams = matchWrap();
+        heroParams.topMargin = Ui.dp(this, 6);
+        root.addView(hero, heroParams);
+
+        LinearLayout heroTop = new LinearLayout(this);
+        heroTop.setOrientation(LinearLayout.HORIZONTAL);
+        heroTop.setGravity(Gravity.CENTER_VERTICAL);
+        hero.addView(heroTop, matchWrap());
 
         statusChip = Ui.text(this, "", 13, Ui.GREEN, true);
-        statusChip.setGravity(Gravity.CENTER);
-        statusChip.setPadding(Ui.dp(this, 10), Ui.dp(this, 6), Ui.dp(this, 10), Ui.dp(this, 6));
-        tools.addView(statusChip);
-
-        TextView hint = Ui.text(this, "SQLite на VPS", 13, Ui.MUTED, false);
-        LinearLayout.LayoutParams hintParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        hintParams.leftMargin = Ui.dp(this, 10);
-        tools.addView(hint, hintParams);
+        statusChip.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        heroTop.addView(statusChip, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         refreshButton = Ui.iconButton(this, R.drawable.ic_nav_refresh, "Обновить список");
         refreshButton.setOnClickListener(v -> {
             Ui.haptic(v);
             syncOrders(true);
         });
-        tools.addView(refreshButton, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 48)));
+        heroTop.addView(refreshButton, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+
+        heroTitle = Ui.text(this, "Всё под контролем", 24, Ui.TEXT, true);
+        LinearLayout.LayoutParams heroTitleParams = matchWrap();
+        heroTitleParams.topMargin = Ui.dp(this, 8);
+        hero.addView(heroTitle, heroTitleParams);
+
+        heroBody = Ui.text(this, "Нет заказов, ожидающих выполнения", 14, Ui.MUTED, false);
+        LinearLayout.LayoutParams heroBodyParams = matchWrap();
+        heroBodyParams.topMargin = Ui.dp(this, 4);
+        hero.addView(heroBody, heroBodyParams);
+
+        LinearLayout sectionHead = new LinearLayout(this);
+        sectionHead.setOrientation(LinearLayout.HORIZONTAL);
+        sectionHead.setGravity(Gravity.BOTTOM);
+        LinearLayout.LayoutParams sectionParams = matchWrap();
+        sectionParams.topMargin = Ui.dp(this, 22);
+        root.addView(sectionHead, sectionParams);
+        sectionHead.addView(Ui.text(this, "Сделки", 21, Ui.TEXT, true),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView cacheHint = Ui.text(this, "данные с VPS", 12, Ui.MUTED, false);
+        cacheHint.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        sectionHead.addView(cacheHint);
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams tabsParams = matchWrap();
-        tabsParams.topMargin = Ui.dp(this, 20);
+        tabsParams.topMargin = Ui.dp(this, 4);
         root.addView(tabs, tabsParams);
 
         newOrdersTab = makeTab("Новые заказы");
         newOrdersTab.setOnClickListener(v -> selectDirection(FILTER_NEW_ORDERS));
-        tabs.addView(newOrdersTab, new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f));
+        tabs.addView(newOrdersTab, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         salesTab = makeTab("Продажи");
         salesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_SALE));
         LinearLayout.LayoutParams salesParams = new LinearLayout.LayoutParams(
-                0, Ui.dp(this, 50), 1f);
-        salesParams.leftMargin = Ui.dp(this, 6);
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         tabs.addView(salesTab, salesParams);
 
         purchasesTab = makeTab("Покупки");
         purchasesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_PURCHASE));
-        LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f);
-        purchaseParams.leftMargin = Ui.dp(this, 6);
+        LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         tabs.addView(purchasesTab, purchaseParams);
 
         classificationHint = Ui.text(this, "", 12, Ui.AMBER, false);
@@ -156,10 +189,10 @@ public final class MainActivity extends Activity {
         classificationHint.setVisibility(View.GONE);
         root.addView(classificationHint, matchWrap());
 
-        emptyText = Ui.text(this, "", 15, Ui.MUTED, false);
-        emptyText.setGravity(Gravity.CENTER);
-        emptyText.setPadding(Ui.dp(this, 20), Ui.dp(this, 50), Ui.dp(this, 20), Ui.dp(this, 20));
-        root.addView(emptyText, matchWrap());
+        FrameLayout contentArea = new FrameLayout(this);
+        LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+        root.addView(contentArea, contentParams);
 
         ListView list = new ListView(this);
         list.setDivider(null);
@@ -168,6 +201,8 @@ public final class MainActivity extends Activity {
         list.setBackgroundColor(Ui.BG);
         list.setOverScrollMode(View.OVER_SCROLL_NEVER);
         list.setVerticalScrollBarEnabled(false);
+        list.setClipToPadding(false);
+        list.setPadding(0, Ui.dp(this, 4), 0, Ui.dp(this, 20));
         adapter = new OrderListAdapter(this);
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, position, id) -> {
@@ -176,10 +211,49 @@ public final class MainActivity extends Activity {
                     .putExtra(OrderDetailActivity.EXTRA_DEAL_ID, order.dealId);
             startActivity(detail);
         });
-        root.addView(list, new LinearLayout.LayoutParams(
+        contentArea.addView(list, new FrameLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f));
+                LinearLayout.LayoutParams.MATCH_PARENT));
+
+        emptyState = new LinearLayout(this);
+        emptyState.setOrientation(LinearLayout.VERTICAL);
+        emptyState.setGravity(Gravity.CENTER);
+        emptyState.setPadding(Ui.dp(this, 20), Ui.dp(this, 36), Ui.dp(this, 20), Ui.dp(this, 24));
+
+        ImageView emptyIcon = new ImageView(this);
+        emptyIcon.setImageResource(R.drawable.ic_empty_check);
+        emptyIcon.setImageTintList(android.content.res.ColorStateList.valueOf(Ui.ACCENT));
+        emptyIcon.setPadding(Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18));
+        emptyIcon.setBackground(Ui.rounded(this, Ui.ACCENT_BG, 32));
+        emptyState.addView(emptyIcon, new LinearLayout.LayoutParams(Ui.dp(this, 64), Ui.dp(this, 64)));
+
+        emptyTitle = Ui.text(this, "Пока всё спокойно", 20, Ui.TEXT, true);
+        emptyTitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams emptyTitleParams = matchWrap();
+        emptyTitleParams.topMargin = Ui.dp(this, 16);
+        emptyState.addView(emptyTitle, emptyTitleParams);
+
+        emptyText = Ui.text(this, "", 14, Ui.MUTED, false);
+        emptyText.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams emptyBodyParams = matchWrap();
+        emptyBodyParams.topMargin = Ui.dp(this, 5);
+        emptyState.addView(emptyText, emptyBodyParams);
+
+        Button emptyRefresh = Ui.button(this, "Обновить", false);
+        emptyRefresh.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_nav_refresh, 0, 0, 0);
+        emptyRefresh.setCompoundDrawablePadding(Ui.dp(this, 8));
+        emptyRefresh.setOnClickListener(v -> { Ui.haptic(v); syncOrders(true); });
+        LinearLayout.LayoutParams emptyRefreshParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        emptyRefreshParams.topMargin = Ui.dp(this, 12);
+        emptyState.addView(emptyRefresh, emptyRefreshParams);
+
+        FrameLayout.LayoutParams emptyParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER);
+        contentArea.addView(emptyState, emptyParams);
 
         updateTabStyles();
         Ui.reveal(root);
@@ -189,7 +263,10 @@ public final class MainActivity extends Activity {
     private TextView makeTab(String text) {
         TextView tab = Ui.text(this, text, 14, Ui.MUTED, true);
         tab.setGravity(Gravity.CENTER);
-        tab.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), 0);
+        tab.setMinHeight(Ui.dp(this, 56));
+        tab.setMaxLines(2);
+        tab.setHorizontallyScrolling(false);
+        tab.setPadding(Ui.dp(this, 5), Ui.dp(this, 9), Ui.dp(this, 5), Ui.dp(this, 7));
         return tab;
     }
 
@@ -225,13 +302,17 @@ public final class MainActivity extends Activity {
         adapter.setOrders(visible);
         boolean empty = visible.isEmpty();
         if (FILTER_NEW_ORDERS.equals(selectedDirection)) {
+            emptyTitle.setText("Пока всё спокойно");
             emptyText.setText("Новых заказов нет — всё выполнено");
         } else if (OrderData.DIRECTION_SALE.equals(selectedDirection)) {
-            emptyText.setText("Оплаченных продаж пока нет");
+            emptyTitle.setText("Продаж пока нет");
+            emptyText.setText("Новые оплаченные продажи появятся здесь");
         } else {
-            emptyText.setText("Покупок пока нет");
+            emptyTitle.setText("Покупок пока нет");
+            emptyText.setText("Ваши оплаченные покупки появятся здесь");
         }
-        emptyText.setVisibility(empty ? View.VISIBLE : View.GONE);
+        emptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        updateHeroSummary();
 
         int unclassified = OrdersRepository.countUnclassified(allOrders);
         if (unclassified > 0) {
@@ -248,8 +329,9 @@ public final class MainActivity extends Activity {
         if (validation != null) {
             if (manual) toast("Сначала укажите Pairing URL в настройках");
             if (allOrders.isEmpty()) {
-                emptyText.setText("Подключите VPS в настройках");
-                emptyText.setVisibility(View.VISIBLE);
+                emptyTitle.setText("Нужно подключение");
+                emptyText.setText("Добавьте Pairing URL в настройках");
+                emptyState.setVisibility(View.VISIBLE);
             }
             return;
         }
@@ -281,13 +363,30 @@ public final class MainActivity extends Activity {
     private void refreshMonitorStatus() {
         if (statusChip == null) return;
         if (Prefs.isEnabled(this)) {
-            statusChip.setText("МОНИТОРИНГ");
+            statusChip.setText("●  Мониторинг активен");
             statusChip.setTextColor(Ui.GREEN);
-            statusChip.setBackground(Ui.rounded(this, Ui.GREEN_BG, 10));
         } else {
-            statusChip.setText("ВЫКЛЮЧЕН");
+            statusChip.setText("●  Мониторинг выключен");
             statusChip.setTextColor(Ui.AMBER);
-            statusChip.setBackground(Ui.rounded(this, Ui.AMBER_BG, 10));
+        }
+        statusChip.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        updateHeroSummary();
+    }
+
+    private void updateHeroSummary() {
+        if (heroTitle == null || heroBody == null) return;
+        if (!Prefs.isEnabled(this)) {
+            heroTitle.setText("Мониторинг на паузе");
+            heroBody.setText("Включите его в настройках, чтобы получать новые события");
+            return;
+        }
+        int newCount = OrdersRepository.filterNewOrders(allOrders).size();
+        if (newCount > 0) {
+            heroTitle.setText("Новых заказов: " + newCount);
+            heroBody.setText("Откройте заказ и подтвердите выполнение на Playerok");
+        } else {
+            heroTitle.setText("Всё под контролем");
+            heroBody.setText("Нет заказов, ожидающих выполнения");
         }
     }
 

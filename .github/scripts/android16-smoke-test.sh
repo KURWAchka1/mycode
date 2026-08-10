@@ -40,6 +40,22 @@ fi
 adb shell uiautomator dump /sdcard/playerok-window.xml >/dev/null
 WINDOW_XML="$(adb shell cat /sdcard/playerok-window.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$WINDOW_XML"
+grep -F "Заказы" <<<"$WINDOW_XML"
+adb pull /sdcard/playerok-window.xml android16-main-default.xml >/dev/null
+adb exec-out screencap -p > android16-main-default.png
+
+# Samsung's accessibility guidance requires content to survive substantially
+# enlarged text. Relaunch at 200% and assert that the complete tab label is
+# still present; its WRAP_CONTENT height must grow instead of clipping.
+adb shell settings put system font_scale 2.0
+adb shell am force-stop "$PACKAGE"
+adb shell am start -W -n "$ACTIVITY" >/dev/null
+sleep 3
+adb shell uiautomator dump /sdcard/playerok-window-large-text.xml >/dev/null
+LARGE_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text.xml | tr -d '\r')"
+grep -F "Новые заказы" <<<"$LARGE_WINDOW_XML"
+adb pull /sdcard/playerok-window-large-text.xml android16-main-large-text.xml >/dev/null
+adb exec-out screencap -p > android16-main-large-text.png
 
 if adb logcat -d -b crash | grep -F "$PACKAGE"; then
     echo "ERROR: application crash detected" >&2
