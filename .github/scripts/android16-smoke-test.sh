@@ -40,7 +40,7 @@ fi
 adb shell uiautomator dump /sdcard/playerok-window.xml >/dev/null
 WINDOW_XML="$(adb shell cat /sdcard/playerok-window.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$WINDOW_XML"
-grep -F "Заказы" <<<"$WINDOW_XML"
+grep -F "Playerok Заказы" <<<"$WINDOW_XML"
 adb pull /sdcard/playerok-window.xml android16-main-default.xml >/dev/null
 adb exec-out screencap -p > android16-main-default.png
 
@@ -55,18 +55,38 @@ adb shell uiautomator dump /sdcard/playerok-window-large-text.xml >/dev/null
 LARGE_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$LARGE_WINDOW_XML"
 grep -F "Продажи" <<<"$LARGE_WINDOW_XML"
+grep -F "Playerok Заказы" <<<"$LARGE_WINDOW_XML"
 adb pull /sdcard/playerok-window-large-text.xml android16-main-large-text.xml >/dev/null
 adb exec-out screencap -p > android16-main-large-text.png
 
 # The third label intentionally moves off-screen instead of being squeezed.
 # Swipe the adaptive tab row and confirm that it remains reachable in full.
-adb shell input swipe 900 1500 180 1500 450
+TAB_Y="$(python3 - <<'PY'
+import re
+import xml.etree.ElementTree as ET
+
+root = ET.parse("android16-main-large-text.xml")
+tabs = next(node for node in root.iter("node")
+            if node.attrib.get("class") == "android.widget.HorizontalScrollView")
+left, top, right, bottom = map(int, re.findall(r"\d+", tabs.attrib["bounds"]))
+print((top + bottom) // 2)
+PY
+)"
+adb shell input swipe 900 "$TAB_Y" 180 "$TAB_Y" 450
 sleep 1
 adb shell uiautomator dump /sdcard/playerok-window-large-text-scrolled.xml >/dev/null
 SCROLLED_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text-scrolled.xml | tr -d '\r')"
 grep -F "Покупки" <<<"$SCROLLED_WINDOW_XML"
 adb pull /sdcard/playerok-window-large-text-scrolled.xml android16-main-large-text-scrolled.xml >/dev/null
 adb exec-out screencap -p > android16-main-large-text-scrolled.png
+
+# Vertical content movement must never take the compact app bar or tabs away.
+adb shell input swipe 540 2100 540 1100 450
+sleep 1
+adb shell uiautomator dump /sdcard/playerok-window-pinned.xml >/dev/null
+PINNED_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-pinned.xml | tr -d '\r')"
+grep -F "Playerok Заказы" <<<"$PINNED_WINDOW_XML"
+grep -F "Продажи" <<<"$PINNED_WINDOW_XML"
 
 # The user's Galaxy runs the dark palette. Exercise the night resources and
 # transparent controls as a separate launch instead of trusting theme XML.
@@ -78,6 +98,7 @@ sleep 3
 adb shell uiautomator dump /sdcard/playerok-window-dark.xml >/dev/null
 DARK_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-dark.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$DARK_WINDOW_XML"
+grep -F "Playerok Заказы" <<<"$DARK_WINDOW_XML"
 adb pull /sdcard/playerok-window-dark.xml android16-main-dark.xml >/dev/null
 adb exec-out screencap -p > android16-main-dark.png
 

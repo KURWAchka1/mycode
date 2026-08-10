@@ -1,6 +1,14 @@
-# Playerok Monitor 2.3.10 · One UI Workspace
+# Playerok Monitor 2.3.11 · Compact Order Workspace
 
-- The main screen is rebuilt around Samsung's viewing/interaction split: a compact title, one calm live-status focus block, clear deal navigation and a useful empty state.
+- Removed the oversized monitoring focus block and redundant “Сделки / данные с VPS” heading from the working list screen.
+- The condensed app bar now keeps “Playerok Заказы”, refresh and settings on one transparent row.
+- Tabs sit directly below the title and remain pinned with it while only the order list scrolls.
+- A restrained divider separates fixed navigation from content without another card or dark button background.
+- Large-text tabs remain horizontally scrollable, and CI now locates the tab row dynamically before testing the swipe.
+
+## Included from 2.3.10
+
+- The main screen gained clearer deal navigation, redesigned order cards and a useful empty state.
 - Every icon and secondary action now uses a transparent background with a restrained One UI ripple. Primary actions use only a translucent blue wash and outline instead of a black button slab.
 - “Новые заказы” no longer has a hard-coded height. Tabs expand with the system font, keep the full label visible and are smoke-tested at 200% text size.
 - Order cards now prioritize status, product name and payout without squeezing the title. A slim semantic rail distinguishes new, fulfilled, completed, problem and refund states.
