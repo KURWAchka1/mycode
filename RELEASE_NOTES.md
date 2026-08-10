@@ -1,4 +1,9 @@
-# Playerok Monitor 2.3.11 · Compact Order Workspace
+# Playerok Monitor 2.3.12 · Aligned Tabs
+
+- Disabled baseline alignment in the horizontal tab row and bottom-aligned every tab container.
+- The selected indicator now stays on one shared horizontal line whether a tab label uses one or two lines.
+
+## Included from 2.3.11
 
 - Removed the oversized monitoring focus block and redundant “Сделки / данные с VPS” heading from the working list screen.
 - The condensed app bar now keeps “Playerok Заказы”, refresh and settings on one transparent row.

@@ -131,6 +131,8 @@ public final class MainActivity extends Activity {
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
+        tabs.setBaselineAligned(false);
+        tabs.setGravity(Gravity.BOTTOM);
         tabScroll.addView(tabs, new HorizontalScrollView.LayoutParams(
                 largeText
                         ? HorizontalScrollView.LayoutParams.WRAP_CONTENT

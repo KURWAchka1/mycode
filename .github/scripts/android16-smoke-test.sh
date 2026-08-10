@@ -44,6 +44,31 @@ grep -F "Playerok Заказы" <<<"$WINDOW_XML"
 adb pull /sdcard/playerok-window.xml android16-main-default.xml >/dev/null
 adb exec-out screencap -p > android16-main-default.png
 
+# At an intermediate font scale the longest label can wrap while the other
+# two remain on one line. All three tab containers must still share one bottom
+# coordinate so the selected indicator never jumps vertically.
+adb shell settings put system font_scale 1.3
+adb shell am force-stop "$PACKAGE"
+adb shell am start -W -n "$ACTIVITY" >/dev/null
+sleep 3
+adb shell uiautomator dump /sdcard/playerok-window-wrapped-tabs.xml >/dev/null
+adb pull /sdcard/playerok-window-wrapped-tabs.xml android16-main-wrapped-tabs.xml >/dev/null
+python3 - <<'PY'
+import re
+import xml.etree.ElementTree as ET
+
+labels = {"Новые заказы", "Продажи", "Покупки"}
+nodes = [node for node in ET.parse("android16-main-wrapped-tabs.xml").iter("node")
+         if node.attrib.get("text") in labels]
+if len(nodes) != 3:
+    raise SystemExit(f"expected 3 tabs, found {len(nodes)}")
+bottoms = [int(re.findall(r"\d+", node.attrib["bounds"])[3]) for node in nodes]
+if len(set(bottoms)) != 1:
+    raise SystemExit(f"tab bottoms are not aligned: {bottoms}")
+print(f"Tab indicators share bottom={bottoms[0]}")
+PY
+adb exec-out screencap -p > android16-main-wrapped-tabs.png
+
 # Samsung's accessibility guidance requires content to survive substantially
 # enlarged text. Relaunch at 200% and assert that the complete tab label is
 # still present; its WRAP_CONTENT height must grow instead of clipping.
