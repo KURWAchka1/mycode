@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private readonly WindowsNotifier _notifier = new();
     private readonly ObservableCollection<Order> _visibleOrders = [];
     private readonly List<EmojiRichTextBox> _messageBoxes = [];
+    private readonly List<TextBlock> _messagePlaceholders = [];
     private DesktopState _state = new();
     private MonitorCoordinator? _monitor;
     private TrayService? _tray;
@@ -119,14 +120,29 @@ public partial class MainWindow : Window
             new Order { DealId = "preview-buy", Direction = "IN", ItemName = "✨ Подписка на месяц", Price = "399", Counterparty = "seller_pro", PaidAt = now.AddDays(-2).ToString("O"), SellerFulfilled = true }
         ]);
         SelectFilter("new");
-        if (section.Equals("settings", StringComparison.OrdinalIgnoreCase) || section.Equals("sleep", StringComparison.OrdinalIgnoreCase))
+        if (section.Equals("settings", StringComparison.OrdinalIgnoreCase) ||
+            section.Equals("sleep", StringComparison.OrdinalIgnoreCase) ||
+            section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
         {
             SleepStartBox.SelectedItem = "00:00";
             SleepEndBox.SelectedItem = "08:00";
             SleepTimezoneBox.SelectedItem = "Europe/Moscow";
-            FulfillmentMessageBox.Text = "✅ Заказ выполнен. Подтвердите получение, пожалуйста.";
-            SleepMessageBox.Text = "🌙 Возможно, продавец сейчас спит. Ответит после пробуждения.";
-            if (_messageBoxes.Count == 0) AddMessageRow("Спасибо за заказ! 🎉 Ожидайте сообщение продавца.");
+            if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
+            {
+                _replySettings = new AutoReplySettings();
+                FulfillmentMessageBox.Text = "";
+                SleepMessageBox.Text = "";
+                _messageBoxes.Clear();
+                _messagePlaceholders.Clear();
+                MessagesPanel.Children.Clear();
+                AddMessageRow("");
+            }
+            else
+            {
+                FulfillmentMessageBox.Text = "✅ Заказ выполнен. Подтвердите получение, пожалуйста.";
+                SleepMessageBox.Text = "🌙 Возможно, продавец сейчас спит. Ответит после пробуждения.";
+                if (_messageBoxes.Count == 0) AddMessageRow("Спасибо за заказ! 🎉 Ожидайте сообщение продавца.");
+            }
         }
         if (section.Equals("command", StringComparison.OrdinalIgnoreCase))
         {
@@ -142,6 +158,11 @@ public partial class MainWindow : Window
         {
             SelectSection("settings");
             Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(640), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        else if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectSection("settings");
+            Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(300), System.Windows.Threading.DispatcherPriority.Loaded);
         }
         else if (section.Equals("review", StringComparison.OrdinalIgnoreCase))
         {
@@ -345,6 +366,7 @@ public partial class MainWindow : Window
             SleepMessageBox.Text = _replySettings.SleepMessage;
             SleepHint.Text = $"По умолчанию: {_replySettings.DefaultSleepMessage}";
             _messageBoxes.Clear();
+            _messagePlaceholders.Clear();
             MessagesPanel.Children.Clear();
             IEnumerable<string> messages = _replySettings.Messages.Count == 0 ? new[] { "" } : _replySettings.Messages;
             foreach (var message in messages) AddMessageRow(message);
@@ -360,6 +382,18 @@ public partial class MainWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var box = new EmojiRichTextBox { Text = text, AcceptsReturn = true, MinHeight = 58 };
+        var inputHost = new Grid();
+        var placeholder = new TextBlock
+        {
+            Foreground = (Brush)FindResource("SubtleBrush"),
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(14, 10, 12, 10),
+            VerticalAlignment = VerticalAlignment.Top,
+            IsHitTestVisible = false
+        };
+        inputHost.Children.Add(box);
+        inputHost.Children.Add(placeholder);
         var remove = new Button
         {
             Content = new TextBlock { Text = "\uE74D", FontSize = 16, Style = (Style)FindResource("FluentIcon") },
@@ -370,15 +404,40 @@ public partial class MainWindow : Window
             ToolTip = "Удалить сообщение",
             Style = (Style)FindResource("IconButton")
         };
-        remove.Click += (_, _) => { _messageBoxes.Remove(box); MessagesPanel.Children.Remove(grid); if (_messageBoxes.Count == 0) AddMessageRow(""); };
-        grid.Children.Add(box);
+        remove.Click += (_, _) =>
+        {
+            var index = _messageBoxes.IndexOf(box);
+            if (index >= 0)
+            {
+                _messageBoxes.RemoveAt(index);
+                _messagePlaceholders.RemoveAt(index);
+            }
+            MessagesPanel.Children.Remove(grid);
+            if (_messageBoxes.Count == 0) AddMessageRow("");
+            RefreshPaymentMessagePlaceholders();
+        };
+        grid.Children.Add(inputHost);
         Grid.SetColumn(remove, 1);
         grid.Children.Add(remove);
         MessagesPanel.Children.Add(grid);
         _messageBoxes.Add(box);
-        if (_replySettings is not null && _messageBoxes.Count == 1)
+        _messagePlaceholders.Add(placeholder);
+        box.TextChanged += (_, _) => RefreshPaymentMessagePlaceholders();
+        RefreshPaymentMessagePlaceholders();
+    }
+
+    private void RefreshPaymentMessagePlaceholders()
+    {
+        var defaultMessage = _replySettings?.DefaultMessage ?? new AutoReplySettings().DefaultMessage;
+        for (var index = 0; index < _messageBoxes.Count; index++)
         {
-            grid.ToolTip = $"Если оставить пустым, сервер применит: {_replySettings.DefaultMessage}";
+            var placeholder = _messagePlaceholders[index];
+            placeholder.Text = index == 0
+                ? $"По умолчанию:\n{defaultMessage}"
+                : "Дополнительное сообщение после оплаты";
+            placeholder.Visibility = string.IsNullOrWhiteSpace(_messageBoxes[index].Text)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
     }
 

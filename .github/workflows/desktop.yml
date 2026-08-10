@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  DESKTOP_VERSION: 1.1.5
-  DESKTOP_TAG: desktop-v1.1.5
+  DESKTOP_VERSION: 1.1.6
+  DESKTOP_TAG: desktop-v1.1.6
 
 jobs:
   build-test-package:
@@ -58,7 +58,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force ./desktop/ui-smoke | Out-Null
-          foreach ($section in @('search', 'command', 'review')) {
+          foreach ($section in @('search', 'command', 'review', 'defaults')) {
             $output = (Resolve-Path ./desktop/ui-smoke).Path + "\$section.png"
             $arguments = @('--render-preview', "`"$output`"", '--preview-section', $section, '--preview-width', '1280', '--preview-height', '820')
             $process = Start-Process -FilePath ./desktop/publish/PlayerokMonitor.Desktop.exe -ArgumentList $arguments -Wait -PassThru

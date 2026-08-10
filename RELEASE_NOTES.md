@@ -1,4 +1,10 @@
-# Playerok Monitor 2.3.14 · Reviews
+# Playerok Monitor 2.3.15 · Swipe Tabs & Defaults
+
+- Swipe left and right across the order list to switch between New orders, Sales and Purchases without interfering with vertical scrolling or order taps.
+- Empty automatic-message fields now show the actual default text directly inside the editor instead of leaving the field visually blank.
+- Android 16 smoke tests verify both swipe directions and the selected tab state.
+
+## Included from 2.3.14
 
 - Completed orders now show the Playerok rating as a compact five-star row at the top of every order card and detail screen.
 - The VPS discovers new testimonials with a low-frequency paginated check, then loads each review detail once. This avoids per-order polling and preserves VPS capacity.

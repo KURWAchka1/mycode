@@ -204,6 +204,7 @@ final class Ui {
     }
 
     static void styleTab(Context c, TextView tab, boolean selected) {
+        tab.setSelected(selected);
         tab.setTextColor(selected ? ACCENT : MUTED);
         tab.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         tab.setBackground(ripple(c, Color.TRANSPARENT, Color.TRANSPARENT, 18));

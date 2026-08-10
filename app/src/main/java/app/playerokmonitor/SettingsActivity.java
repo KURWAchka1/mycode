@@ -238,7 +238,7 @@ public final class SettingsActivity extends Activity {
 
         fulfillmentReplyInput = new EditText(this);
         fulfillmentReplyInput.setText("");
-        fulfillmentReplyInput.setHint(AutoReplyConfig.DEFAULT_FULFILLMENT_MESSAGE);
+        fulfillmentReplyInput.setHint("По умолчанию:\n" + AutoReplyConfig.DEFAULT_FULFILLMENT_MESSAGE);
         fulfillmentReplyInput.setTextColor(Ui.TEXT);
         fulfillmentReplyInput.setHintTextColor(Ui.MUTED);
         fulfillmentReplyInput.setTextSize(15);
@@ -309,7 +309,7 @@ public final class SettingsActivity extends Activity {
 
         sleepReplyInput = new EditText(this);
         sleepReplyInput.setText("");
-        sleepReplyInput.setHint(AutoReplyConfig.DEFAULT_SLEEP_MESSAGE);
+        sleepReplyInput.setHint("По умолчанию:\n" + AutoReplyConfig.DEFAULT_SLEEP_MESSAGE);
         sleepReplyInput.setTextColor(Ui.TEXT);
         sleepReplyInput.setHintTextColor(Ui.MUTED);
         sleepReplyInput.setTextSize(15);
@@ -451,8 +451,9 @@ public final class SettingsActivity extends Activity {
     private void refreshReplyHints() {
         for (int index = 0; index < replyInputs.size(); index++) {
             replyInputs.get(index).setHint(index == 0
-                    ? replyDefaultMessage
+                    ? "По умолчанию:\n" + replyDefaultMessage
                     : "Дополнительное сообщение после оплаты");
+            replyInputs.get(index).setMinLines(index == 0 ? 3 : 2);
         }
     }
 
@@ -557,13 +558,13 @@ public final class SettingsActivity extends Activity {
         replyDisabledToggle.setChecked(!config.enabled);
         showReplyMessages(config.messages);
         fulfillmentReplyInput.setText(config.fulfillmentMessage);
-        fulfillmentReplyInput.setHint(config.defaultFulfillmentMessage);
+        fulfillmentReplyInput.setHint("По умолчанию:\n" + config.defaultFulfillmentMessage);
         sleepStart = config.sleepStart;
         sleepEnd = config.sleepEnd;
         sleepTimezone = config.sleepTimezone;
         sleepReplyToggle.setChecked(config.sleepEnabled);
         sleepReplyInput.setText(config.sleepMessage);
-        sleepReplyInput.setHint(config.defaultSleepMessage);
+        sleepReplyInput.setHint("По умолчанию:\n" + config.defaultSleepMessage);
         sleepTimezoneText.setText("Часовой пояс: " + sleepTimezone);
         refreshSleepTimeButtons();
         updateSleepControls();

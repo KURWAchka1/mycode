@@ -44,6 +44,34 @@ grep -F "Playerok Заказы" <<<"$WINDOW_XML"
 adb pull /sdcard/playerok-window.xml android16-main-default.xml >/dev/null
 adb exec-out screencap -p > android16-main-default.png
 
+# Horizontal gestures on the content area switch only adjacent tabs. Verify
+# both directions while the ListView/empty ScrollView keep their normal touch
+# handling for vertical scrolling and item clicks.
+adb shell input swipe 900 1100 180 1100 420
+sleep 1
+adb shell uiautomator dump /sdcard/playerok-window-swipe-sales.xml >/dev/null
+adb pull /sdcard/playerok-window-swipe-sales.xml android16-main-swipe-sales.xml >/dev/null
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+
+node = next(node for node in ET.parse("android16-main-swipe-sales.xml").iter("node")
+            if node.attrib.get("text") == "Продажи")
+if node.attrib.get("selected") != "true":
+    raise SystemExit("left swipe did not select Продажи")
+PY
+adb shell input swipe 180 1100 900 1100 420
+sleep 1
+adb shell uiautomator dump /sdcard/playerok-window-swipe-new.xml >/dev/null
+adb pull /sdcard/playerok-window-swipe-new.xml android16-main-swipe-new.xml >/dev/null
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+
+node = next(node for node in ET.parse("android16-main-swipe-new.xml").iter("node")
+            if node.attrib.get("text") == "Новые заказы")
+if node.attrib.get("selected") != "true":
+    raise SystemExit("right swipe did not return to Новые заказы")
+PY
+
 # At an intermediate font scale the longest label can wrap while the other
 # two remain on one line. All three tab containers must still share one bottom
 # coordinate so the selected indicator never jumps vertically.
