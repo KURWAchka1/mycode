@@ -6,3 +6,10 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+.tools/
+desktop/**/bin/
+desktop/**/obj/
+desktop/publish/
+desktop/Releases/
+desktop/assets/app.ico
+desktop/preview*.png

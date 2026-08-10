@@ -1,5 +1,7 @@
 # Playerok Monitor for Android 16
 
+Android-приложение и полноценный Windows 11-клиент работают с одним безопасным VPS API. Desktop-версия находится в [`desktop/`](desktop/README.md), содержит локальную статистику и выпускается обновляемым `Setup.exe` через отдельный GitHub Actions workflow.
+
 Android client for the Playerok Monitor VPS service.
 
 - `compileSdk 36`, `targetSdk 36`, `minSdk 26`
