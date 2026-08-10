@@ -144,7 +144,12 @@
                                     <Button x:Name="AllTab" Style="{StaticResource TabButton}" Content="Все" Click="AllTab_Click"/>
                                 </StackPanel>
                                 <Grid Grid.Column="2" x:Name="SearchContainer" Width="240" VerticalAlignment="Center">
-                                    <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" Padding="34,7,10,7" ToolTip="Поиск по товару, пользователю или номеру"/>
+                                    <TextBox x:Name="SearchBox"
+                                             TextChanged="SearchBox_TextChanged"
+                                             GotKeyboardFocus="SearchBox_FocusChanged"
+                                             LostKeyboardFocus="SearchBox_FocusChanged"
+                                             Padding="34,7,10,7"
+                                             ToolTip="Поиск по товару, пользователю или номеру"/>
                                     <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE721;" FontSize="16" Foreground="{StaticResource SubtleBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
                                     <TextBlock x:Name="SearchHint" Text="Поиск заказов" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="35,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                                 </Grid>
@@ -344,7 +349,7 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="Playerok Monitor 1.1.2 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
+                            <TextBlock Text="Playerok Monitor 1.1.3 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -358,7 +363,12 @@
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <Grid>
-                        <TextBox x:Name="CommandSearchBox" Padding="36,8,34,8" TextChanged="CommandSearchBox_TextChanged" KeyDown="CommandSearchBox_KeyDown"/>
+                        <TextBox x:Name="CommandSearchBox"
+                                 Padding="36,8,34,8"
+                                 TextChanged="CommandSearchBox_TextChanged"
+                                 GotKeyboardFocus="CommandSearchBox_FocusChanged"
+                                 LostKeyboardFocus="CommandSearchBox_FocusChanged"
+                                 KeyDown="CommandSearchBox_KeyDown"/>
                         <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE721;" FontSize="16" Foreground="{StaticResource MutedBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
                         <TextBlock x:Name="CommandSearchHint" Text="Команда или раздел" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                         <Button Style="{StaticResource SubtleButton}" Content="Esc" FontSize="10" Foreground="{StaticResource MutedBrush}" Padding="5,2" MinHeight="20" HorizontalAlignment="Right" Margin="0,0,8,0" Click="CloseCommandPaletteButton_Click"/>

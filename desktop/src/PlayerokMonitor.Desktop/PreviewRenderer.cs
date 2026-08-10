@@ -10,12 +10,14 @@ internal static class PreviewRenderer
 {
     public static void Render(string destination, string section, double width = 1280, double height = 820)
     {
+        var maximize = section.Equals("maximized", StringComparison.OrdinalIgnoreCase);
         var window = new MainWindow(true) { Width = width, Height = height, WindowStartupLocation = WindowStartupLocation.Manual, Left = -3000, Top = -3000 };
         window.Show();
-        window.LoadPreviewData(section);
-        window.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);
-        window.Measure(new System.Windows.Size(window.Width, window.Height));
-        window.Arrange(new System.Windows.Rect(0, 0, window.Width, window.Height));
+        window.LoadPreviewData(maximize ? "orders" : section);
+        if (maximize) window.WindowState = WindowState.Maximized;
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        window.Measure(new System.Windows.Size(window.ActualWidth, window.ActualHeight));
+        window.Arrange(new System.Windows.Rect(0, 0, window.ActualWidth, window.ActualHeight));
         window.UpdateLayout();
         var dpi = VisualTreeHelper.GetDpi(window);
         var bitmap = new RenderTargetBitmap((int)(window.ActualWidth * dpi.DpiScaleX), (int)(window.ActualHeight * dpi.DpiScaleY), dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);

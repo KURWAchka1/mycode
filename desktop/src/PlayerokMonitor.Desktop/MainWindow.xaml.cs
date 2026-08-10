@@ -14,6 +14,7 @@ using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
 using EmojiRichTextBox = Emoji.Wpf.RichTextBox;
 using EmojiTextBlock = Emoji.Wpf.TextBlock;
 
@@ -55,6 +56,7 @@ public partial class MainWindow : Window
         if (!previewMode) Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
         StateChanged += (_, _) => UpdateMaximizeGlyph();
+        WindowWorkArea.Attach(this);
         ConfigureTimeZones();
         ApplyAdaptiveLayout(Width);
     }
@@ -123,6 +125,11 @@ public partial class MainWindow : Window
         {
             SelectSection("orders");
             OpenCommandPalette();
+        }
+        else if (section.Equals("search", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectSection("orders");
+            Dispatcher.BeginInvoke(() => SearchBox.Focus(), System.Windows.Threading.DispatcherPriority.Input);
         }
         else if (section.Equals("sleep", StringComparison.OrdinalIgnoreCase))
         {
@@ -552,7 +559,7 @@ public partial class MainWindow : Window
                 || command.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
         CommandList.ItemsSource = matches;
         CommandList.SelectedIndex = matches.Count > 0 ? 0 : -1;
-        CommandSearchHint.Visibility = string.IsNullOrEmpty(CommandSearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+        UpdateInputHint(CommandSearchBox, CommandSearchHint);
     }
 
     private void ExecuteCommand(CommandEntry? command)
@@ -609,6 +616,7 @@ public partial class MainWindow : Window
     private void CommandPaletteButton_Click(object sender, RoutedEventArgs e) => OpenCommandPalette();
     private void CloseCommandPaletteButton_Click(object sender, RoutedEventArgs e) => CloseCommandPalette();
     private void CommandSearchBox_TextChanged(object sender, TextChangedEventArgs e) => FilterCommands();
+    private void CommandSearchBox_FocusChanged(object sender, KeyboardFocusChangedEventArgs e) => UpdateInputHint(CommandSearchBox, CommandSearchHint);
     private void CommandSearchBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Down && CommandList.Items.Count > 0) { CommandList.Focus(); CommandList.SelectedIndex = Math.Max(0, CommandList.SelectedIndex); e.Handled = true; }
@@ -623,7 +631,15 @@ public partial class MainWindow : Window
 
     private static void ShowError(string title, string message) => MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
     private void OrdersList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RenderOrder(OrdersList.SelectedItem as Order);
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { SearchHint.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed; if (IsLoaded) ApplyFilter(); }
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { UpdateInputHint(SearchBox, SearchHint); if (IsLoaded) ApplyFilter(); }
+    private void SearchBox_FocusChanged(object sender, KeyboardFocusChangedEventArgs e) => UpdateInputHint(SearchBox, SearchHint);
+
+    private static void UpdateInputHint(TextBox input, TextBlock hint)
+    {
+        hint.Visibility = string.IsNullOrEmpty(input.Text) && !input.IsKeyboardFocusWithin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshOrdersAsync();
     private void OrdersNav_Click(object sender, RoutedEventArgs e) => SelectSection("orders");
     private void StatsNav_Click(object sender, RoutedEventArgs e) => SelectSection("stats");

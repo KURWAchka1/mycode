@@ -17,6 +17,7 @@ public partial class RelistWindow : Window
         _client = client;
         _order = order;
         InitializeComponent();
+        WindowWorkArea.Attach(this);
         Loaded += RelistWindow_Loaded;
     }
 
