@@ -36,7 +36,9 @@ public final class SettingsActivity extends Activity {
     private LinearLayout replyList;
     private TextView replyStatus;
     private Button addReplyButton;
+    private EditText fulfillmentReplyInput;
     private final ArrayList<EditText> replyInputs = new ArrayList<>();
+    private String replyDefaultMessage = AutoReplyConfig.DEFAULT_MESSAGE;
     private int maxReplyMessages = AutoReplyConfig.DEFAULT_MAX_MESSAGES;
     private boolean loadingReplySettings;
     private int replyRequestGeneration;
@@ -178,7 +180,7 @@ public final class SettingsActivity extends Activity {
         card.addView(title, matchWrap());
 
         TextView description = Ui.text(this,
-                "Сообщения отправляются по порядку после новой оплаты. Пустой список использует стандартный текст.",
+                "Настройте два момента общения с покупателем. Пустое поле не отключает сообщение: серый фоновый текст становится действующим значением по умолчанию.",
                 13, Ui.MUTED, false);
         card.addView(description, marginTop(5));
 
@@ -189,17 +191,48 @@ public final class SettingsActivity extends Activity {
         replyDisabledToggle.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
         card.addView(replyDisabledToggle, marginTop(10));
 
+        TextView paidTitle = Ui.text(this, "После оплаты", 16, Ui.TEXT, true);
+        card.addView(paidTitle, marginTop(10));
+
+        TextView paidDescription = Ui.text(this,
+                "Эти сообщения идут по порядку только покупателю вашего товара.",
+                13, Ui.MUTED, false);
+        card.addView(paidDescription, marginTop(3));
+
         replyList = new LinearLayout(this);
         replyList.setOrientation(LinearLayout.VERTICAL);
-        card.addView(replyList, matchWrap());
-        addReplyInput(AutoReplyConfig.DEFAULT_MESSAGE);
+        card.addView(replyList, marginTop(8));
+        addReplyInput("");
+
+        TextView fulfilledTitle = Ui.text(
+                this, "После подтверждения выполнения вами", 16, Ui.TEXT, true);
+        card.addView(fulfilledTitle, marginTop(18));
+
+        TextView fulfilledDescription = Ui.text(this,
+                "Одно сообщение после того, как именно вы подтвердили выполнение своей продажи. Подтверждение чужого продавца в ваших покупках его не запускает.",
+                13, Ui.MUTED, false);
+        card.addView(fulfilledDescription, marginTop(3));
+
+        fulfillmentReplyInput = new EditText(this);
+        fulfillmentReplyInput.setText("");
+        fulfillmentReplyInput.setHint(AutoReplyConfig.DEFAULT_FULFILLMENT_MESSAGE);
+        fulfillmentReplyInput.setTextColor(Ui.TEXT);
+        fulfillmentReplyInput.setHintTextColor(Ui.MUTED);
+        fulfillmentReplyInput.setTextSize(15);
+        fulfillmentReplyInput.setMinLines(3);
+        fulfillmentReplyInput.setMaxLines(6);
+        fulfillmentReplyInput.setGravity(Gravity.TOP | Gravity.START);
+        fulfillmentReplyInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        card.addView(fulfillmentReplyInput, marginTop(8));
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setGravity(Gravity.CENTER_VERTICAL);
         card.addView(actions, marginTop(12));
 
-        addReplyButton = Ui.button(this, "+ Добавить", false);
+        addReplyButton = Ui.button(this, "+ Сообщение после оплаты", false);
         addReplyButton.setOnClickListener(v -> {
             Ui.haptic(v);
             if (replyInputs.size() >= maxReplyMessages) {
@@ -238,7 +271,6 @@ public final class SettingsActivity extends Activity {
 
         EditText input = new EditText(this);
         input.setText(value == null ? "" : value);
-        input.setHint("Текст сообщения");
         input.setTextColor(Ui.TEXT);
         input.setHintTextColor(Ui.MUTED);
         input.setTextSize(15);
@@ -263,6 +295,7 @@ public final class SettingsActivity extends Activity {
             replyInputs.remove(input);
             replyList.removeView(row);
             if (replyInputs.isEmpty()) addReplyInput("");
+            refreshReplyHints();
             updateAddReplyButton();
         });
 
@@ -270,14 +303,23 @@ public final class SettingsActivity extends Activity {
         LinearLayout.LayoutParams rowParams = matchWrap();
         if (replyList.getChildCount() > 0) rowParams.topMargin = Ui.dp(this, 8);
         replyList.addView(row, rowParams);
+        refreshReplyHints();
         updateAddReplyButton();
+    }
+
+    private void refreshReplyHints() {
+        for (int index = 0; index < replyInputs.size(); index++) {
+            replyInputs.get(index).setHint(index == 0
+                    ? replyDefaultMessage
+                    : "Дополнительное сообщение после оплаты");
+        }
     }
 
     private void showReplyMessages(List<String> messages) {
         replyList.removeAllViews();
         replyInputs.clear();
         if (messages == null || messages.isEmpty()) {
-            addReplyInput(AutoReplyConfig.DEFAULT_MESSAGE);
+            addReplyInput("");
         } else {
             for (String message : messages) addReplyInput(message);
         }
@@ -328,17 +370,19 @@ public final class SettingsActivity extends Activity {
         }
         final boolean enabled = !replyDisabledToggle.isChecked();
         final ArrayList<String> messages = collectReplyMessages();
+        final String fulfillmentMessage = fulfillmentReplyInput.getText().toString();
         final int generation = ++replyRequestGeneration;
         replyStatus.setText(enabled ? "Сохраняю сообщения…" : "Отключаю сообщения…");
         network.execute(() -> {
             try {
-                String request = AutoReplyConfig.requestJson(enabled, messages);
+                String request = AutoReplyConfig.requestJson(
+                        enabled, messages, fulfillmentMessage);
                 AutoReplyConfig config = AutoReplyConfig.fromJson(HttpTextClient.postJson(
                         UrlTools.autoRepliesUrl(url), request, 15_000));
                 runOnUiThread(() -> {
                     if (generation != replyRequestGeneration) return;
                     applyAutoReplyConfig(config, config.enabled
-                            ? "Сообщения включены · сохранено: " + config.messages.size()
+                            ? "Сообщения включены · настройки сохранены"
                             : "Сообщения отключены · тексты сохранены");
                     toast(config.enabled ? "Сообщения сохранены" : "Отправка сообщений отключена");
                 });
@@ -354,8 +398,11 @@ public final class SettingsActivity extends Activity {
     private void applyAutoReplyConfig(AutoReplyConfig config, String status) {
         loadingReplySettings = true;
         maxReplyMessages = config.maxMessages;
+        replyDefaultMessage = config.defaultMessage;
         replyDisabledToggle.setChecked(!config.enabled);
         showReplyMessages(config.messages);
+        fulfillmentReplyInput.setText(config.fulfillmentMessage);
+        fulfillmentReplyInput.setHint(config.defaultFulfillmentMessage);
         replyStatus.setText(status);
         loadingReplySettings = false;
     }

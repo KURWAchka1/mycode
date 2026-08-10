@@ -37,6 +37,10 @@ if ! adb shell dumpsys activity activities | grep -F "$ACTIVITY"; then
     exit 1
 fi
 
+adb shell uiautomator dump /sdcard/playerok-window.xml >/dev/null
+WINDOW_XML="$(adb shell cat /sdcard/playerok-window.xml | tr -d '\r')"
+grep -F "Новые заказы" <<<"$WINDOW_XML"
+
 if adb logcat -d -b crash | grep -F "$PACKAGE"; then
     echo "ERROR: application crash detected" >&2
     exit 1

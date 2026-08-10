@@ -72,12 +72,12 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           grep -F "package: name='app.playerokmonitor'" apk-badging.txt
           grep -F "targetSdkVersion:'36'" apk-badging.txt
-          grep -F "versionName='2.3.7'" apk-badging.txt
+          grep -F "versionName='2.3.8'" apk-badging.txt
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: PlayerokMonitor-2.3.7-OneUI85
+          name: PlayerokMonitor-2.3.8-OneUI85
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-badging.txt
@@ -89,15 +89,15 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v2.3.7-oneui85
+          TAG: v2.3.8-oneui85
         run: |
           set -Eeuo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk PlayerokMonitor-OneUI85-v2.3.7.apk
+          cp app/build/outputs/apk/debug/app-debug.apk PlayerokMonitor-OneUI85-v2.3.8.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PlayerokMonitor-OneUI85-v2.3.7.apk --clobber
+            gh release upload "$TAG" PlayerokMonitor-OneUI85-v2.3.8.apk --clobber
           else
-            gh release create "$TAG" PlayerokMonitor-OneUI85-v2.3.7.apk \
+            gh release create "$TAG" PlayerokMonitor-OneUI85-v2.3.8.apk \
               --target "$GITHUB_SHA" \
-              --title "Playerok Monitor 2.3.7 · Smarter Relist Defaults" \
+              --title "Playerok Monitor 2.3.8 · New Orders & Fulfillment Reply" \
               --notes-file RELEASE_NOTES.md
           fi

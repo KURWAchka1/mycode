@@ -42,6 +42,19 @@ final class OrdersRepository {
         return result;
     }
 
+    static List<OrderData> filterNewOrders(List<OrderData> values) {
+        ArrayList<OrderData> result = new ArrayList<>();
+        if (values == null) return result;
+        for (OrderData order : values) {
+            // "New" means a paid sale still awaiting this account's own
+            // fulfillment action. Refunded deals are no longer actionable.
+            if (order.isSale() && !order.sellerFulfilled && !order.rolledBack) {
+                result.add(order);
+            }
+        }
+        return result;
+    }
+
     static int countUnclassified(List<OrderData> values) {
         int count = 0;
         if (values == null) return 0;

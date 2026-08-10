@@ -1,4 +1,12 @@
-# Playerok Monitor 2.3.7 · Smarter Relist Defaults
+# Playerok Monitor 2.3.8 · New Orders & Fulfillment Reply
+
+- The app now opens on a dedicated “Новые заказы” tab containing only active sales that you have not yet marked as fulfilled.
+- A separate configurable buyer message is sent only after you confirm fulfillment of your own sale. Fulfillment by another seller in your purchases is explicitly excluded.
+- Fulfillment replies are journaled per order, checked against the chat and retried idempotently; service restarts and historical orders cannot create a catch-up message flood.
+- Default message texts are now true field hints. Leaving a field blank visibly keeps it empty while the gray background text remains the effective server default.
+- The global “Отключить сообщения” switch covers both payment and fulfillment messages and preserves every custom text.
+
+## Included from 2.3.7
 
 - The new relisting price field is optional. Leaving it blank reuses the sold item's original pre-discount listing price.
 - A custom price remains visible when editing the confirmation, while an already-created draft continues to show its pinned price.

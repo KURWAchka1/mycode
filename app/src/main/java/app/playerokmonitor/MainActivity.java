@@ -24,18 +24,20 @@ import java.util.concurrent.Executors;
 
 public final class MainActivity extends Activity {
     private static final int REQ_NOTIFICATIONS = 5001;
+    private static final String FILTER_NEW_ORDERS = "NEW_ORDERS";
     static final String EXTRA_DIRECTION = "direction";
 
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private OrderListAdapter adapter;
     private TextView statusChip;
     private TextView emptyText;
+    private TextView newOrdersTab;
     private TextView salesTab;
     private TextView purchasesTab;
     private TextView classificationHint;
     private ImageButton refreshButton;
     private long lastSyncStartedMs = 0L;
-    private String selectedDirection = OrderData.DIRECTION_SALE;
+    private String selectedDirection = FILTER_NEW_ORDERS;
     private List<OrderData> allOrders = Collections.emptyList();
 
     @Override
@@ -88,7 +90,7 @@ public final class MainActivity extends Activity {
         header.addView(titleBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         titleBlock.addView(Ui.text(this, "Playerok Monitor", 34, Ui.TEXT, true));
-        TextView subtitle = Ui.text(this, "Продажи, покупки и проблемы", 14, Ui.MUTED, false);
+        TextView subtitle = Ui.text(this, "Новые заказы, продажи и покупки", 14, Ui.MUTED, false);
         LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -132,14 +134,21 @@ public final class MainActivity extends Activity {
         tabsParams.topMargin = Ui.dp(this, 20);
         root.addView(tabs, tabsParams);
 
-        salesTab = makeTab("Мои продажи");
-        salesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_SALE));
-        tabs.addView(salesTab, new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f));
+        newOrdersTab = makeTab("Новые заказы");
+        newOrdersTab.setOnClickListener(v -> selectDirection(FILTER_NEW_ORDERS));
+        tabs.addView(newOrdersTab, new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f));
 
-        purchasesTab = makeTab("Мои покупки");
+        salesTab = makeTab("Продажи");
+        salesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_SALE));
+        LinearLayout.LayoutParams salesParams = new LinearLayout.LayoutParams(
+                0, Ui.dp(this, 50), 1f);
+        salesParams.leftMargin = Ui.dp(this, 6);
+        tabs.addView(salesTab, salesParams);
+
+        purchasesTab = makeTab("Покупки");
         purchasesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_PURCHASE));
         LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(0, Ui.dp(this, 50), 1f);
-        purchaseParams.leftMargin = Ui.dp(this, 8);
+        purchaseParams.leftMargin = Ui.dp(this, 6);
         tabs.addView(purchasesTab, purchaseParams);
 
         classificationHint = Ui.text(this, "", 12, Ui.AMBER, false);
@@ -192,26 +201,36 @@ public final class MainActivity extends Activity {
 
     private void selectDirection(String direction) {
         if (direction.equals(selectedDirection)) return;
-        Ui.haptic(OrderData.DIRECTION_SALE.equals(direction) ? salesTab : purchasesTab);
+        View target = FILTER_NEW_ORDERS.equals(direction)
+                ? newOrdersTab
+                : (OrderData.DIRECTION_SALE.equals(direction) ? salesTab : purchasesTab);
+        Ui.haptic(target);
         selectedDirection = direction;
         updateTabStyles();
         renderSelectedTab();
     }
 
     private void updateTabStyles() {
-        if (salesTab == null || purchasesTab == null) return;
+        if (newOrdersTab == null || salesTab == null || purchasesTab == null) return;
+        Ui.styleTab(this, newOrdersTab, FILTER_NEW_ORDERS.equals(selectedDirection));
         Ui.styleTab(this, salesTab, OrderData.DIRECTION_SALE.equals(selectedDirection));
         Ui.styleTab(this, purchasesTab, OrderData.DIRECTION_PURCHASE.equals(selectedDirection));
     }
 
     private void renderSelectedTab() {
         if (adapter == null) return;
-        List<OrderData> visible = OrdersRepository.filterByDirection(allOrders, selectedDirection);
+        List<OrderData> visible = FILTER_NEW_ORDERS.equals(selectedDirection)
+                ? OrdersRepository.filterNewOrders(allOrders)
+                : OrdersRepository.filterByDirection(allOrders, selectedDirection);
         adapter.setOrders(visible);
         boolean empty = visible.isEmpty();
-        emptyText.setText(OrderData.DIRECTION_SALE.equals(selectedDirection)
-                ? "Оплаченных продаж пока нет"
-                : "Покупок пока нет");
+        if (FILTER_NEW_ORDERS.equals(selectedDirection)) {
+            emptyText.setText("Новых заказов нет — всё выполнено");
+        } else if (OrderData.DIRECTION_SALE.equals(selectedDirection)) {
+            emptyText.setText("Оплаченных продаж пока нет");
+        } else {
+            emptyText.setText("Покупок пока нет");
+        }
         emptyText.setVisibility(empty ? View.VISIBLE : View.GONE);
 
         int unclassified = OrdersRepository.countUnclassified(allOrders);
@@ -315,10 +334,14 @@ public final class MainActivity extends Activity {
             return true;
         }
         if (keyCode == KeyEvent.KEYCODE_1) {
-            selectDirection(OrderData.DIRECTION_SALE);
+            selectDirection(FILTER_NEW_ORDERS);
             return true;
         }
         if (keyCode == KeyEvent.KEYCODE_2) {
+            selectDirection(OrderData.DIRECTION_SALE);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_3) {
             selectDirection(OrderData.DIRECTION_PURCHASE);
             return true;
         }
