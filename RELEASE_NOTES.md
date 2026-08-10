@@ -1,4 +1,4 @@
-# Playerok Monitor 2.3.9 · One UI Workspace
+# Playerok Monitor 2.3.10 · One UI Workspace
 
 - The main screen is rebuilt around Samsung's viewing/interaction split: a compact title, one calm live-status focus block, clear deal navigation and a useful empty state.
 - Every icon and secondary action now uses a transparent background with a restrained One UI ripple. Primary actions use only a translucent blue wash and outline instead of a black button slab.
@@ -6,7 +6,7 @@
 - Order cards now prioritize status, product name and payout without squeezing the title. A slim semantic rail distinguishes new, fulfilled, completed, problem and refund states.
 - Dark mode uses layered charcoal-blue surfaces rather than pure-black controls, while light mode uses the same hierarchy and contrast.
 - Settings and relisting inputs resize above the on-screen keyboard, add an IME-aware bottom inset and scroll the focused field into view.
-- CI captures both default and 200%-text Android 16 screenshots in addition to linting, installing and launching the APK.
+- CI captures default, 200%-text and dark-mode Android 16 screenshots in addition to linting, installing and launching the APK.
 
 ## Included from 2.3.8
 

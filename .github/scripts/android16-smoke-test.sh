@@ -54,8 +54,23 @@ sleep 3
 adb shell uiautomator dump /sdcard/playerok-window-large-text.xml >/dev/null
 LARGE_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-large-text.xml | tr -d '\r')"
 grep -F "Новые заказы" <<<"$LARGE_WINDOW_XML"
+grep -F "Продажи" <<<"$LARGE_WINDOW_XML"
+grep -F "Покупки" <<<"$LARGE_WINDOW_XML"
 adb pull /sdcard/playerok-window-large-text.xml android16-main-large-text.xml >/dev/null
 adb exec-out screencap -p > android16-main-large-text.png
+
+# The user's Galaxy runs the dark palette. Exercise the night resources and
+# transparent controls as a separate launch instead of trusting theme XML.
+adb shell settings put system font_scale 1.0
+adb shell cmd uimode night yes
+adb shell am force-stop "$PACKAGE"
+adb shell am start -W -n "$ACTIVITY" >/dev/null
+sleep 3
+adb shell uiautomator dump /sdcard/playerok-window-dark.xml >/dev/null
+DARK_WINDOW_XML="$(adb shell cat /sdcard/playerok-window-dark.xml | tr -d '\r')"
+grep -F "Новые заказы" <<<"$DARK_WINDOW_XML"
+adb pull /sdcard/playerok-window-dark.xml android16-main-dark.xml >/dev/null
+adb exec-out screencap -p > android16-main-dark.png
 
 if adb logcat -d -b crash | grep -F "$PACKAGE"; then
     echo "ERROR: application crash detected" >&2

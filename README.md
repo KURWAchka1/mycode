@@ -17,4 +17,4 @@ Android client for the Playerok Monitor VPS service.
 gradle :app:assembleDebug
 ```
 
-The CI artifact is named `PlayerokMonitor-2.3.9-OneUI85` and includes default/large-text screenshots alongside the APK.
+The CI artifact is named `PlayerokMonitor-2.3.10-OneUI85` and includes default, large-text and dark-mode screenshots alongside the APK.

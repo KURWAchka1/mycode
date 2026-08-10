@@ -13,10 +13,12 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +37,7 @@ public final class MainActivity extends Activity {
     private TextView statusChip;
     private TextView heroTitle;
     private TextView heroBody;
+    private ScrollView emptyScroll;
     private LinearLayout emptyState;
     private TextView emptyTitle;
     private TextView emptyText;
@@ -149,6 +152,8 @@ public final class MainActivity extends Activity {
         heroBodyParams.topMargin = Ui.dp(this, 4);
         hero.addView(heroBody, heroBodyParams);
 
+        boolean largeText = getResources().getConfiguration().fontScale >= 1.35f;
+
         LinearLayout sectionHead = new LinearLayout(this);
         sectionHead.setOrientation(LinearLayout.HORIZONTAL);
         sectionHead.setGravity(Gravity.BOTTOM);
@@ -159,30 +164,36 @@ public final class MainActivity extends Activity {
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         TextView cacheHint = Ui.text(this, "данные с VPS", 12, Ui.MUTED, false);
         cacheHint.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        cacheHint.setVisibility(largeText ? View.GONE : View.VISIBLE);
         sectionHead.addView(cacheHint);
+
+        HorizontalScrollView tabScroll = new HorizontalScrollView(this);
+        tabScroll.setFillViewport(!largeText);
+        tabScroll.setHorizontalScrollBarEnabled(false);
+        tabScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout.LayoutParams tabsParams = matchWrap();
+        tabsParams.topMargin = Ui.dp(this, 4);
+        root.addView(tabScroll, tabsParams);
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams tabsParams = matchWrap();
-        tabsParams.topMargin = Ui.dp(this, 4);
-        root.addView(tabs, tabsParams);
+        tabScroll.addView(tabs, new HorizontalScrollView.LayoutParams(
+                largeText
+                        ? HorizontalScrollView.LayoutParams.WRAP_CONTENT
+                        : HorizontalScrollView.LayoutParams.MATCH_PARENT,
+                HorizontalScrollView.LayoutParams.WRAP_CONTENT));
 
-        newOrdersTab = makeTab("Новые заказы");
+        newOrdersTab = makeTab("Новые заказы", largeText);
         newOrdersTab.setOnClickListener(v -> selectDirection(FILTER_NEW_ORDERS));
-        tabs.addView(newOrdersTab, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        tabs.addView(newOrdersTab, tabParams(largeText));
 
-        salesTab = makeTab("Продажи");
+        salesTab = makeTab("Продажи", largeText);
         salesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_SALE));
-        LinearLayout.LayoutParams salesParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        tabs.addView(salesTab, salesParams);
+        tabs.addView(salesTab, tabParams(largeText));
 
-        purchasesTab = makeTab("Покупки");
+        purchasesTab = makeTab("Покупки", largeText);
         purchasesTab.setOnClickListener(v -> selectDirection(OrderData.DIRECTION_PURCHASE));
-        LinearLayout.LayoutParams purchaseParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        tabs.addView(purchasesTab, purchaseParams);
+        tabs.addView(purchasesTab, tabParams(largeText));
 
         classificationHint = Ui.text(this, "", 12, Ui.AMBER, false);
         classificationHint.setPadding(Ui.dp(this, 2), Ui.dp(this, 8), Ui.dp(this, 2), 0);
@@ -215,10 +226,18 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT));
 
+        emptyScroll = new ScrollView(this);
+        emptyScroll.setFillViewport(true);
+        emptyScroll.setVerticalScrollBarEnabled(false);
+        emptyScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
         emptyState = new LinearLayout(this);
         emptyState.setOrientation(LinearLayout.VERTICAL);
         emptyState.setGravity(Gravity.CENTER);
         emptyState.setPadding(Ui.dp(this, 20), Ui.dp(this, 36), Ui.dp(this, 20), Ui.dp(this, 24));
+        emptyScroll.addView(emptyState, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
 
         ImageView emptyIcon = new ImageView(this);
         emptyIcon.setImageResource(R.drawable.ic_empty_check);
@@ -251,23 +270,36 @@ public final class MainActivity extends Activity {
 
         FrameLayout.LayoutParams emptyParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER);
-        contentArea.addView(emptyState, emptyParams);
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        contentArea.addView(emptyScroll, emptyParams);
 
         updateTabStyles();
         Ui.reveal(root);
         return root;
     }
 
-    private TextView makeTab(String text) {
+    private TextView makeTab(String text, boolean largeText) {
         TextView tab = Ui.text(this, text, 14, Ui.MUTED, true);
         tab.setGravity(Gravity.CENTER);
         tab.setMinHeight(Ui.dp(this, 56));
-        tab.setMaxLines(2);
-        tab.setHorizontallyScrolling(false);
-        tab.setPadding(Ui.dp(this, 5), Ui.dp(this, 9), Ui.dp(this, 5), Ui.dp(this, 7));
+        if (largeText) {
+            tab.setSingleLine(true);
+            tab.setPadding(Ui.dp(this, 18), Ui.dp(this, 9), Ui.dp(this, 18), Ui.dp(this, 7));
+        } else {
+            tab.setMaxLines(2);
+            tab.setHorizontallyScrolling(false);
+            tab.setPadding(Ui.dp(this, 5), Ui.dp(this, 9), Ui.dp(this, 5), Ui.dp(this, 7));
+        }
         return tab;
+    }
+
+    private LinearLayout.LayoutParams tabParams(boolean largeText) {
+        return largeText
+                ? new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT)
+                : new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
     }
 
     private LinearLayout.LayoutParams matchWrap() {
@@ -311,7 +343,7 @@ public final class MainActivity extends Activity {
             emptyTitle.setText("Покупок пока нет");
             emptyText.setText("Ваши оплаченные покупки появятся здесь");
         }
-        emptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        emptyScroll.setVisibility(empty ? View.VISIBLE : View.GONE);
         updateHeroSummary();
 
         int unclassified = OrdersRepository.countUnclassified(allOrders);
@@ -331,7 +363,7 @@ public final class MainActivity extends Activity {
             if (allOrders.isEmpty()) {
                 emptyTitle.setText("Нужно подключение");
                 emptyText.setText("Добавьте Pairing URL в настройках");
-                emptyState.setVisibility(View.VISIBLE);
+                emptyScroll.setVisibility(View.VISIBLE);
             }
             return;
         }
