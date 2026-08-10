@@ -1,4 +1,10 @@
-# Playerok Monitor 2.3.13 · Sleep & Wake
+# Playerok Monitor 2.3.14 · Reviews
+
+- Completed orders now show the Playerok rating as a compact five-star row at the top of every order card and detail screen.
+- The VPS discovers new testimonials with a low-frequency paginated check, then loads each review detail once. This avoids per-order polling and preserves VPS capacity.
+- Review fields are revisioned with the existing order snapshot, so Android receives them through the normal incremental sync without another background connection.
+
+## Included from 2.3.13
 
 - Settings now include an optional sleep interval, native time pickers, the saved timezone and a configurable buyer message with the same blank-field default behavior as the existing message editor.
 - A new sale paid during that interval receives only the sleep notice. The normal post-payment sequence is deferred until you open that order and confirm “Я проснулся”.

@@ -48,6 +48,8 @@ final class OrderData {
     final String recipientConfirmedByName;
     final String recipientConfirmedByRole;
     final String recipientConfirmedByRelation;
+    final int reviewRating;
+    final String reviewText;
     final boolean relistEligible;
     final String relistState;
     final String relistedItemId;
@@ -104,6 +106,8 @@ final class OrderData {
             String recipientConfirmedByName,
             String recipientConfirmedByRole,
             String recipientConfirmedByRelation,
+            int reviewRating,
+            String reviewText,
             boolean relistEligible,
             String relistState,
             String relistedItemId,
@@ -159,6 +163,8 @@ final class OrderData {
         this.recipientConfirmedByName = recipientConfirmedByName;
         this.recipientConfirmedByRole = recipientConfirmedByRole;
         this.recipientConfirmedByRelation = recipientConfirmedByRelation;
+        this.reviewRating = Math.max(0, Math.min(5, reviewRating));
+        this.reviewText = reviewText;
         this.relistEligible = relistEligible;
         this.relistState = relistState;
         this.relistedItemId = relistedItemId;
@@ -224,6 +230,8 @@ final class OrderData {
                 o.optString("recipient_confirmed_by_name", ""),
                 o.optString("recipient_confirmed_by_role", ""),
                 o.optString("recipient_confirmed_by_relation", ""),
+                o.optInt("review_rating", 0),
+                o.optString("review_text", ""),
                 o.optBoolean("relist_eligible", false),
                 o.optString("relist_state", ""),
                 o.optString("relisted_item_id", ""),
@@ -311,6 +319,14 @@ final class OrderData {
 
     boolean isSale() { return DIRECTION_SALE.equals(direction); }
     boolean isPurchase() { return DIRECTION_PURCHASE.equals(direction); }
+    boolean hasReview() { return reviewRating > 0; }
+
+    String reviewStars() {
+        if (!hasReview()) return "";
+        StringBuilder stars = new StringBuilder(5);
+        for (int i = 1; i <= 5; i++) stars.append(i <= reviewRating ? '★' : '☆');
+        return stars.toString();
+    }
 
     String counterpartyLabel() { return isSale() ? "Покупатель" : "Продавец"; }
     String problemReporterLabel() { return actorLabel(problemReportedByName, problemReportedByRole, problemReportedByRelation); }

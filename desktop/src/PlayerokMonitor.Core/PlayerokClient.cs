@@ -21,7 +21,7 @@ public sealed class PlayerokClient : IDisposable
         PairingUrl = pairingUrl.Trim();
         _http = handler is null ? new HttpClient() : new HttpClient(handler, true);
         _http.Timeout = TimeSpan.FromSeconds(70);
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.1.4 Windows11");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.1.5 Windows11");
         _http.DefaultRequestHeaders.Accept.ParseAdd("application/json, text/plain, */*");
     }
 

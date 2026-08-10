@@ -39,7 +39,12 @@ var actorOrder = new Order { Direction = "OUT" };
 Assert(actorOrder.Actor("seller", "SELLER", "SELF") == "Вы", "self actor failed");
 Assert(actorOrder.Actor("buyer", "BUYER", "COUNTERPARTY") == "@buyer", "counterparty actor failed");
 
-Console.WriteLine("PlayerokMonitor.Core.Tests: 15 assertions passed");
+var reviewedOrder = new Order { ReviewRating = 4, ReviewText = "Всё хорошо" };
+Assert(reviewedOrder.HasReview, "review presence failed");
+Assert(reviewedOrder.ReviewStars == "★★★★☆", "review stars failed");
+Assert(!new Order().HasReview && new Order().ReviewStars == "", "empty review failed");
+
+Console.WriteLine("PlayerokMonitor.Core.Tests: 18 assertions passed");
 
 sealed class StaticResponseHandler(string content) : HttpMessageHandler
 {

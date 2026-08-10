@@ -70,7 +70,10 @@ public partial class MainWindow : Window
         AutoStartCheck.IsChecked = _state.StartWithWindows;
         CloseToTrayCheck.IsChecked = _state.CloseToTray;
         _allOrders = _state.Orders;
-        _notifier.Register();
+        var notificationReady = _notifier.Register();
+        NotificationStatus.Text = notificationReady
+            ? "Канал уведомлений Windows готов"
+            : "Windows-toast недоступен; события будут показаны через значок в трее";
         _tray = new TrayService();
         _tray.OpenRequested += ShowFromTray;
         _tray.RefreshRequested += () => Dispatcher.Invoke(async () => await RefreshOrdersAsync());
@@ -88,7 +91,11 @@ public partial class MainWindow : Window
 
     private void OnEvent(EventRecord record)
     {
-        if (_state.NotificationsEnabled) _notifier.Show(record.Title, record.Body, record.DealId);
+        if (_state.NotificationsEnabled && !_notifier.Show(record.Title, record.Body, record.DealId))
+        {
+            _tray?.ShowNotification(record.Title, record.Body);
+            NotificationStatus.Text = "Windows-toast не сработал — включён резерв через трей";
+        }
         if (!IsVisible) _tray?.Update(_allOrders.Count(order => order.IsNew), _connected);
     }
 
@@ -108,7 +115,7 @@ public partial class MainWindow : Window
         var now = DateTimeOffset.Now;
         ApplyOrders([
             new Order { DealId = "preview-new", Direction = "OUT", ItemName = "🎮 100 BC в дни x2 · без привязки", Price = "249", SellerNetAmount = "224", SellerNetStatus = "PROCESSING", Counterparty = "galaxy_buyer", PaidAt = now.AddMinutes(-8).ToString("O"), ReplyMode = "SLEEP", SleepReplySent = true, WakeReplyAvailable = true },
-            new Order { DealId = "preview-sale", Direction = "OUT", ItemName = "⚡ Игровая валюта · быстрая выдача", Price = "590", SellerNetAmount = "531", SellerNetStatus = "CONFIRMED", Counterparty = "buyer_ok", PaidAt = now.AddDays(-1).ToString("O"), SellerFulfilled = true, RecipientConfirmed = true },
+            new Order { DealId = "preview-sale", Direction = "OUT", ItemName = "⚡ Игровая валюта · быстрая выдача", Price = "590", SellerNetAmount = "531", SellerNetStatus = "CONFIRMED", Counterparty = "buyer_ok", PaidAt = now.AddDays(-1).ToString("O"), SellerFulfilled = true, RecipientConfirmed = true, ReviewRating = 5, ReviewText = "Всё получил быстро, спасибо!" },
             new Order { DealId = "preview-buy", Direction = "IN", ItemName = "✨ Подписка на месяц", Price = "399", Counterparty = "seller_pro", PaidAt = now.AddDays(-2).ToString("O"), SellerFulfilled = true }
         ]);
         SelectFilter("new");
@@ -135,6 +142,12 @@ public partial class MainWindow : Window
         {
             SelectSection("settings");
             Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(640), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        else if (section.Equals("review", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectSection("orders");
+            SelectFilter("sales");
+            OrdersList.SelectedItem = _visibleOrders.FirstOrDefault(order => order.HasReview);
         }
         else SelectSection(section);
     }
@@ -203,6 +216,13 @@ public partial class MainWindow : Window
         AddField("Оплачен", order.PaidAtDisplay);
         AddStatusCard(order.SellerFulfilled ? "Выполнение подтверждено" : "Выполнение не подтверждено", order.IsSale ? (order.SellerFulfilled ? "Вами" : "Нужно выполнить заказ на Playerok") : (order.SellerFulfilled ? $"Продавцом · {order.Actor(order.SellerFulfilledByName, order.SellerFulfilledByRole, order.SellerFulfilledByRelation)}" : "Продавец ещё не подтвердил выполнение"), order.SellerFulfilled ? "green" : "amber");
         AddStatusCard(order.RecipientConfirmed ? "Получение подтверждено" : "Получение не подтверждено", ReceiptDescription(order), order.RecipientConfirmed ? "green" : "neutral");
+        if (order.HasReview)
+        {
+            var reviewBody = string.IsNullOrWhiteSpace(order.ReviewText)
+                ? order.ReviewStars
+                : $"{order.ReviewStars}\n{order.ReviewText.Trim()}";
+            AddStatusCard(order.IsSale ? "Отзыв покупателя" : "Отзыв о продавце", reviewBody, "amber");
+        }
         if (order.ProblemActive || !string.IsNullOrWhiteSpace(order.ProblemReportedAt))
         {
             var reporter = order.Actor(order.ProblemReportedByName, order.ProblemReportedByRole, order.ProblemReportedByRelation);
@@ -441,11 +461,21 @@ public partial class MainWindow : Window
         catch (Exception error) { ShowError("Не удалось сохранить", error.Message); }
     }
 
-    private async void TestNotificationButton_Click(object sender, RoutedEventArgs e)
+    private void TestNotificationButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_monitor?.Client is null) { ShowError("Нет подключения", "Сначала сохраните Pairing URL"); return; }
-        try { await _monitor.Client.TriggerTestNotificationAsync(); }
-        catch (Exception error) { ShowError("Не удалось отправить тест", error.Message); }
+        const string title = "Playerok Monitor";
+        const string body = "Тестовое уведомление на этом компьютере";
+        if (_notifier.Show(title, body, ""))
+        {
+            NotificationStatus.Text = "Тест отправлен в центр уведомлений Windows";
+            return;
+        }
+
+        _tray?.ShowNotification(title, body);
+        NotificationStatus.Text = "Системный toast недоступен — тест показан через трей";
+        ShowError(
+            "Windows не принял системное уведомление",
+            $"Приложение показало резервное уведомление через трей.\n\nДиагностика: {_notifier.LastError}");
     }
 
     private async void WakeButton_Click(object sender, RoutedEventArgs e)

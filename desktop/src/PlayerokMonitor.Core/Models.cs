@@ -43,6 +43,10 @@ public sealed class Order
     [JsonPropertyName("recipient_confirmed_by_name")] public string RecipientConfirmedByName { get; init; } = "";
     [JsonPropertyName("recipient_confirmed_by_role")] public string RecipientConfirmedByRole { get; init; } = "";
     [JsonPropertyName("recipient_confirmed_by_relation")] public string RecipientConfirmedByRelation { get; init; } = "";
+    [JsonPropertyName("review_rating")] public int ReviewRating { get; init; }
+    [JsonPropertyName("review_text")] public string ReviewText { get; init; } = "";
+    [JsonPropertyName("review_created_at")] public string ReviewCreatedAt { get; init; } = "";
+    [JsonPropertyName("review_author")] public string ReviewAuthor { get; init; } = "";
     [JsonPropertyName("relist_eligible")] public bool RelistEligible { get; init; }
     [JsonPropertyName("relist_state")] public string RelistState { get; init; } = "";
     [JsonPropertyName("relisted_item_id")] public string RelistedItemId { get; init; } = "";
@@ -74,6 +78,16 @@ public sealed class Order
     [JsonIgnore] public string PaidAtDisplay => PaidAtValue?.ToLocalTime().ToString("d MMM, HH:mm", new CultureInfo("ru-RU")) ?? "Время неизвестно";
     [JsonIgnore] public string StateLabel => RolledBack ? "Возврат" : ProblemActive ? "Есть проблема" : IsNew ? "Нужно выполнить" : RecipientConfirmed ? "Завершён" : SellerFulfilled ? "Ждём получение" : DealStatus;
     [JsonIgnore] public string LifecycleLabel => $"{(SellerFulfilled ? "Выполнено" : "Не выполнено")}  •  {(RecipientConfirmed ? "Получено" : "Не получено")}";
+
+    [JsonIgnore] public bool HasReview => ReviewRating > 0;
+    [JsonIgnore] public string ReviewStars
+    {
+        get
+        {
+            var rating = Math.Clamp(ReviewRating, 0, 5);
+            return rating == 0 ? "" : new string('★', rating) + new string('☆', 5 - rating);
+        }
+    }
 
     public string Actor(string name, string role, string relation)
     {

@@ -90,6 +90,16 @@ public final class OrderDetailActivity extends Activity {
         tp.leftMargin = Ui.dp(this, 10);
         head.addView(title, tp);
 
+        if (order != null && order.hasReview()) {
+            TextView rating = Ui.text(this, order.reviewStars(), 16, Ui.AMBER, true);
+            rating.setContentDescription("Оценка: " + order.reviewRating + " из 5");
+            LinearLayout.LayoutParams ratingParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            ratingParams.rightMargin = Ui.dp(this, 6);
+            head.addView(rating, ratingParams);
+        }
+
         ImageButton refresh = Ui.iconButton(this, R.drawable.ic_nav_refresh, "Обновить сделку");
         refresh.setOnClickListener(v -> { Ui.haptic(v); sync(true); });
         head.addView(refresh, new LinearLayout.LayoutParams(Ui.dp(this, 52), Ui.dp(this, 52)));

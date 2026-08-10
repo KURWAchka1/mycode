@@ -70,6 +70,13 @@ final class OrderListAdapter extends BaseAdapter {
             h.status.setPadding(Ui.dp(context, 10), Ui.dp(context, 5), Ui.dp(context, 10), Ui.dp(context, 5));
             meta.addView(h.status);
 
+            h.rating = Ui.text(context, "", 14, Ui.AMBER, true);
+            LinearLayout.LayoutParams ratingParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            ratingParams.leftMargin = Ui.dp(context, 9);
+            meta.addView(h.rating, ratingParams);
+
             h.date = Ui.text(context, "", 13, Ui.MUTED, false);
             h.date.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             LinearLayout.LayoutParams dateParams = new LinearLayout.LayoutParams(
@@ -119,6 +126,8 @@ final class OrderListAdapter extends BaseAdapter {
         String person = order.counterparty.isEmpty() ? "—" : "@" + order.counterparty;
         h.counterparty.setText(order.counterpartyLabel() + ": " + person);
         h.date.setText(Ui.formatDate(order.paidAt));
+        h.rating.setText(order.reviewStars());
+        h.rating.setVisibility(order.hasReview() ? View.VISIBLE : View.GONE);
 
         if (order.rolledBack) {
             h.status.setText("ВОЗВРАТ");
@@ -184,6 +193,7 @@ final class OrderListAdapter extends BaseAdapter {
         TextView name;
         TextView price;
         TextView status;
+        TextView rating;
         TextView counterparty;
         TextView date;
         TextView info;

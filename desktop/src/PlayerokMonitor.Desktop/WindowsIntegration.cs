@@ -13,25 +13,78 @@ namespace PlayerokMonitor.Desktop;
 public sealed class WindowsNotifier : IDisposable
 {
     private bool _registered;
+    private readonly string _logPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "PlayerokMonitor",
+        "notifications.log");
 
-    public void Register()
+    public bool IsRegistered => _registered;
+    public string LastError { get; private set; } = "";
+
+    public bool Register()
     {
         try
         {
-            AppNotificationManager.Default.Register();
+            var manager = AppNotificationManager.Default;
+            manager.NotificationInvoked -= NotificationInvoked;
+            manager.NotificationInvoked += NotificationInvoked;
+            manager.Register();
             _registered = true;
+            LastError = "";
+            WriteLog("AppNotificationManager registered");
+            return true;
         }
-        catch { _registered = false; }
+        catch (Exception error)
+        {
+            _registered = false;
+            LastError = $"{error.GetType().Name}: {error.Message}";
+            WriteLog("Registration failed: " + LastError);
+            return false;
+        }
     }
 
-    public void Show(string title, string body, string dealId)
+    public bool Show(string title, string body, string dealId)
     {
-        if (!_registered) return;
+        if (!_registered && !Register()) return false;
         try
         {
+            var setting = AppNotificationManager.Default.Setting;
+            if (setting != AppNotificationSetting.Enabled)
+            {
+                LastError = $"Windows notification setting: {setting}";
+                WriteLog(LastError);
+                return false;
+            }
             var builder = new AppNotificationBuilder().AddText(title).AddText(body);
             if (!string.IsNullOrWhiteSpace(dealId)) builder.AddArgument("deal_id", dealId);
             AppNotificationManager.Default.Show(builder.BuildNotification());
+            LastError = "";
+            WriteLog($"Notification submitted deal={dealId}");
+            return true;
+        }
+        catch (Exception error)
+        {
+            LastError = $"{error.GetType().Name}: {error.Message}";
+            WriteLog("Show failed: " + LastError);
+            return false;
+        }
+    }
+
+    private static void NotificationInvoked(
+        AppNotificationManager sender,
+        AppNotificationActivatedEventArgs args)
+    {
+        // Subscription must exist before Register() for unpackaged WPF apps.
+        // The running window already owns navigation; activation is intentionally
+        // side-effect free so clicking a toast can never repeat a server action.
+    }
+
+    private void WriteLog(string message)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_logPath)!);
+            File.AppendAllText(_logPath, $"{DateTimeOffset.Now:O} {message}{Environment.NewLine}");
         }
         catch { }
     }
@@ -39,7 +92,13 @@ public sealed class WindowsNotifier : IDisposable
     public void Dispose()
     {
         if (!_registered) return;
-        try { AppNotificationManager.Default.Unregister(); } catch { }
+        try
+        {
+            AppNotificationManager.Default.NotificationInvoked -= NotificationInvoked;
+            AppNotificationManager.Default.Unregister();
+        }
+        catch (Exception error) { WriteLog("Unregister failed: " + error.Message); }
+        finally { _registered = false; }
     }
 }
 
@@ -73,6 +132,17 @@ public sealed class TrayService : IDisposable
     public void Update(int newOrders, bool connected)
     {
         _icon.Text = connected ? $"Playerok Monitor · новых: {newOrders}" : "Playerok Monitor · нет связи";
+    }
+
+    public void ShowNotification(string title, string body)
+    {
+        var safeTitle = string.IsNullOrWhiteSpace(title) ? "Playerok Monitor" : title.Trim();
+        var safeBody = string.IsNullOrWhiteSpace(body) ? "Новое событие Playerok" : body.Trim();
+        _icon.ShowBalloonTip(
+            7000,
+            safeTitle[..Math.Min(safeTitle.Length, 63)],
+            safeBody[..Math.Min(safeBody.Length, 255)],
+            System.Windows.Forms.ToolTipIcon.Info);
     }
 
     public void Dispose()

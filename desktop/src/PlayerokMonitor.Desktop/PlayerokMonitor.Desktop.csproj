@@ -11,7 +11,7 @@
     <StartupObject>PlayerokMonitor.Desktop.App</StartupObject>
     <AssemblyName>PlayerokMonitor.Desktop</AssemblyName>
     <RootNamespace>PlayerokMonitor.Desktop</RootNamespace>
-    <Version>1.1.4</Version>
+    <Version>1.1.5</Version>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
