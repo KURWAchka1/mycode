@@ -1,6 +1,6 @@
 # Desktop redesign research
 
-Playerok Monitor 1.1.0 uses an original WPF implementation. No UI source was copied. The following open-source projects were inspected to identify established interaction patterns and failure modes.
+Playerok Monitor 1.1 uses an original WPF implementation. No UI source was copied. The following open-source projects were inspected to identify established interaction patterns and failure modes.
 
 ## Files
 

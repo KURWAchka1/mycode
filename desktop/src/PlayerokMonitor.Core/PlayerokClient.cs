@@ -21,7 +21,7 @@ public sealed class PlayerokClient : IDisposable
         PairingUrl = pairingUrl.Trim();
         _http = handler is null ? new HttpClient() : new HttpClient(handler, true);
         _http.Timeout = TimeSpan.FromSeconds(70);
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.0 Windows11");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.1.1 Windows11");
         _http.DefaultRequestHeaders.Accept.ParseAdd("application/json, text/plain, */*");
     }
 
@@ -38,8 +38,23 @@ public sealed class PlayerokClient : IDisposable
 
     public async Task<bool> CheckHealthAsync(CancellationToken cancellationToken = default)
     {
-        using var doc = await GetJsonAsync(Build("/health"), cancellationToken);
-        return doc.RootElement.TryGetProperty("ok", out var ok) && ok.GetBoolean();
+        var text = (await GetTextAsync(Build("/health"), cancellationToken)).Trim();
+        if (text.Equals("OK", StringComparison.OrdinalIgnoreCase)) return true;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.True) return true;
+            if (root.ValueKind == JsonValueKind.String) return root.GetString()?.Equals("OK", StringComparison.OrdinalIgnoreCase) == true;
+            return root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("ok", out var ok)
+                && ok.ValueKind is JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     public async Task<long> GetLatestEventIdAsync(CancellationToken cancellationToken = default)

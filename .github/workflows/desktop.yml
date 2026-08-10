@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  DESKTOP_VERSION: 1.1.0
-  DESKTOP_TAG: desktop-v1.1.0
+  DESKTOP_VERSION: 1.1.1
+  DESKTOP_TAG: desktop-v1.1.1
 
 jobs:
   build-test-package:

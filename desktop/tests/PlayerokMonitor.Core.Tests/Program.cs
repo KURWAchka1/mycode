@@ -1,4 +1,5 @@
 using PlayerokMonitor.Core;
+using System.Net;
 
 static void Assert(bool condition, string message)
 {
@@ -8,6 +9,13 @@ static void Assert(bool condition, string message)
 Assert(PlayerokClient.ValidatePairingUrl("https://example.com/poll?token=secret") is null, "valid pairing URL rejected");
 Assert(PlayerokClient.ValidatePairingUrl("http://example.com/poll?token=secret") is not null, "http pairing URL accepted");
 Assert(PlayerokClient.ValidatePairingUrl("https://example.com/health?token=secret") is not null, "wrong pairing path accepted");
+
+using var plainHealthClient = new PlayerokClient("https://example.com/poll?token=secret", new StaticResponseHandler("OK\n"));
+Assert(await plainHealthClient.CheckHealthAsync(), "plain-text health response rejected");
+using var jsonHealthClient = new PlayerokClient("https://example.com/poll?token=secret", new StaticResponseHandler("{\"ok\":true}"));
+Assert(await jsonHealthClient.CheckHealthAsync(), "JSON health response rejected");
+using var invalidHealthClient = new PlayerokClient("https://example.com/poll?token=secret", new StaticResponseHandler("Offline"));
+Assert(!await invalidHealthClient.CheckHealthAsync(), "invalid health response accepted");
 
 var eventRecord = EventRecord.Parse("EVENT2\t42\tORDER_PAID\tdeal-1\tНовый заказ\tТовар оплачен");
 Assert(eventRecord is { Id: 42, DealId: "deal-1" }, "EVENT2 parse failed");
@@ -31,4 +39,10 @@ var actorOrder = new Order { Direction = "OUT" };
 Assert(actorOrder.Actor("seller", "SELLER", "SELF") == "Вы", "self actor failed");
 Assert(actorOrder.Actor("buyer", "BUYER", "COUNTERPARTY") == "@buyer", "counterparty actor failed");
 
-Console.WriteLine("PlayerokMonitor.Core.Tests: 12 assertions passed");
+Console.WriteLine("PlayerokMonitor.Core.Tests: 15 assertions passed");
+
+sealed class StaticResponseHandler(string content) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(content) });
+}
