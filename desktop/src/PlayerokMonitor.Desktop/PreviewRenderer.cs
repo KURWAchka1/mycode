@@ -20,6 +20,7 @@ internal static class PreviewRenderer
         window.Arrange(new System.Windows.Rect(0, 0, window.ActualWidth, window.ActualHeight));
         window.UpdateLayout();
         VerifySearchInsertionOffset(window, section);
+        VerifyMessageHintBehavior(window, section);
         var dpi = VisualTreeHelper.GetDpi(window);
         var bitmap = new RenderTargetBitmap((int)(window.ActualWidth * dpi.DpiScaleX), (int)(window.ActualHeight * dpi.DpiScaleY), dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
         bitmap.Render(window);
@@ -42,6 +43,25 @@ internal static class PreviewRenderer
         if (!double.IsNaN(insertionOffset) && insertionOffset is < 30 or > 44)
         {
             throw new InvalidDataException($"Search insertion point is misplaced at {insertionOffset:N1} DIPs");
+        }
+    }
+
+    private static void VerifyMessageHintBehavior(MainWindow window, string section)
+    {
+        if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase)
+            && !window.PaymentMessageHintVisible)
+        {
+            throw new InvalidDataException("The default message hint is not visible in an empty unfocused editor");
+        }
+        if (section.Equals("defaults-focused", StringComparison.OrdinalIgnoreCase)
+            && (!window.PaymentMessageEditorFocused || window.PaymentMessageHintVisible))
+        {
+            throw new InvalidDataException("The default message hint remained under the caret after focus");
+        }
+        if (section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase)
+            && (window.PaymentMessageEditorFocused || !window.PaymentMessageHintVisible))
+        {
+            throw new InvalidDataException("The default message hint did not return after the editor lost focus");
         }
     }
 }

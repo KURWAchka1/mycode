@@ -286,7 +286,7 @@
                     </ScrollViewer>
 
                     <!-- SETTINGS: compact rows, descriptions on the left and actions on the right. -->
-                    <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Focusable="True" PreviewMouseDown="SettingsView_PreviewMouseDown">
                         <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="18,16,18,28">
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
@@ -331,8 +331,10 @@
                                     <Button Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Margin="0,2,0,0" Padding="7,5" Click="AddMessageButton_Click"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE710;" FontSize="16"/><TextBlock Text="Добавить сообщение" Margin="7,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
 
                                     <TextBlock Text="После подтверждения выполнения вами" FontWeight="SemiBold" Margin="0,16,0,7"/>
-                                    <emoji:RichTextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" MinHeight="64"/>
-                                    <TextBlock x:Name="FulfillmentHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
+                                    <Grid>
+                                        <emoji:RichTextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" MinHeight="64"/>
+                                        <TextBlock x:Name="FulfillmentHint" Foreground="{StaticResource SubtleBrush}" FontSize="12" TextWrapping="Wrap" Margin="11,9" VerticalAlignment="Top" IsHitTestVisible="False"/>
+                                    </Grid>
 
                                     <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,16,0,14"/>
                                     <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Режим сна" FontWeight="SemiBold"/><TextBlock Text="Предупреждать покупателя, что продавец может спать" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="SleepEnabledCheck" VerticalAlignment="Center"/></Grid>
@@ -343,15 +345,17 @@
                                         <StackPanel Grid.Column="4"><TextBlock Text="Часовой пояс" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepTimezoneBox" Style="{StaticResource CompactComboBox}" Tag="&#xE909;"/></StackPanel>
                                     </Grid>
                                     <TextBlock Text="Сообщение во время сна" FontWeight="SemiBold" Margin="0,14,0,7"/>
-                                    <emoji:RichTextBox x:Name="SleepMessageBox" AcceptsReturn="True" MinHeight="64"/>
-                                    <TextBlock x:Name="SleepHint" Foreground="{StaticResource SubtleBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,4,2,0"/>
+                                    <Grid>
+                                        <emoji:RichTextBox x:Name="SleepMessageBox" AcceptsReturn="True" MinHeight="64"/>
+                                        <TextBlock x:Name="SleepHint" Foreground="{StaticResource SubtleBrush}" FontSize="12" TextWrapping="Wrap" Margin="11,9" VerticalAlignment="Top" IsHitTestVisible="False"/>
+                                    </Grid>
                                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                                         <Button Style="{StaticResource AccentButton}" Content="Сохранить сообщения" Click="SaveRepliesButton_Click"/>
                                         <TextBlock x:Name="RepliesStatus" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="10,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="Playerok Monitor 1.1.6 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
+                            <TextBlock Text="Playerok Monitor 1.1.7 · Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

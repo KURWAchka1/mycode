@@ -59,6 +59,7 @@ public partial class MainWindow : Window
         StateChanged += (_, _) => UpdateMaximizeGlyph();
         WindowWorkArea.Attach(this);
         ConfigureTimeZones();
+        WireFixedMessageHints();
         ApplyAdaptiveLayout(Width);
     }
 
@@ -122,12 +123,16 @@ public partial class MainWindow : Window
         SelectFilter("new");
         if (section.Equals("settings", StringComparison.OrdinalIgnoreCase) ||
             section.Equals("sleep", StringComparison.OrdinalIgnoreCase) ||
-            section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
+            section.Equals("defaults", StringComparison.OrdinalIgnoreCase) ||
+            section.Equals("defaults-focused", StringComparison.OrdinalIgnoreCase) ||
+            section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase))
         {
             SleepStartBox.SelectedItem = "00:00";
             SleepEndBox.SelectedItem = "08:00";
             SleepTimezoneBox.SelectedItem = "Europe/Moscow";
-            if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
+            if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase) ||
+                section.Equals("defaults-focused", StringComparison.OrdinalIgnoreCase) ||
+                section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase))
             {
                 _replySettings = new AutoReplySettings();
                 FulfillmentMessageBox.Text = "";
@@ -159,10 +164,28 @@ public partial class MainWindow : Window
             SelectSection("settings");
             Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(640), System.Windows.Threading.DispatcherPriority.Loaded);
         }
-        else if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase))
+        else if (section.Equals("defaults", StringComparison.OrdinalIgnoreCase) ||
+                 section.Equals("defaults-focused", StringComparison.OrdinalIgnoreCase) ||
+                 section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase))
         {
             SelectSection("settings");
-            Dispatcher.BeginInvoke(() => SettingsView.ScrollToVerticalOffset(300), System.Windows.Threading.DispatcherPriority.Loaded);
+            Dispatcher.BeginInvoke(() =>
+            {
+                SettingsView.ScrollToVerticalOffset(300);
+                if (section.Equals("defaults-focused", StringComparison.OrdinalIgnoreCase)
+                    || section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase))
+                {
+                    _messageBoxes[0].Focus();
+                    if (section.Equals("defaults-blurred", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            Keyboard.ClearFocus();
+                            SettingsView.Focus();
+                        }, System.Windows.Threading.DispatcherPriority.Background);
+                    }
+                }
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
         }
         else if (section.Equals("review", StringComparison.OrdinalIgnoreCase))
         {
@@ -175,6 +198,10 @@ public partial class MainWindow : Window
 
     internal double SearchInsertionOffset => SearchBox.GetRectFromCharacterIndex(0).X;
     internal double CommandSearchInsertionOffset => CommandSearchBox.GetRectFromCharacterIndex(0).X;
+    internal bool PaymentMessageHintVisible => _messagePlaceholders.Count > 0
+        && _messagePlaceholders[0].Visibility == Visibility.Visible;
+    internal bool PaymentMessageEditorFocused => _messageBoxes.Count > 0
+        && _messageBoxes[0].IsKeyboardFocusWithin;
 
     private void ApplyFilter()
     {
@@ -358,13 +385,12 @@ public partial class MainWindow : Window
             _replySettings = await _monitor.Client.GetAutoRepliesAsync();
             DisableRepliesCheck.IsChecked = !_replySettings.Enabled;
             FulfillmentMessageBox.Text = _replySettings.FulfillmentMessage;
-            FulfillmentHint.Text = $"По умолчанию: {_replySettings.DefaultFulfillmentMessage}";
             SleepEnabledCheck.IsChecked = _replySettings.SleepEnabled;
             SleepStartBox.Text = _replySettings.SleepStart;
             SleepEndBox.Text = _replySettings.SleepEnd;
             SleepTimezoneBox.Text = _replySettings.SleepTimezone;
             SleepMessageBox.Text = _replySettings.SleepMessage;
-            SleepHint.Text = $"По умолчанию: {_replySettings.DefaultSleepMessage}";
+            RefreshFixedMessageHints();
             _messageBoxes.Clear();
             _messagePlaceholders.Clear();
             MessagesPanel.Children.Clear();
@@ -388,7 +414,7 @@ public partial class MainWindow : Window
             Foreground = (Brush)FindResource("SubtleBrush"),
             FontSize = 12,
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(14, 10, 12, 10),
+            Margin = new Thickness(11, 9, 11, 9),
             VerticalAlignment = VerticalAlignment.Top,
             IsHitTestVisible = false
         };
@@ -423,6 +449,10 @@ public partial class MainWindow : Window
         _messageBoxes.Add(box);
         _messagePlaceholders.Add(placeholder);
         box.TextChanged += (_, _) => RefreshPaymentMessagePlaceholders();
+        box.GotKeyboardFocus += (_, _) => RefreshPaymentMessagePlaceholders();
+        box.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
+            RefreshPaymentMessagePlaceholders,
+            System.Windows.Threading.DispatcherPriority.Input);
         RefreshPaymentMessagePlaceholders();
     }
 
@@ -433,12 +463,34 @@ public partial class MainWindow : Window
         {
             var placeholder = _messagePlaceholders[index];
             placeholder.Text = index == 0
-                ? $"По умолчанию:\n{defaultMessage}"
+                ? defaultMessage
                 : "Дополнительное сообщение после оплаты";
-            placeholder.Visibility = string.IsNullOrWhiteSpace(_messageBoxes[index].Text)
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            UpdateInputHint(_messageBoxes[index], placeholder);
         }
+    }
+
+    private void WireFixedMessageHints()
+    {
+        FulfillmentMessageBox.TextChanged += (_, _) => RefreshFixedMessageHints();
+        FulfillmentMessageBox.GotKeyboardFocus += (_, _) => RefreshFixedMessageHints();
+        FulfillmentMessageBox.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
+            RefreshFixedMessageHints,
+            System.Windows.Threading.DispatcherPriority.Input);
+        SleepMessageBox.TextChanged += (_, _) => RefreshFixedMessageHints();
+        SleepMessageBox.GotKeyboardFocus += (_, _) => RefreshFixedMessageHints();
+        SleepMessageBox.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
+            RefreshFixedMessageHints,
+            System.Windows.Threading.DispatcherPriority.Input);
+        RefreshFixedMessageHints();
+    }
+
+    private void RefreshFixedMessageHints()
+    {
+        var defaults = _replySettings ?? new AutoReplySettings();
+        FulfillmentHint.Text = defaults.DefaultFulfillmentMessage;
+        SleepHint.Text = defaults.DefaultSleepMessage;
+        UpdateInputHint(FulfillmentMessageBox, FulfillmentHint);
+        UpdateInputHint(SleepMessageBox, SleepHint);
     }
 
     private async Task SaveRepliesAsync()
@@ -705,6 +757,32 @@ public partial class MainWindow : Window
     }
 
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) => ApplyAdaptiveLayout(e.NewSize.Width);
+    private void SettingsView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsInteractiveSettingsTarget(e.OriginalSource as DependencyObject)) return;
+        Keyboard.ClearFocus();
+        SettingsView.Focus();
+        Dispatcher.BeginInvoke(() =>
+        {
+            RefreshPaymentMessagePlaceholders();
+            RefreshFixedMessageHints();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private static bool IsInteractiveSettingsTarget(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is System.Windows.Controls.Primitives.TextBoxBase
+                or System.Windows.Controls.Primitives.ButtonBase
+                or System.Windows.Controls.Primitives.Selector
+                or System.Windows.Controls.Primitives.RangeBase)
+                return true;
+            source = source is Visual ? VisualTreeHelper.GetParent(source) : null;
+        }
+        return false;
+    }
+
     private void CommandPaletteButton_Click(object sender, RoutedEventArgs e) => OpenCommandPalette();
     private void CloseCommandPaletteButton_Click(object sender, RoutedEventArgs e) => CloseCommandPalette();
     private void CommandSearchBox_TextChanged(object sender, TextChangedEventArgs e) => FilterCommands();
@@ -728,7 +806,14 @@ public partial class MainWindow : Window
 
     private static void UpdateInputHint(TextBox input, TextBlock hint)
     {
-        hint.Visibility = string.IsNullOrEmpty(input.Text) && !input.IsKeyboardFocusWithin
+        hint.Visibility = string.IsNullOrWhiteSpace(input.Text) && !input.IsKeyboardFocusWithin
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private static void UpdateInputHint(EmojiRichTextBox input, TextBlock hint)
+    {
+        hint.Visibility = string.IsNullOrWhiteSpace(input.Text) && !input.IsKeyboardFocusWithin
             ? Visibility.Visible
             : Visibility.Collapsed;
     }
