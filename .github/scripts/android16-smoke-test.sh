@@ -129,8 +129,20 @@ adb exec-out screencap -p > android16-main-dark.png
 
 # The sleep editor is a native settings section: it must remain reachable in
 # the same large-text-safe scroll container and expose the configured interval.
-adb shell am start -W -n "$PACKAGE/.SettingsActivity" >/dev/null
+read -r SETTINGS_X SETTINGS_Y < <(python3 - <<'PY'
+import re
+import xml.etree.ElementTree as ET
+
+root = ET.parse("android16-main-dark.xml")
+settings = next(node for node in root.iter("node")
+                if node.attrib.get("content-desc") == "Настройки")
+left, top, right, bottom = map(int, re.findall(r"\d+", settings.attrib["bounds"]))
+print((left + right) // 2, (top + bottom) // 2)
+PY
+)
+adb shell input tap "$SETTINGS_X" "$SETTINGS_Y"
 sleep 2
+adb shell dumpsys activity activities | grep -F "$PACKAGE/.SettingsActivity"
 for _ in 1 2 3 4; do adb shell input swipe 540 2050 540 700 350; done
 sleep 1
 adb shell uiautomator dump /sdcard/playerok-settings-sleep.xml >/dev/null
