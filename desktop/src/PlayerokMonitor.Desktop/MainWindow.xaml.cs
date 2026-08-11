@@ -36,6 +36,8 @@ public partial class MainWindow : Window
     private string _section = "orders";
     private bool _connected;
     private bool _exiting;
+    private bool _shutdownStarted;
+    private bool _resourcesDisposed;
     private AutoReplySettings? _replySettings;
     private readonly bool _previewMode;
     private readonly List<CommandEntry> _commands =
@@ -77,9 +79,9 @@ public partial class MainWindow : Window
             ? "ĞšĞ°Ğ½Ğ°Ğ» ÑƒĞ²ĞµĞ´Ğ¾Ğ¼Ğ»ĞµĞ½Ğ¸Ğ¹ Windows Ğ³Ğ¾Ñ‚Ğ¾Ğ²"
             : "Windows-toast Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿ĞµĞ½; ÑĞ¾Ğ±Ñ‹Ñ‚Ğ¸Ñ Ğ±ÑƒĞ´ÑƒÑ‚ Ğ¿Ğ¾ĞºĞ°Ğ·Ğ°Ğ½Ñ‹ Ñ‡ĞµÑ€ĞµĞ· Ğ·Ğ½Ğ°Ñ‡Ğ¾Ğº Ğ² Ñ‚Ñ€ĞµĞµ";
         _tray = new TrayService();
-        _tray.OpenRequested += ShowFromTray;
-        _tray.RefreshRequested += () => Dispatcher.Invoke(async () => await RefreshOrdersAsync());
-        _tray.ExitRequested += () => Dispatcher.Invoke(ExitApplication);
+        _tray.OpenRequested += () => Dispatcher.BeginInvoke(new Action(ShowFromTray));
+        _tray.RefreshRequested += () => Dispatcher.BeginInvoke(new Action(async () => await RefreshOrdersAsync()));
+        _tray.ExitRequested += () => Dispatcher.BeginInvoke(new Action(ExitApplication));
         _monitor = new MonitorCoordinator(_state, _store);
         _monitor.OrdersChanged += orders => Dispatcher.Invoke(() => ApplyOrders(orders));
         _monitor.EventReceived += record => Dispatcher.Invoke(() => OnEvent(record));
@@ -262,606 +264,9 @@ public partial class MainWindow : Window
         AddField("Ğ—Ğ°ĞºĞ°Ğ·", order.DealId);
         AddField(order.IsSale ? "ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»ÑŒ" : "ĞŸÑ€Ğ¾Ğ´Ğ°Ğ²ĞµÑ†", string.IsNullOrWhiteSpace(order.CounterpartyDisplay) ? "â€”" : $"@{order.CounterpartyDisplay.TrimStart('@')}");
         AddField("ĞĞ¿Ğ»Ğ°Ñ‡ĞµĞ½", order.PaidAtDisplay);
-        AddStatusCard(order.SellerFulfilled ? "Ğ’Ñ‹Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾" : "Ğ’Ñ‹Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ¸Ğµ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾", order.IsSale ? (order.SellerFulfilled ? "Ğ’Ğ°Ğ¼Ğ¸" : "ĞÑƒĞ¶Ğ½Ğ¾ Ğ²Ñ‹Ğ¿Ğ¾Ğ»Ğ½Ğ¸Ñ‚ÑŒ Ğ·Ğ°ĞºĞ°Ğ· Ğ½Ğ° Playerok") : (order.SellerFulfilled ? $"ĞŸÑ€Ğ¾Ğ´Ğ°Ğ²Ñ†Ğ¾Ğ¼ Â· {order.Actor(order.SellerFulfilledByName, order.SellerFulfilledByRole, order.SellerFulfilledByRelation)}" : "ĞŸÑ€Ğ¾Ğ´Ğ°Ğ²ĞµÑ† ĞµÑ‰Ñ‘ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ» Ğ²Ñ‹Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ¸Ğµ"), order.SellerFulfilled ? "green" : "amber");
-        AddStatusCard(order.RecipientConfirmed ? "ĞŸĞ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾" : "ĞŸĞ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾", ReceiptDescription(order), order.RecipientConfirmed ? "green" : "neutral");
-        if (order.HasReview)
-        {
-            var reviewBody = string.IsNullOrWhiteSpace(order.ReviewText)
-                ? order.ReviewStars
-                : $"{order.ReviewStars}\n{order.ReviewText.Trim()}";
-            AddStatusCard(order.IsSale ? "ĞÑ‚Ğ·Ñ‹Ğ² Ğ¿Ğ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»Ñ" : "ĞÑ‚Ğ·Ñ‹Ğ² Ğ¾ Ğ¿Ñ€Ğ¾Ğ´Ğ°Ğ²Ñ†Ğµ", reviewBody, "amber");
-        }
-        if (order.ProblemActive || !string.IsNullOrWhiteSpace(order.ProblemReportedAt))
-        {
-            var reporter = order.Actor(order.ProblemReportedByName, order.ProblemReportedByRole, order.ProblemReportedByRelation);
-            var description = order.ProblemActive ? $"Ğ¡Ğ¾Ğ·Ğ´Ğ°Ğ»: {reporter}" : $"Ğ¡Ğ¾Ğ·Ğ´Ğ°Ğ»: {reporter}. Ğ ĞµÑˆĞµĞ½Ğ°: {order.Actor(order.ProblemResolvedByName, order.ProblemResolvedByRole, order.ProblemResolvedByRelation)}";
-            AddStatusCard(order.ProblemActive ? "ĞĞºÑ‚Ğ¸Ğ²Ğ½Ğ°Ñ Ğ¿Ñ€Ğ¾Ğ±Ğ»ĞµĞ¼Ğ°" : "ĞŸÑ€Ğ¾Ğ±Ğ»ĞµĞ¼Ğ° Ñ€ĞµÑˆĞµĞ½Ğ°", description, order.ProblemActive ? "red" : "green");
-        }
-        if (order.RolledBack) AddStatusCard("ĞÑ„Ğ¾Ñ€Ğ¼Ğ»ĞµĞ½ Ğ²Ğ¾Ğ·Ğ²Ñ€Ğ°Ñ‚", $"ĞšĞµĞ¼: {order.Actor(order.RolledBackByName, order.RolledBackByRole, order.RolledBackByRelation)}", "red");
-        if (order.SleepReplySent) AddStatusCard(order.WakeReplySent ? "Ğ¡Ğ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾ÑĞ»Ğµ Ğ¿Ñ€Ğ¾Ğ±ÑƒĞ¶Ğ´ĞµĞ½Ğ¸Ñ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²Ğ»ĞµĞ½Ğ¾" : "ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»ÑŒ Ğ¿Ñ€ĞµĞ´ÑƒĞ¿Ñ€ĞµĞ¶Ğ´Ñ‘Ğ½ Ğ¾ ÑĞ½Ğµ", order.WakeReplyAvailable ? "ĞœĞ¾Ğ¶Ğ½Ğ¾ Ğ½Ğ°Ğ¶Ğ°Ñ‚ÑŒ Â«Ğ¯ Ğ¿Ñ€Ğ¾ÑĞ½ÑƒĞ»ÑÑÂ» â€” Ğ¾Ğ±Ñ‹Ñ‡Ğ½Ğ¾Ğµ ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ğµ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²Ğ¸Ñ‚ÑÑ Ğ¾Ğ´Ğ¸Ğ½ Ñ€Ğ°Ğ·." : "ĞĞ±Ñ‹Ñ‡Ğ½Ğ°Ñ Ñ†ĞµĞ¿Ğ¾Ñ‡ĞºĞ° ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ğ¹ ÑƒĞ¶Ğµ Ğ¾Ğ±Ñ€Ğ°Ğ±Ğ¾Ñ‚Ğ°Ğ½Ğ°.", order.WakeReplyAvailable ? "blue" : "green");
-        if (order.IsRelisted) AddStatusCard("Ğ¢Ğ¾Ğ²Ğ°Ñ€ Ğ²Ñ‹ÑÑ‚Ğ°Ğ²Ğ»ĞµĞ½ ÑĞ½Ğ¾Ğ²Ğ°", $"Ğ¦ĞµĞ½Ğ°: {order.RelistListingPrice:N0} â‚½ Â· Ñ€Ğ°Ğ·Ğ¼ĞµÑ‰ĞµĞ½Ğ¸Ğµ: {(order.RelistPriorityPrice <= 0 ? "Ğ±ĞµÑĞ¿Ğ»Ğ°Ñ‚Ğ½Ğ¾" : $"{order.RelistPriorityPrice:N0} â‚½")}", "green");
-        if (!string.IsNullOrWhiteSpace(order.BuyerComment)) AddStatusCard("ĞšĞ¾Ğ¼Ğ¼ĞµĞ½Ñ‚Ğ°Ñ€Ğ¸Ğ¹ Ğ¿Ğ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»Ñ", order.BuyerComment, "neutral");
-    }
-
-    private string ReceiptDescription(Order order)
-    {
-        if (!order.RecipientConfirmed) return order.IsSale ? "ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»ÑŒ ĞµÑ‰Ñ‘ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ» Ğ¿Ğ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ" : "Ğ’Ñ‹ ĞµÑ‰Ñ‘ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ»Ğ¸ Ğ¿Ğ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ";
-        if (order.RecipientConfirmationAutomatic) return "Playerok Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ» Ğ¿Ğ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ Ğ°Ğ²Ñ‚Ğ¾Ğ¼Ğ°Ñ‚Ğ¸Ñ‡ĞµÑĞºĞ¸";
-        return order.IsSale ? "ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»ÑŒ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ» Ğ¿Ğ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ" : "ĞŸĞ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾ Ğ²Ğ°Ğ¼Ğ¸";
-    }
-
-    private void AddField(string label, string value)
-    {
-        var grid = new Grid { Margin = new Thickness(0, 8, 0, 0) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(new TextBlock { Text = label, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 12 });
-        var text = new EmojiTextBlock { Text = value, FontSize = 12, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, MaxWidth = 310, TextWrapping = TextWrapping.Wrap };
-        Grid.SetColumn(text, 1);
-        grid.Children.Add(text);
-        DetailFields.Children.Add(grid);
-    }
-
-    private void AddStatusCard(string title, string description, string tone)
-    {
-        var colors = tone switch
-        {
-            "green" => Color.FromRgb(88, 214, 141),
-            "red" => Color.FromRgb(242, 123, 133),
-            "amber" => Color.FromRgb(232, 185, 95),
-            "blue" => Color.FromRgb(114, 169, 249),
-            _ => Color.FromRgb(164, 171, 182)
-        };
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.Children.Add(new Ellipse { Width = 7, Height = 7, Fill = new SolidColorBrush(colors), HorizontalAlignment = System.Windows.HorizontalAlignment.Left, VerticalAlignment = System.Windows.VerticalAlignment.Top, Margin = new Thickness(0, 5, 0, 0) });
-        var stack = new StackPanel();
-        stack.Children.Add(new EmojiTextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = new SolidColorBrush(colors) });
-        stack.Children.Add(new EmojiTextBlock { Text = description, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("MutedBrush"), FontSize = 11, Margin = new Thickness(0, 3, 0, 0) });
-        Grid.SetColumn(stack, 1);
-        grid.Children.Add(stack);
-        DetailFields.Children.Add(new Border { BorderBrush = (Brush)FindResource("DividerBrush"), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 10, 0, 0), Margin = new Thickness(0, 10, 0, 0), Child = grid });
-    }
-
-    private void SetConnectionStatus(string text, bool online)
-    {
-        _connected = online;
-        ConnectionText.Text = text;
-        ConnectionDot.Fill = (Brush)FindResource(online ? "GreenBrush" : "AmberBrush");
-        ConnectionPill.Background = new SolidColorBrush(online ? Color.FromArgb(28, 88, 214, 141) : Color.FromArgb(28, 232, 185, 95));
-        ConnectionPill.ToolTip = text;
-        _tray?.Update(_allOrders.Count(order => order.IsNew), online);
-    }
-
-    private void SelectSection(string section)
-    {
-        _section = section;
-        OrdersView.Visibility = section == "orders" ? Visibility.Visible : Visibility.Collapsed;
-        StatsView.Visibility = section == "stats" ? Visibility.Visible : Visibility.Collapsed;
-        SettingsView.Visibility = section == "settings" ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var button in new[] { OrdersNav, StatsNav, SettingsNav })
-        {
-            button.Background = Brushes.Transparent;
-            button.Foreground = (Brush)FindResource("MutedBrush");
-        }
-        var selected = section switch { "stats" => StatsNav, "settings" => SettingsNav, _ => OrdersNav };
-        selected.Background = (Brush)FindResource("AccentSoftBrush");
-        selected.Foreground = (Brush)FindResource("AccentBrush");
-        UpdatePageHeader();
-        if (section == "settings" && _replySettings is null) _ = LoadRepliesAsync();
-        if (section == "stats") RenderStatistics();
-    }
-
-    private void SelectFilter(string filter)
-    {
-        _filter = filter;
-        foreach (var button in new[] { NewTab, SalesTab, PurchasesTab, AllTab })
-        {
-            button.Background = Brushes.Transparent;
-            button.Foreground = (Brush)FindResource("MutedBrush");
-        }
-        var selected = filter switch { "sales" => SalesTab, "purchases" => PurchasesTab, "all" => AllTab, _ => NewTab };
-        selected.Background = (Brush)FindResource("AccentSoftBrush");
-        selected.Foreground = (Brush)FindResource("TextBrush");
-        ApplyFilter();
-    }
-
-    private async Task RefreshOrdersAsync()
-    {
-        if (_monitor is null) return;
-        RefreshButton.IsEnabled = false;
-        try { await _monitor.RefreshAsync(); }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¾Ğ±Ğ½Ğ¾Ğ²Ğ¸Ñ‚ÑŒ", error.Message); }
-        finally { RefreshButton.IsEnabled = true; }
-    }
-
-    private async Task LoadRepliesAsync()
-    {
-        if (_monitor?.Client is null) { RepliesStatus.Text = "Ğ¡Ğ½Ğ°Ñ‡Ğ°Ğ»Ğ° Ğ¿Ğ¾Ğ´ĞºĞ»ÑÑ‡Ğ¸Ñ‚Ğµ VPS"; return; }
-        RepliesStatus.Text = "Ğ—Ğ°Ğ³Ñ€ÑƒĞ·ĞºĞ°â€¦";
-        try
-        {
-            _replySettings = await _monitor.Client.GetAutoRepliesAsync();
-            DisableRepliesCheck.IsChecked = !_replySettings.Enabled;
-            FulfillmentMessageBox.Text = _replySettings.FulfillmentMessage;
-            SleepEnabledCheck.IsChecked = _replySettings.SleepEnabled;
-            SleepStartBox.Text = _replySettings.SleepStart;
-            SleepEndBox.Text = _replySettings.SleepEnd;
-            SleepTimezoneBox.Text = _replySettings.SleepTimezone;
-            SleepMessageBox.Text = _replySettings.SleepMessage;
-            RefreshFixedMessageHints();
-            _messageBoxes.Clear();
-            _messagePlaceholders.Clear();
-            MessagesPanel.Children.Clear();
-            IEnumerable<string> messages = _replySettings.Messages.Count == 0 ? new[] { "" } : _replySettings.Messages;
-            foreach (var message in messages) AddMessageRow(message);
-            RepliesStatus.Text = "ĞĞ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ¸ Ğ·Ğ°Ğ³Ñ€ÑƒĞ¶ĞµĞ½Ñ‹";
-        }
-        catch (Exception error) { RepliesStatus.Text = error.Message; }
-    }
-
-    private void AddMessageRow(string text)
-    {
-        if (_messageBoxes.Count >= 8) return;
-        var grid = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var box = new EmojiRichTextBox { Text = text, AcceptsReturn = true, MinHeight = 58 };
-        var inputHost = new Grid();
-        var placeholder = new TextBlock
-        {
-            Foreground = (Brush)FindResource("SubtleBrush"),
-            FontSize = 12,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(11, 9, 11, 9),
-            VerticalAlignment = VerticalAlignment.Top,
-            IsHitTestVisible = false
-        };
-        inputHost.Children.Add(box);
-        inputHost.Children.Add(placeholder);
-        var remove = new Button
-        {
-            Content = new TextBlock { Text = "\uE74D", FontSize = 16, Style = (Style)FindResource("FluentIcon") },
-            Width = 36,
-            Height = 36,
-            Padding = new Thickness(0),
-            Margin = new Thickness(8, 0, 0, 0),
-            ToolTip = "Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ğµ",
-            Style = (Style)FindResource("IconButton")
-        };
-        remove.Click += (_, _) =>
-        {
-            var index = _messageBoxes.IndexOf(box);
-            if (index >= 0)
-            {
-                _messageBoxes.RemoveAt(index);
-                _messagePlaceholders.RemoveAt(index);
-            }
-            MessagesPanel.Children.Remove(grid);
-            if (_messageBoxes.Count == 0) AddMessageRow("");
-            RefreshPaymentMessagePlaceholders();
-        };
-        grid.Children.Add(inputHost);
-        Grid.SetColumn(remove, 1);
-        grid.Children.Add(remove);
-        MessagesPanel.Children.Add(grid);
-        _messageBoxes.Add(box);
-        _messagePlaceholders.Add(placeholder);
-        box.TextChanged += (_, _) => RefreshPaymentMessagePlaceholders();
-        box.GotKeyboardFocus += (_, _) => RefreshPaymentMessagePlaceholders();
-        box.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
-            RefreshPaymentMessagePlaceholders,
-            System.Windows.Threading.DispatcherPriority.Input);
-        RefreshPaymentMessagePlaceholders();
-    }
-
-    private void RefreshPaymentMessagePlaceholders()
-    {
-        var defaultMessage = _replySettings?.DefaultMessage ?? new AutoReplySettings().DefaultMessage;
-        for (var index = 0; index < _messageBoxes.Count; index++)
-        {
-            var placeholder = _messagePlaceholders[index];
-            placeholder.Text = index == 0
-                ? defaultMessage
-                : "Ğ”Ğ¾Ğ¿Ğ¾Ğ»Ğ½Ğ¸Ñ‚ĞµĞ»ÑŒĞ½Ğ¾Ğµ ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾ÑĞ»Ğµ Ğ¾Ğ¿Ğ»Ğ°Ñ‚Ñ‹";
-            UpdateInputHint(_messageBoxes[index], placeholder);
-        }
-    }
-
-    private void WireFixedMessageHints()
-    {
-        FulfillmentMessageBox.TextChanged += (_, _) => RefreshFixedMessageHints();
-        FulfillmentMessageBox.GotKeyboardFocus += (_, _) => RefreshFixedMessageHints();
-        FulfillmentMessageBox.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
-            RefreshFixedMessageHints,
-            System.Windows.Threading.DispatcherPriority.Input);
-        SleepMessageBox.TextChanged += (_, _) => RefreshFixedMessageHints();
-        SleepMessageBox.GotKeyboardFocus += (_, _) => RefreshFixedMessageHints();
-        SleepMessageBox.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(
-            RefreshFixedMessageHints,
-            System.Windows.Threading.DispatcherPriority.Input);
-        RefreshFixedMessageHints();
-    }
-
-    private void RefreshFixedMessageHints()
-    {
-        var defaults = _replySettings ?? new AutoReplySettings();
-        FulfillmentHint.Text = defaults.DefaultFulfillmentMessage;
-        SleepHint.Text = defaults.DefaultSleepMessage;
-        UpdateInputHint(FulfillmentMessageBox, FulfillmentHint);
-        UpdateInputHint(SleepMessageBox, SleepHint);
-    }
-
-    private async Task SaveRepliesAsync()
-    {
-        if (_monitor?.Client is null) { RepliesStatus.Text = "Ğ¡Ğ½Ğ°Ñ‡Ğ°Ğ»Ğ° Ğ¿Ğ¾Ğ´ĞºĞ»ÑÑ‡Ğ¸Ñ‚Ğµ VPS"; return; }
-        var start = SleepStartBox.Text.Trim();
-        var end = SleepEndBox.Text.Trim();
-        if (!TimeOnly.TryParseExact(start, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) || !TimeOnly.TryParseExact(end, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-        {
-            RepliesStatus.Text = "Ğ’Ñ€ĞµĞ¼Ñ Ğ½ÑƒĞ¶Ğ½Ğ¾ ÑƒĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ² Ñ„Ğ¾Ñ€Ğ¼Ğ°Ñ‚Ğµ Ğ§Ğ§:ĞœĞœ";
-            return;
-        }
-        if (start == end && SleepEnabledCheck.IsChecked == true)
-        {
-            RepliesStatus.Text = "ĞĞ°Ñ‡Ğ°Ğ»Ğ¾ Ğ¸ ĞºĞ¾Ğ½ĞµÑ† ÑĞ½Ğ° Ğ½Ğµ Ğ´Ğ¾Ğ»Ğ¶Ğ½Ñ‹ ÑĞ¾Ğ²Ğ¿Ğ°Ğ´Ğ°Ñ‚ÑŒ";
-            return;
-        }
-        var request = new AutoReplyRequest
-        {
-            Enabled = DisableRepliesCheck.IsChecked != true,
-            Messages = _messageBoxes.Select(box => box.Text.Trim()).Where(text => !string.IsNullOrWhiteSpace(text)).Take(8).ToList(),
-            FulfillmentMessage = FulfillmentMessageBox.Text.Trim(),
-            SleepEnabled = SleepEnabledCheck.IsChecked == true,
-            SleepStart = start,
-            SleepEnd = end,
-            SleepTimezone = SleepTimezoneBox.Text.Trim(),
-            SleepMessage = SleepMessageBox.Text.Trim()
-        };
-        RepliesStatus.Text = "Ğ¡Ğ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¸Ğµâ€¦";
-        try { _replySettings = await _monitor.Client.SaveAutoRepliesAsync(request); RepliesStatus.Text = "Ğ¡Ğ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¾ Ğ½Ğ° VPS Â· Android ÑƒĞ²Ğ¸Ğ´Ğ¸Ñ‚ Ñ‚Ğµ Ğ¶Ğµ Ğ½Ğ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ¸"; }
-        catch (Exception error) { RepliesStatus.Text = error.Message; }
-    }
-
-    private void ConfigureTimeZones()
-    {
-        var times = Enumerable.Range(0, 96).Select(value => $"{value / 4:00}:{value % 4 * 15:00}").ToList();
-        SleepStartBox.ItemsSource = times;
-        SleepEndBox.ItemsSource = times;
-        SleepTimezoneBox.ItemsSource = new[] { "Europe/Moscow", "Europe/Kaliningrad", "Europe/Samara", "Asia/Yekaterinburg", "Asia/Omsk", "Asia/Krasnoyarsk", "Asia/Irkutsk", "Asia/Yakutsk", "Asia/Vladivostok", "Asia/Magadan", "Asia/Kamchatka" };
-    }
-
-    private async Task CheckForUpdatesAsync()
-    {
-        await Task.Delay(2500);
-        try
-        {
-            _pendingUpdate = await new DesktopUpdateService().CheckAsync();
-            if (_pendingUpdate is null) return;
-            await Dispatcher.InvokeAsync(() => { UpdateText.Text = $"Ğ”Ğ¾ÑÑ‚ÑƒĞ¿Ğ½Ğ° Ğ²ĞµÑ€ÑĞ¸Ñ {_pendingUpdate.Version}"; UpdateBanner.Visibility = Visibility.Visible; });
-        }
-        catch { }
-    }
-
-    private async void SaveConnectionButton_Click(object sender, RoutedEventArgs e)
-    {
-        var value = PairingUrlBox.Text.Trim();
-        var validation = PlayerokClient.ValidatePairingUrl(value);
-        if (validation is not null) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¿Ğ¾Ğ´ĞºĞ»ÑÑ‡Ğ¸Ñ‚ÑŒ", validation); return; }
-        try
-        {
-            using var client = new PlayerokClient(value);
-            if (!await client.CheckHealthAsync()) throw new InvalidOperationException("VPS Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ´Ğ¸Ğ» Ğ³Ğ¾Ñ‚Ğ¾Ğ²Ğ½Ğ¾ÑÑ‚ÑŒ");
-            _state.PairingUrl = value;
-            _state.EventSourceFingerprint = "";
-            await _store.SaveAsync(_state);
-            if (_monitor is not null) await _monitor.RestartAsync();
-            SetConnectionStatus("ĞŸĞ¾Ğ´ĞºĞ»ÑÑ‡ĞµĞ½Ğ¾ Ğº VPS", true);
-        }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¿Ğ¾Ğ´ĞºĞ»ÑÑ‡Ğ¸Ñ‚ÑŒ", error.Message); }
-    }
-
-    private async void SaveWindowsSettingsButton_Click(object sender, RoutedEventArgs e)
-    {
-        _state.MonitoringEnabled = MonitoringCheck.IsChecked == true;
-        _state.NotificationsEnabled = NotificationsCheck.IsChecked == true;
-        _state.StartWithWindows = AutoStartCheck.IsChecked == true;
-        _state.CloseToTray = CloseToTrayCheck.IsChecked == true;
-        try { AutoStartManager.SetEnabled(_state.StartWithWindows); await _store.SaveAsync(_state); if (_monitor is not null) await _monitor.RestartAsync(); }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ğ¸Ñ‚ÑŒ", error.Message); }
-    }
-
-    private void TestNotificationButton_Click(object sender, RoutedEventArgs e)
-    {
-        const string title = "Playerok Monitor";
-        const string body = "Ğ¢ĞµÑÑ‚Ğ¾Ğ²Ğ¾Ğµ ÑƒĞ²ĞµĞ´Ğ¾Ğ¼Ğ»ĞµĞ½Ğ¸Ğµ Ğ½Ğ° ÑÑ‚Ğ¾Ğ¼ ĞºĞ¾Ğ¼Ğ¿ÑŒÑÑ‚ĞµÑ€Ğµ";
-        if (_notifier.Show(title, body, ""))
-        {
-            NotificationStatus.Text = "Ğ¢ĞµÑÑ‚ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²Ğ»ĞµĞ½ Ğ² Ñ†ĞµĞ½Ñ‚Ñ€ ÑƒĞ²ĞµĞ´Ğ¾Ğ¼Ğ»ĞµĞ½Ğ¸Ğ¹ Windows";
-            return;
-        }
-
-        _tray?.ShowNotification(title, body);
-        NotificationStatus.Text = "Ğ¡Ğ¸ÑÑ‚ĞµĞ¼Ğ½Ñ‹Ğ¹ toast Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿ĞµĞ½ â€” Ñ‚ĞµÑÑ‚ Ğ¿Ğ¾ĞºĞ°Ğ·Ğ°Ğ½ Ñ‡ĞµÑ€ĞµĞ· Ñ‚Ñ€ĞµĞ¹";
-        ShowError(
-            "Windows Ğ½Ğµ Ğ¿Ñ€Ğ¸Ğ½ÑĞ» ÑĞ¸ÑÑ‚ĞµĞ¼Ğ½Ğ¾Ğµ ÑƒĞ²ĞµĞ´Ğ¾Ğ¼Ğ»ĞµĞ½Ğ¸Ğµ",
-            $"ĞŸÑ€Ğ¸Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾ĞºĞ°Ğ·Ğ°Ğ»Ğ¾ Ñ€ĞµĞ·ĞµÑ€Ğ²Ğ½Ğ¾Ğµ ÑƒĞ²ĞµĞ´Ğ¾Ğ¼Ğ»ĞµĞ½Ğ¸Ğµ Ñ‡ĞµÑ€ĞµĞ· Ñ‚Ñ€ĞµĞ¹.\n\nĞ”Ğ¸Ğ°Ğ³Ğ½Ğ¾ÑÑ‚Ğ¸ĞºĞ°: {_notifier.LastError}");
-    }
-
-    private async void WakeButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (OrdersList.SelectedItem is not Order order || _monitor?.Client is null) return;
-        if (MessageBox.Show(this, "ĞŸĞ¾ĞºÑƒĞ¿Ğ°Ñ‚ĞµĞ»Ñ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²ÑÑ‚ÑÑ Ğ¾Ğ±Ñ‹Ñ‡Ğ½Ñ‹Ğµ ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ñ Â«ĞŸĞ¾ÑĞ»Ğµ Ğ¾Ğ¿Ğ»Ğ°Ñ‚Ñ‹Â». Ğ¡ĞµÑ€Ğ²ĞµÑ€ Ğ½Ğµ ÑĞ¾Ğ·Ğ´Ğ°ÑÑ‚ Ğ´ÑƒĞ±Ğ»ÑŒ Ğ¿Ñ€Ğ¸ Ğ¿Ğ¾Ğ²Ñ‚Ğ¾Ñ€Ğ½Ğ¾Ğ¼ Ğ½Ğ°Ğ¶Ğ°Ñ‚Ğ¸Ğ¸.", "Ğ¡Ğ¾Ğ¾Ğ±Ñ‰Ğ¸Ñ‚ÑŒ Ğ¾ Ğ¿Ñ€Ğ¾Ğ±ÑƒĞ¶Ğ´ĞµĞ½Ğ¸Ğ¸?", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
-        WakeButton.IsEnabled = false;
-        try
-        {
-            var result = await _monitor.Client.WakeAsync(order.DealId);
-            if (!result.Ok) throw new InvalidOperationException(result.Message);
-            await RefreshOrdersAsync();
-        }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²Ğ¸Ñ‚ÑŒ", error.Message + "\n\nĞŸĞ¾Ğ²Ñ‚Ğ¾Ñ€Ğ½Ñ‹Ğ¹ Ğ·Ğ°Ğ¿Ñ€Ğ¾Ñ Ğ±ĞµĞ·Ğ¾Ğ¿Ğ°ÑĞµĞ½ Ğ¸ Ğ½Ğµ ÑĞ¾Ğ·Ğ´Ğ°ÑÑ‚ Ğ´ÑƒĞ±Ğ»ÑŒ."); }
-        finally { WakeButton.IsEnabled = true; }
-    }
-
-    private void RelistButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (OrdersList.SelectedItem is not Order order || _monitor?.Client is null) return;
-        var dialog = new RelistWindow(_monitor.Client, order) { Owner = this };
-        if (dialog.ShowDialog() == true) _ = RefreshOrdersAsync();
-    }
-
-    private void OpenDealButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (OpenDealButton.Tag is not string url) return;
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¾Ñ‚ĞºÑ€Ñ‹Ñ‚ÑŒ Playerok", error.Message); }
-    }
-
-    private async void InstallUpdateButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_pendingUpdate is null) return;
-        InstallUpdateButton.IsEnabled = false;
-        InstallUpdateButton.Content = "Ğ—Ğ°Ğ³Ñ€ÑƒĞ·ĞºĞ°â€¦";
-        try { await _pendingUpdate.DownloadAndRestartAsync(); }
-        catch (Exception error) { ShowError("ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¾Ğ±Ğ½Ğ¾Ğ²Ğ¸Ñ‚ÑŒ", error.Message); InstallUpdateButton.IsEnabled = true; InstallUpdateButton.Content = "ĞŸĞ¾Ğ²Ñ‚Ğ¾Ñ€Ğ¸Ñ‚ÑŒ"; }
-    }
-
-    private void UpdatePageHeader()
-    {
-        PageTitle.Text = _section switch { "stats" => "Ğ¡Ñ‚Ğ°Ñ‚Ğ¸ÑÑ‚Ğ¸ĞºĞ°", "settings" => "ĞĞ°ÑÑ‚Ñ€Ğ¾Ğ¹ĞºĞ¸", _ => "Ğ—Ğ°ĞºĞ°Ğ·Ñ‹" };
-        PageSubtitle.Text = _section switch
-        {
-            "stats" => "Ğ›Ğ¾ĞºĞ°Ğ»ÑŒĞ½Ğ¾ Â· Ğ¿Ğ¾ÑĞ»ĞµĞ´Ğ½Ğ¸Ğµ 14 Ğ´Ğ½ĞµĞ¹",
-            "settings" => "ĞŸĞ¾Ğ´ĞºĞ»ÑÑ‡ĞµĞ½Ğ¸Ğµ, Windows Ğ¸ ÑĞ¾Ğ¾Ğ±Ñ‰ĞµĞ½Ğ¸Ñ",
-            _ => $"ĞĞ¾Ğ²Ñ‹Ñ…: {_allOrders.Count(order => order.IsNew)}  Â·  Ğ¿Ñ€Ğ¾Ğ´Ğ°Ğ¶: {_allOrders.Count(order => order.IsSale)}  Â·  Ğ¿Ğ¾ĞºÑƒĞ¿Ğ¾Ğº: {_allOrders.Count(order => order.IsPurchase)}"
-        };
-    }
-
-    private void UpdateMaximizeGlyph()
-    {
-        var maximized = WindowState == WindowState.Maximized;
-        MaximizeIcon.Text = maximized ? "\uE923" : "\uE922";
-        MaximizeButton.ToolTip = maximized ? "Ğ’Ğ¾ÑÑÑ‚Ğ°Ğ½Ğ¾Ğ²Ğ¸Ñ‚ÑŒ" : "Ğ Ğ°Ğ·Ğ²ĞµÑ€Ğ½ÑƒÑ‚ÑŒ";
-    }
-
-    private void ApplyAdaptiveLayout(double windowWidth)
-    {
-        var compact = windowWidth < 980;
-        NavigationColumn.Width = new GridLength(compact ? 54 : 62);
-        SearchContainer.Width = compact ? 178 : 240;
-        PageSubtitle.Visibility = windowWidth < 860 ? Visibility.Collapsed : Visibility.Visible;
-        StatsMetricsGrid.Columns = windowWidth < 1040 ? 2 : 4;
-
-        if (windowWidth < 840)
-        {
-            OrderListColumn.MinWidth = 270;
-            OrderDetailColumn.MinWidth = 300;
-            OrderListColumn.Width = new GridLength(45, GridUnitType.Star);
-            OrderDetailColumn.Width = new GridLength(55, GridUnitType.Star);
-            Grid.SetColumn(StatsStatusPanel, 0);
-            Grid.SetRow(StatsStatusPanel, 1);
-            StatsStatusPanel.Margin = new Thickness(0, 10, 0, 0);
-            StatsContentGrid.ColumnDefinitions[1].Width = new GridLength(0);
-            StatsContentGrid.ColumnDefinitions[2].Width = new GridLength(0);
-        }
-        else
-        {
-            OrderListColumn.MinWidth = 300;
-            OrderDetailColumn.MinWidth = 340;
-            OrderListColumn.Width = new GridLength(42, GridUnitType.Star);
-            OrderDetailColumn.Width = new GridLength(58, GridUnitType.Star);
-            Grid.SetColumn(StatsStatusPanel, 2);
-            Grid.SetRow(StatsStatusPanel, 0);
-            StatsStatusPanel.Margin = new Thickness(0);
-            StatsContentGrid.ColumnDefinitions[1].Width = new GridLength(10);
-            StatsContentGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
-        }
-    }
-
-    private void OpenCommandPalette()
-    {
-        CommandSearchBox.Clear();
-        CommandList.ItemsSource = _commands;
-        CommandList.SelectedIndex = 0;
-        CommandPaletteOverlay.Visibility = Visibility.Visible;
-        Dispatcher.BeginInvoke(() => CommandSearchBox.Focus(), System.Windows.Threading.DispatcherPriority.Input);
-    }
-
-    private void CloseCommandPalette()
-    {
-        CommandPaletteOverlay.Visibility = Visibility.Collapsed;
-        Focus();
-    }
-
-    private void FilterCommands()
-    {
-        var query = CommandSearchBox.Text.Trim();
-        var matches = string.IsNullOrWhiteSpace(query)
-            ? _commands
-            : _commands.Where(command => command.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-                || command.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
-        CommandList.ItemsSource = matches;
-        CommandList.SelectedIndex = matches.Count > 0 ? 0 : -1;
-        UpdateInputHint(CommandSearchBox, CommandSearchHint);
-    }
-
-    private void ExecuteCommand(CommandEntry? command)
-    {
-        if (command is null) return;
-        CloseCommandPalette();
-        switch (command.Id)
-        {
-            case "new": SelectSection("orders"); SelectFilter("new"); break;
-            case "sales": SelectSection("orders"); SelectFilter("sales"); break;
-            case "purchases": SelectSection("orders"); SelectFilter("purchases"); break;
-            case "stats": SelectSection("stats"); break;
-            case "settings": SelectSection("settings"); break;
-            case "refresh": _ = RefreshOrdersAsync(); break;
-        }
-    }
-
-    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (CommandPaletteOverlay.Visibility == Visibility.Visible && e.Key == Key.Escape)
-        {
-            CloseCommandPalette();
-            e.Handled = true;
-            return;
-        }
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.K)
-        {
-            OpenCommandPalette();
-            e.Handled = true;
-        }
-        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.D1)
-        {
-            SelectSection("orders"); SelectFilter("new"); e.Handled = true;
-        }
-        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.D2)
-        {
-            SelectSection("stats"); e.Handled = true;
-        }
-        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.OemComma)
-        {
-            SelectSection("settings"); e.Handled = true;
-        }
-        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.F)
-        {
-            SelectSection("orders"); SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true;
-        }
-        else if (e.Key == Key.F5)
-        {
-            _ = RefreshOrdersAsync(); e.Handled = true;
-        }
-    }
-
-    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) => ApplyAdaptiveLayout(e.NewSize.Width);
-    private void SettingsView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-    {
-        if (IsInteractiveSettingsTarget(e.OriginalSource as DependencyObject)) return;
-        Keyboard.ClearFocus();
-        SettingsView.Focus();
-        Dispatcher.BeginInvoke(() =>
-        {
-            RefreshPaymentMessagePlaceholders();
-            RefreshFixedMessageHints();
-        }, System.Windows.Threading.DispatcherPriority.Input);
-    }
-
-    private static bool IsInteractiveSettingsTarget(DependencyObject? source)
-    {
-        while (source is not null)
-        {
-            if (source is System.Windows.Controls.Primitives.TextBoxBase
-                or System.Windows.Controls.Primitives.ButtonBase
-                or System.Windows.Controls.Primitives.Selector
-                or System.Windows.Controls.Primitives.RangeBase)
-                return true;
-            source = source is Visual ? VisualTreeHelper.GetParent(source) : null;
-        }
-        return false;
-    }
-
-    private void CommandPaletteButton_Click(object sender, RoutedEventArgs e) => OpenCommandPalette();
-    private void CloseCommandPaletteButton_Click(object sender, RoutedEventArgs e) => CloseCommandPalette();
-    private void CommandSearchBox_TextChanged(object sender, TextChangedEventArgs e) => FilterCommands();
-    private void CommandSearchBox_FocusChanged(object sender, KeyboardFocusChangedEventArgs e) => UpdateInputHint(CommandSearchBox, CommandSearchHint);
-    private void CommandSearchBox_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Down && CommandList.Items.Count > 0) { CommandList.Focus(); CommandList.SelectedIndex = Math.Max(0, CommandList.SelectedIndex); e.Handled = true; }
-        else if (e.Key == Key.Enter) { ExecuteCommand(CommandList.SelectedItem as CommandEntry); e.Handled = true; }
-    }
-    private void CommandList_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter) { ExecuteCommand(CommandList.SelectedItem as CommandEntry); e.Handled = true; }
-        else if (e.Key == Key.Escape) { CloseCommandPalette(); e.Handled = true; }
-    }
-    private void CommandList_MouseDoubleClick(object sender, MouseButtonEventArgs e) => ExecuteCommand(CommandList.SelectedItem as CommandEntry);
-
-    private static void ShowError(string title, string message) => MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
-    private void OrdersList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RenderOrder(OrdersList.SelectedItem as Order);
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { UpdateInputHint(SearchBox, SearchHint); if (IsLoaded) ApplyFilter(); }
-    private void SearchBox_FocusChanged(object sender, KeyboardFocusChangedEventArgs e) => UpdateInputHint(SearchBox, SearchHint);
-
-    private static void UpdateInputHint(TextBox input, TextBlock hint)
-    {
-        hint.Visibility = string.IsNullOrWhiteSpace(input.Text) && !input.IsKeyboardFocusWithin
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-    }
-
-    private static void UpdateInputHint(EmojiRichTextBox input, TextBlock hint)
-    {
-        hint.Visibility = string.IsNullOrWhiteSpace(input.Text) && !input.IsKeyboardFocusWithin
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-    }
-    private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshOrdersAsync();
-    private void OrdersNav_Click(object sender, RoutedEventArgs e) => SelectSection("orders");
-    private void StatsNav_Click(object sender, RoutedEventArgs e) => SelectSection("stats");
-    private void SettingsNav_Click(object sender, RoutedEventArgs e) => SelectSection("settings");
-    private void NewTab_Click(object sender, RoutedEventArgs e) => SelectFilter("new");
-    private void SalesTab_Click(object sender, RoutedEventArgs e) => SelectFilter("sales");
-    private void PurchasesTab_Click(object sender, RoutedEventArgs e) => SelectFilter("purchases");
-    private void AllTab_Click(object sender, RoutedEventArgs e) => SelectFilter("all");
-    private async void LoadRepliesButton_Click(object sender, RoutedEventArgs e) => await LoadRepliesAsync();
-    private void AddMessageButton_Click(object sender, RoutedEventArgs e) => AddMessageRow("");
-    private async void SaveRepliesButton_Click(object sender, RoutedEventArgs e) => await SaveRepliesAsync();
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    private void MaximizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
-
-    private void MainWindow_Closing(object? sender, CancelEventArgs e)
-    {
-        if (_previewMode) return;
-        if (!_exiting && _state.CloseToTray)
-        {
-            e.Cancel = true;
-            Hide();
-            return;
-        }
-        if (!_exiting)
-        {
-            _exiting = true;
-            Dispatcher.BeginInvoke(() => System.Windows.Application.Current.Shutdown());
-        }
-        _monitor?.DisposeAsync().AsTask().GetAwaiter().GetResult();
-        _notifier.Dispose();
-        _tray?.Dispose();
-    }
-
-    private void ShowFromTray()
-    {
-        Dispatcher.Invoke(() => { Show(); WindowState = WindowState.Normal; Activate(); });
-    }
-
-    private void ExitApplication()
-    {
-        _exiting = true;
-        Close();
-        System.Windows.Application.Current.Shutdown();
-    }
-
-    private sealed record CommandEntry(string Id, string Title, string Description, string Shortcut);
-}
+        AddStatusCard(order.SellerFulfilled ? "Ğ’Ñ‹Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ¸Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾" : "Ğ’Ñ‹Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ¸Ğµ Ğ½Ğµ Ğ¿Ğ¾Ğ´Ñ‚Ğ²ĞµÑ€Ğ¶Ğ´ĞµĞ½Ğ¾", order.IsSale ? (order.SellerFulfilled ? "Ğ’Ğ°Ğ¼Ğ¸" : "ĞÑƒĞ¶Ğ½Ğ¾ Ğ²Ñ‹Ğ¿Ğ¾Ğ»Ğ½Ğ¸Ñ‚ÑŒ Ğ·Ğ°ĞºĞ°Ğ· Ğ½Ğ° Playeroç½6¶‰Ëkºwµç]¥¹‘½İÌ¤ì…İ…¥Ğ}ÍÑ½É”¹M…Ù•Íå¹Œ¡}ÍÑ…Ñ”¤ì¥˜€¡}µ½¹¥Ñ½È¥Ì¹½Ğ¹Õ±°¤…İ…¥Ğ}µ½¹¥Ñ½È¹I•ÍÑ…ÉÑÍå¹Œ ¤ìô(€€€€€€€…Ñ €¡á•ÁÑ¥½¸•ÉÉ½È¤ìM¡½İÉÉ½È ‹BwBÔƒFBÓBÃBïBûFF0ƒFBûFFBÃB÷BãFF0ˆ°•ÉÉ½È¹5•ÍÍ…”¤ìô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥Q•ÍÑ9½Ñ¥™¥…Ñ¥½¹	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€½¹ÍĞÍÑÉ¥¹œÑ¥Ñ±”€ô€‰A±…å•É½¬5½¹¥Ñ½Èˆì(€€€€€€€½¹ÍĞÍÑÉ¥¹œ‰½‘ä€ô€‹B‹B×FFBûBËBûBÔƒFBËB×BÓBûBóBïB×B÷BãBÔƒB÷BÀƒF7FBûBğƒBëBûBóBÿF3F;FB×FBÔˆì(€€€€€€€¥˜€¡}¹½Ñ¥™¥•È¹M¡½Ü¡Ñ¥Ñ±”°‰½‘ä°€ˆˆ¤¤(€€€€€€€ì(€€€€€€€€€€€9½Ñ¥™¥…Ñ¥½¹MÑ…ÑÕÌ¹Q•áĞ€ô€‹B‹B×FFƒBûFBÿFBÃBËBïB×BôƒBÈƒFB×B÷FF ƒFBËB×BÓBûBóBïB×B÷BãBä]¥¹‘½İÌˆì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô((€€€€€€€}ÑÉ…äü¹M¡½İ9½Ñ¥™¥…Ñ¥½¸¡Ñ¥Ñ±”°‰½‘ä¤ì(€€€€€€€9½Ñ¥™¥…Ñ¥½¹MÑ…ÑÕÌ¹Q•áĞ€ô€‹B‡BãFFB×BóB÷F/BäÑ½…ÍĞƒB÷B×BÓBûFFFBÿB×BôƒŠPƒFB×FFƒBÿBûBëBÃBßBÃBôƒFB×FB×BÜƒFFB×Bäˆì(€€€€€€€M¡½İÉÉ½È (€€€€€€€€€€€€‰]¥¹‘½İÌƒB÷BÔƒBÿFBãB÷F?BìƒFBãFFB×BóB÷BûBÔƒFBËB×BÓBûBóBïB×B÷BãBÔˆ°(€€€€€€€€€€€€‹BFBãBïBûBÛB×B÷BãBÔƒBÿBûBëBÃBßBÃBïBøƒFB×BßB×FBËB÷BûBÔƒFBËB×BÓBûBóBïB×B÷BãBÔƒFB×FB×BÜƒFFB×Bä¹q¹q»BSBãBÃBÏB÷BûFFBãBëBÀèí}¹½Ñ¥™¥•È¹1…ÍÑÉÉ½Éôˆ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥]…­•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡=É‘•ÉÍ1¥ÍĞ¹M•±•Ñ•‘%Ñ•´¥Ì¹½Ğ=É‘•È½É‘•Èñğ}µ½¹¥Ñ½Èü¹±¥•¹Ğ¥Ì¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€¥˜€¡5•ÍÍ…•	½à¹M¡½Ü¡Ñ¡¥Ì°€‹BBûBëFBÿBÃFB×BïF8ƒBûFBÿFBÃBËF?FFF<ƒBûBÇF/FB÷F/BÔƒFBûBûBÇF'B×B÷BãF<ƒ
+¯BBûFBïBÔƒBûBÿBïBÃFF/
+ì¸ƒB‡B×FBËB×F ƒB÷BÔƒFBûBßBÓBÃFFƒBÓFBÇBïF0ƒBÿFBàƒBÿBûBËFBûFB÷BûBğƒB÷BÃBÛBÃFBãBà¸ˆ°€‹B‡BûBûBÇF'BãFF0ƒBøƒBÿFBûBÇFBÛBÓB×B÷BãBàüˆ°5•ÍÍ…•	½á	ÕÑÑ½¸¹=-…¹•°°5•ÍÍ…•	½á%µ…”¹EÕ•ÍÑ¥½¸¤€„ô5•ÍÍ…•	½áI•ÍÕ±Ğ¹=,¤É•ÑÕÉ¸ì(€€€€€€€]…­•	ÕÑÑ½¸¹%Í¹…‰±•€ô™…±Í”ì(€€€€€€€ÑÉä(€€€€€€€ì(€€€€€€€€€€€Ù…ÈÉ•ÍÕ±Ğ€ô…İ…¥Ğ}µ½¹¥Ñ½È¹±¥•¹Ğ¹]…­•Íå¹Œ¡½É‘•È¹•…±%¤ì(€€€€€€€€€€€¥˜€ …É•ÍÕ±Ğ¹=¬¤Ñ¡É½Ü¹•Ü%¹Ù…±¥‘=Á•É…Ñ¥½¹á•ÁÑ¥½¸¡É•ÍÕ±Ğ¹5•ÍÍ…”¤ì(€€€€€€€€€€€…İ…¥ĞI•™É•Í¡=É‘•ÉÍÍå¹Œ ¤ì(€€€€€€€ô(€€€€€€€…Ñ €¡á•ÁÑ¥½¸•ÉÉ½È¤ìM¡½İÉÉ½È ‹BwBÔƒFBÓBÃBïBûFF0ƒBûFBÿFBÃBËBãFF0ˆ°•ÉÉ½È¹5•ÍÍ…”€¬€‰q¹q»BBûBËFBûFB÷F/BäƒBßBÃBÿFBûFƒBÇB×BßBûBÿBÃFB×BôƒBàƒB÷BÔƒFBûBßBÓBÃFFƒBÓFBÇBïF0¸ˆ¤ìô(€€€€€€€™¥¹…±±äì]…­•	ÕÑÑ½¸¹%Í¹…‰±•€ôÑÉÕ”ìô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥I•±¥ÍÑ	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡=É‘•ÉÍ1¥ÍĞ¹M•±•Ñ•‘%Ñ•´¥Ì¹½Ğ=É‘•È½É‘•Èñğ}µ½¹¥Ñ½Èü¹±¥•¹Ğ¥Ì¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€Ù…È‘¥…±½œ€ô¹•ÜI•±¥ÍÑ]¥¹‘½Ü¡}µ½¹¥Ñ½È¹±¥•¹Ğ°½É‘•È¤ì=İ¹•È€ôÑ¡¥Ìôì(€€€€€€€¥˜€¡‘¥…±½œ¹M¡½İ¥…±½œ ¤€ôôÑÉÕ”¤|€ôI•™É•Í¡=É‘•ÉÍÍå¹Œ ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥=Á•¹•…±	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡=Á•¹•…±	ÕÑÑ½¸¹Q…œ¥Ì¹½ĞÍÑÉ¥¹œÕÉ°¤É•ÑÕÉ¸ì(€€€€€€€ÑÉäìAÉ½•ÍÌ¹MÑ…ÉĞ¡¹•ÜAÉ½•ÍÍMÑ…ÉÑ%¹™¼¡ÕÉ°¤ìUÍ•M¡•±±á•ÕÑ”€ôÑÉÕ”ô¤ìô(€€€€€€€…Ñ €¡á•ÁÑ¥½¸•ÉÉ½È¤ìM¡½İÉÉ½È ‹BwBÔƒFBÓBÃBïBûFF0ƒBûFBëFF/FF0A±…å•É½¬ˆ°•ÉÉ½È¹5•ÍÍ…”¤ìô(€€€ô((€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥%¹ÍÑ…±±UÁ‘…Ñ•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡}Á•¹‘¥¹UÁ‘…Ñ”¥Ì¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€%¹ÍÑ…±±UÁ‘…Ñ•	ÕÑÑ½¸¹%Í¹…‰±•€ô™…±Í”ì(€€€€€€€%¹ÍÑ…±±UÁ‘…Ñ•	ÕÑÑ½¸¹½¹Ñ•¹Ğ€ô€‹B_BÃBÏFFBßBëBÃŠ˜ˆì(€€€€€€€ÑÉäì…İ…¥Ğ}Á•¹‘¥¹UÁ‘…Ñ”¹½İ¹±½…‘¹‘I•ÍÑ…ÉÑÍå¹Œ ¤ìô(€€€€€€€…Ñ €¡á•ÁÑ¥½¸•ÉÉ½È¤ìM¡½İÉÉ½È ‹BwBÔƒFBÓBÃBïBûFF0ƒBûBÇB÷BûBËBãFF0ˆ°•ÉÉ½È¹5•ÍÍ…”¤ì%¹ÍÑ…±±UÁ‘…Ñ•	ÕÑÑ½¸¹%Í¹…‰±•€ôÑÉÕ”ì%¹ÍÑ…±±UÁ‘…Ñ•	ÕÑÑ½¸¹½¹Ñ•¹Ğ€ô€‹BBûBËFBûFBãFF0ˆìô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥UÁ‘…Ñ•A…•!•…‘•È ¤(€€€ì(€€€€€€€A…•Q¥Ñ±”¹Q•áĞ€ô}Í•Ñ¥½¸Íİ¥Ñ ì€‰ÍÑ…ÑÌˆ€ôø€‹B‡FBÃFBãFFBãBëBÀˆ°€‰Í•ÑÑ¥¹Ìˆ€ôø€‹BwBÃFFFBûBçBëBàˆ°|€ôø€‹B_BÃBëBÃBßF,ˆôì(€€€€€€€A…•MÕ‰Ñ¥Ñ±”¹Q•áĞ€ô}Í•Ñ¥½¸Íİ¥Ñ (€€€€€€€ì(€€€€€€€€€€€€‰ÍÑ…ÑÌˆ€ôø€‹BoBûBëBÃBïF3B÷Bøƒ
+ÜƒBÿBûFBïB×BÓB÷BãBÔ€ÄĞƒBÓB÷B×Bäˆ°(€€€€€€€€€€€€‰Í•ÑÑ¥¹Ìˆ€ôø€‹BBûBÓBëBïF;FB×B÷BãBÔ°]¥¹‘½İÌƒBàƒFBûBûBÇF'B×B÷BãF<ˆ°(€€€€€€€€€€€|€ôø€‹BwBûBËF/Fèí}…±±=É‘•ÉÌ¹½Õ¹Ğ¡½É‘•È€ôø½É‘•È¹%Í9•Ü¥ô€ƒ
+Ü€ƒBÿFBûBÓBÃBØèí}…±±=É‘•ÉÌ¹½Õ¹Ğ¡½É‘•È€ôø½É‘•È¹%ÍM…±”¥ô€ƒ
+Ü€ƒBÿBûBëFBÿBûBèèí}…±±=É‘•ÉÌ¹½Õ¹Ğ¡½É‘•È€ôø½É‘•È¹%ÍAÕÉ¡…Í”¥ôˆ(€€€€€€€ôì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥UÁ‘…Ñ•5…á¥µ¥é•±åÁ  ¤(€€€ì(€€€€€€€Ù…Èµ…á¥µ¥é•€ô]¥¹‘½İMÑ…Ñ”€ôô]¥¹‘½İMÑ…Ñ”¹5…á¥µ¥é•ì(€€€€€€€5…á¥µ¥é•%½¸¹Q•áĞ€ôµ…á¥µ¥é•€ü€‰qÕäÈÌˆ€è€‰qÕäÈÈˆì(€€€€€€€5…á¥µ¥é•	ÕÑÑ½¸¹Q½½±Q¥À€ôµ…á¥µ¥é•€ü€‹BKBûFFFBÃB÷BûBËBãFF0ˆ€è€‹BƒBÃBßBËB×FB÷FFF0ˆì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥ÁÁ±å‘…ÁÑ¥Ù•1…å½ÕĞ¡‘½Õ‰±”İ¥¹‘½İ]¥‘Ñ ¤(€€€ì(€€€€€€€Ù…È½µÁ…Ğ€ôİ¥¹‘½İ]¥‘Ñ €ğ€äàÀì(€€€€€€€9…Ù¥…Ñ¥½¹½±Õµ¸¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ ¡½µÁ…Ğ€ü€ÔĞ€è€ØÈ¤ì(€€€€€€€M•…É¡½¹Ñ…¥¹•È¹]¥‘Ñ €ô½µÁ…Ğ€ü€ÄÜà€è€ÈĞÀì(€€€€€€€A…•MÕ‰Ñ¥Ñ±”¹Y¥Í¥‰¥±¥Ñä€ôİ¥¹‘½İ]¥‘Ñ €ğ€àØÀ€üY¥Í¥‰¥±¥Ñä¹½±±…ÁÍ•€èY¥Í¥‰¥±¥Ñä¹Y¥Í¥‰±”ì(€€€€€€€MÑ…ÑÍ5•ÑÉ¥ÍÉ¥¹½±Õµ¹Ì€ôİ¥¹‘½İ]¥‘Ñ €ğ€ÄÀĞÀ€ü€È€è€Ğì((€€€€€€€¥˜€¡İ¥¹‘½İ]¥‘Ñ €ğ€àĞÀ¤(€€€€€€€ì(€€€€€€€€€€€=É‘•É1¥ÍÑ½±Õµ¸¹5¥¹]¥‘Ñ €ô€ÈÜÀì(€€€€€€€€€€€=É‘•É•Ñ…¥±½±Õµ¸¹5¥¹]¥‘Ñ €ô€ÌÀÀì(€€€€€€€€€€€=É‘•É1¥ÍÑ½±Õµ¸¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  ĞÔ°É¥‘U¹¥ÑQåÁ”¹MÑ…È¤ì(€€€€€€€€€€€=É‘•É•Ñ…¥±½±Õµ¸¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  ÔÔ°É¥‘U¹¥ÑQåÁ”¹MÑ…È¤ì(€€€€€€€€€€€É¥¹M•Ñ½±Õµ¸¡MÑ…ÑÍMÑ…ÑÕÍA…¹•°°€À¤ì(€€€€€€€€€€€É¥¹M•ÑI½Ü¡MÑ…ÑÍMÑ…ÑÕÍA…¹•°°€Ä¤ì(€€€€€€€€€€€MÑ…ÑÍMÑ…ÑÕÍA…¹•°¹5…É¥¸€ô¹•ÜQ¡¥­¹•ÍÌ À°€ÄÀ°€À°€À¤ì(€€€€€€€€€€€MÑ…ÑÍ½¹Ñ•¹ÑÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÍlÅt¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  À¤ì(€€€€€€€€€€€MÑ…ÑÍ½¹Ñ•¹ÑÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÍlÉt¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  À¤ì(€€€€€€€ô(€€€€€€€•±Í”(€€€€€€€ì(€€€€€€€€€€€=É‘•É1¥ÍÑ½±Õµ¸¹5¥¹]¥‘Ñ €ô€ÌÀÀì(€€€€€€€€€€€=É‘•É•Ñ…¥±½±Õµ¸¹5¥¹]¥‘Ñ €ô€ÌĞÀì(€€€€€€€€€€€=É‘•É1¥ÍÑ½±Õµ¸¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  ĞÈ°É¥‘U¹¥ÑQåÁ”¹MÑ…È¤ì(€€€€€€€€€€€=É‘•É•Ñ…¥±½±Õµ¸¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  Ôà°É¥‘U¹¥ÑQåÁ”¹MÑ…È¤ì(€€€€€€€€€€€É¥¹M•Ñ½±Õµ¸¡MÑ…ÑÍMÑ…ÑÕÍA…¹•°°€È¤ì(€€€€€€€€€€€É¥¹M•ÑI½Ü¡MÑ…ÑÍMÑ…ÑÕÍA…¹•°°€À¤ì(€€€€€€€€€€€MÑ…ÑÍMÑ…ÑÕÍA…¹•°¹5…É¥¸€ô¹•ÜQ¡¥­¹•ÍÌ À¤ì(€€€€€€€€€€€MÑ…ÑÍ½¹Ñ•¹ÑÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÍlÅt¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  ÄÀ¤ì(€€€€€€€€€€€MÑ…ÑÍ½¹Ñ•¹ÑÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÍlÉt¹]¥‘Ñ €ô¹•ÜÉ¥‘1•¹Ñ  Ä°É¥‘U¹¥ÑQåÁ”¹MÑ…È¤ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥=Á•¹½µµ…¹‘A…±•ÑÑ” ¤(€€€ì(€€€€€€€½µµ…¹‘M•…É¡	½à¹±•…È ¤ì(€€€€€€€½µµ…¹‘1¥ÍĞ¹%Ñ•µÍM½ÕÉ”€ô}½µµ…¹‘Ìì(€€€€€€€½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%¹‘•à€ô€Àì(€€€€€€€½µµ…¹‘A…±•ÑÑ•=Ù•É±…ä¹Y¥Í¥‰¥±¥Ñä€ôY¥Í¥‰¥±¥Ñä¹Y¥Í¥‰±”ì(€€€€€€€¥ÍÁ…Ñ¡•È¹	•¥¹%¹Ù½­”  ¤€ôø½µµ…¹‘M•…É¡	½à¹½ÕÌ ¤°MåÍÑ•´¹]¥¹‘½İÌ¹Q¡É•…‘¥¹œ¹¥ÍÁ…Ñ¡•ÉAÉ¥½É¥Ñä¹%¹ÁÕĞ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥±½Í•½µµ…¹‘A…±•ÑÑ” ¤(€€€ì(€€€€€€€½µµ…¹‘A…±•ÑÑ•=Ù•É±…ä¹Y¥Í¥‰¥±¥Ñä€ôY¥Í¥‰¥±¥Ñä¹½±±…ÁÍ•ì(€€€€€€€½ÕÌ ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥¥±Ñ•É½µµ…¹‘Ì ¤(€€€ì(€€€€€€€Ù…ÈÅÕ•Éä€ô½µµ…¹‘M•…É¡	½à¹Q•áĞ¹QÉ¥´ ¤ì(€€€€€€€Ù…Èµ…Ñ¡•Ì€ôÍÑÉ¥¹œ¹%Í9Õ±±=É]¡¥Ñ•MÁ…”¡ÅÕ•Éä¤(€€€€€€€€€€€€ü}½µµ…¹‘Ì(€€€€€€€€€€€€è}½µµ…¹‘Ì¹]¡•É”¡½µµ…¹€ôø½µµ…¹¹Q¥Ñ±”¹½¹Ñ…¥¹Ì¡ÅÕ•Éä°MÑÉ¥¹½µÁ…É¥Í½¸¹ÕÉÉ•¹ÑÕ±ÑÕÉ•%¹½É•…Í”¤(€€€€€€€€€€€€€€€ñğ½µµ…¹¹•ÍÉ¥ÁÑ¥½¸¹½¹Ñ…¥¹Ì¡ÅÕ•Éä°MÑÉ¥¹½µÁ…É¥Í½¸¹ÕÉÉ•¹ÑÕ±ÑÕÉ•%¹½É•…Í”¤¤¹Q½1¥ÍĞ ¤ì(€€€€€€€½µµ…¹‘1¥ÍĞ¹%Ñ•µÍM½ÕÉ”€ôµ…Ñ¡•Ìì(€€€€€€€½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%¹‘•à€ôµ…Ñ¡•Ì¹½Õ¹Ğ€ø€À€ü€À€è€´Äì(€€€€€€€UÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡½µµ…¹‘M•…É¡	½à°½µµ…¹‘M•…É¡!¥¹Ğ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥á•ÕÑ•½µµ…¹¡½µµ…¹‘¹ÑÉäü½µµ…¹¤(€€€ì(€€€€€€€¥˜€¡½µµ…¹¥Ì¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€±½Í•½µµ…¹‘A…±•ÑÑ” ¤ì(€€€€€€€Íİ¥Ñ €¡½µµ…¹¹%¤(€€€€€€€ì(€€€€€€€€€€€…Í”€‰¹•ÜˆèM•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ìM•±•Ñ¥±Ñ•È ‰¹•Üˆ¤ì‰É•…¬ì(€€€€€€€€€€€…Í”€‰Í…±•ÌˆèM•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ìM•±•Ñ¥±Ñ•È ‰Í…±•Ìˆ¤ì‰É•…¬ì(€€€€€€€€€€€…Í”€‰ÁÕÉ¡…Í•ÌˆèM•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ìM•±•Ñ¥±Ñ•È ‰ÁÕÉ¡…Í•Ìˆ¤ì‰É•…¬ì(€€€€€€€€€€€…Í”€‰ÍÑ…ÑÌˆèM•±•ÑM•Ñ¥½¸ ‰ÍÑ…ÑÌˆ¤ì‰É•…¬ì(€€€€€€€€€€€…Í”€‰Í•ÑÑ¥¹ÌˆèM•±•ÑM•Ñ¥½¸ ‰Í•ÑÑ¥¹Ìˆ¤ì‰É•…¬ì(€€€€€€€€€€€…Í”€‰É•™É•Í ˆè|€ôI•™É•Í¡=É‘•ÉÍÍå¹Œ ¤ì‰É•…¬ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥5…¥¹]¥¹‘½İ}AÉ•Ù¥•İ-•å½İ¸¡½‰©•ĞÍ•¹‘•È°-•åÙ•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡½µµ…¹‘A…±•ÑÑ•=Ù•É±…ä¹Y¥Í¥‰¥±¥Ñä€ôôY¥Í¥‰¥±¥Ñä¹Y¥Í¥‰±”€˜˜”¹-•ä€ôô-•ä¹Í…Á”¤(€€€€€€€ì(€€€€€€€€€€€±½Í•½µµ…¹‘A…±•ÑÑ” ¤ì(€€€€€€€€€€€”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€¥˜€¡-•å‰½…É¹5½‘¥™¥•ÉÌ¹!…Í±…œ¡5½‘¥™¥•É-•åÌ¹½¹ÑÉ½°¤€˜˜”¹-•ä€ôô-•ä¹,¤(€€€€€€€ì(€€€€€€€€€€€=Á•¹½µµ…¹‘A…±•ÑÑ” ¤ì(€€€€€€€€€€€”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€€€€€•±Í”¥˜€¡-•å‰½…É¹5½‘¥™¥•ÉÌ¹!…Í±…œ¡5½‘¥™¥•É-•åÌ¹½¹ÑÉ½°¤€˜˜”¹-•ä€ôô-•ä¹Ä¤(€€€€€€€ì(€€€€€€€€€€€M•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ìM•±•Ñ¥±Ñ•È ‰¹•Üˆ¤ì”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€€€€€•±Í”¥˜€¡-•å‰½…É¹5½‘¥™¥•ÉÌ¹!…Í±…œ¡5½‘¥™¥•É-•åÌ¹½¹ÑÉ½°¤€˜˜”¹-•ä€ôô-•ä¹È¤(€€€€€€€ì(€€€€€€€€€€€M•±•ÑM•Ñ¥½¸ ‰ÍÑ…ÑÌˆ¤ì”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€€€€€•±Í”¥˜€¡-•å‰½…É¹5½‘¥™¥•ÉÌ¹!…Í±…œ¡5½‘¥™¥•É-•åÌ¹½¹ÑÉ½°¤€˜˜”¹-•ä€ôô-•ä¹=•µ½µµ„¤(€€€€€€€ì(€€€€€€€€€€€M•±•ÑM•Ñ¥½¸ ‰Í•ÑÑ¥¹Ìˆ¤ì”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€€€€€•±Í”¥˜€¡-•å‰½…É¹5½‘¥™¥•ÉÌ¹!…Í±…œ¡5½‘¥™¥•É-•åÌ¹½¹ÑÉ½°¤€˜˜”¹-•ä€ôô-•ä¹¤(€€€€€€€ì(€€€€€€€€€€€M•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ìM•…É¡	½à¹½ÕÌ ¤ìM•…É¡	½à¹M•±•Ñ±° ¤ì”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€€€€€•±Í”¥˜€¡”¹-•ä€ôô-•ä¹Ô¤(€€€€€€€ì(€€€€€€€€€€€|€ôI•™É•Í¡=É‘•ÉÍÍå¹Œ ¤ì”¹!…¹‘±•€ôÑÉÕ”ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥5…¥¹]¥¹‘½İ}M¥é•¡…¹•¡½‰©•ĞÍ•¹‘•È°M¥é•¡…¹•‘Ù•¹ÑÉÌ”¤€ôøÁÁ±å‘…ÁÑ¥Ù•1…å½ÕĞ¡”¹9•İM¥é”¹]¥‘Ñ ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥M•ÑÑ¥¹ÍY¥•İ}AÉ•Ù¥•İ5½ÕÍ•½İ¸¡½‰©•ĞÍ•¹‘•È°5½ÕÍ•	ÕÑÑ½¹Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡%Í%¹Ñ•É…Ñ¥Ù•M•ÑÑ¥¹ÍQ…É•Ğ¡”¹=É¥¥¹…±M½ÕÉ”…Ì•Á•¹‘•¹å=‰©•Ğ¤¤É•ÑÕÉ¸ì(€€€€€€€-•å‰½…É¹±•…É½ÕÌ ¤ì(€€€€€€€M•ÑÑ¥¹ÍY¥•Ü¹½ÕÌ ¤ì(€€€€€€€¥ÍÁ…Ñ¡•È¹	•¥¹%¹Ù½­”  ¤€ôø(€€€€€€€ì(€€€€€€€€€€€I•™É•Í¡A…åµ•¹Ñ5•ÍÍ…•A±…•¡½±‘•ÉÌ ¤ì(€€€€€€€€€€€I•™É•Í¡¥á•‘5•ÍÍ…•!¥¹ÑÌ ¤ì(€€€€€€€ô°MåÍÑ•´¹]¥¹‘½İÌ¹Q¡É•…‘¥¹œ¹¥ÍÁ…Ñ¡•ÉAÉ¥½É¥Ñä¹%¹ÁÕĞ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ‰½½°%Í%¹Ñ•É…Ñ¥Ù•M•ÑÑ¥¹ÍQ…É•Ğ¡•Á•¹‘•¹å=‰©•ĞüÍ½ÕÉ”¤(€€€ì(€€€€€€€İ¡¥±”€¡Í½ÕÉ”¥Ì¹½Ğ¹Õ±°¤(€€€€€€€ì(€€€€€€€€€€€¥˜€¡Í½ÕÉ”¥ÌMåÍÑ•´¹]¥¹‘½İÌ¹½¹ÑÉ½±Ì¹AÉ¥µ¥Ñ¥Ù•Ì¹Q•áÑ	½á	…Í”(€€€€€€€€€€€€€€€½ÈMåÍÑ•´¹]¥¹‘½İÌ¹½¹ÑÉ½±Ì¹AÉ¥µ¥Ñ¥Ù•Ì¹	ÕÑÑ½¹	…Í”(€€€€€€€€€€€€€€€½ÈMåÍÑ•´¹]¥¹‘½İÌ¹½¹ÑÉ½±Ì¹AÉ¥µ¥Ñ¥Ù•Ì¹M•±•Ñ½È(€€€€€€€€€€€€€€€½ÈMåÍÑ•´¹]¥¹‘½İÌ¹½¹ÑÉ½±Ì¹AÉ¥µ¥Ñ¥Ù•Ì¹I…¹•	…Í”¤(€€€€€€€€€€€€€€€É•ÑÕÉ¸ÑÉÕ”ì(€€€€€€€€€€€Í½ÕÉ”€ôÍ½ÕÉ”¥ÌY¥ÍÕ…°€üY¥ÍÕ…±QÉ••!•±Á•È¹•ÑA…É•¹Ğ¡Í½ÕÉ”¤€è¹Õ±°ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸™…±Í”ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘A…±•ÑÑ•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø=Á•¹½µµ…¹‘A…±•ÑÑ” ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥±½Í•½µµ…¹‘A…±•ÑÑ•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø±½Í•½µµ…¹‘A…±•ÑÑ” ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘M•…É¡	½á}Q•áÑ¡…¹•¡½‰©•ĞÍ•¹‘•È°Q•áÑ¡…¹•‘Ù•¹ÑÉÌ”¤€ôø¥±Ñ•É½µµ…¹‘Ì ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘M•…É¡	½á}½ÕÍ¡…¹•¡½‰©•ĞÍ•¹‘•È°-•å‰½…É‘½ÕÍ¡…¹•‘Ù•¹ÑÉÌ”¤€ôøUÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡½µµ…¹‘M•…É¡	½à°½µµ…¹‘M•…É¡!¥¹Ğ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘M•…É¡	½á}-•å½İ¸¡½‰©•ĞÍ•¹‘•È°-•åÙ•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡”¹-•ä€ôô-•ä¹½İ¸€˜˜½µµ…¹‘1¥ÍĞ¹%Ñ•µÌ¹½Õ¹Ğ€ø€À¤ì½µµ…¹‘1¥ÍĞ¹½ÕÌ ¤ì½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%¹‘•à€ô5…Ñ ¹5…à À°½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%¹‘•à¤ì”¹!…¹‘±•€ôÑÉÕ”ìô(€€€€€€€•±Í”¥˜€¡”¹-•ä€ôô-•ä¹¹Ñ•È¤ìá•ÕÑ•½µµ…¹¡½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%Ñ•´…Ì½µµ…¹‘¹ÑÉä¤ì”¹!…¹‘±•€ôÑÉÕ”ìô(€€€ô(€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘1¥ÍÑ}-•å½İ¸¡½‰©•ĞÍ•¹‘•È°-•åÙ•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡”¹-•ä€ôô-•ä¹¹Ñ•È¤ìá•ÕÑ•½µµ…¹¡½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%Ñ•´…Ì½µµ…¹‘¹ÑÉä¤ì”¹!…¹‘±•€ôÑÉÕ”ìô(€€€€€€€•±Í”¥˜€¡”¹-•ä€ôô-•ä¹Í…Á”¤ì±½Í•½µµ…¹‘A…±•ÑÑ” ¤ì”¹!…¹‘±•€ôÑÉÕ”ìô(€€€ô(€€€ÁÉ¥Ù…Ñ”Ù½¥½µµ…¹‘1¥ÍÑ}5½ÕÍ•½Õ‰±•±¥¬¡½‰©•ĞÍ•¹‘•È°5½ÕÍ•	ÕÑÑ½¹Ù•¹ÑÉÌ”¤€ôøá•ÕÑ•½µµ…¹¡½µµ…¹‘1¥ÍĞ¹M•±•Ñ•‘%Ñ•´…Ì½µµ…¹‘¹ÑÉä¤ì((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½¥M¡½İÉÉ½È¡ÍÑÉ¥¹œÑ¥Ñ±”°ÍÑÉ¥¹œµ•ÍÍ…”¤€ôø5•ÍÍ…•	½à¹M¡½Ü¡µ•ÍÍ…”°Ñ¥Ñ±”°5•ÍÍ…•	½á	ÕÑÑ½¸¹=,°5•ÍÍ…•	½á%µ…”¹]…É¹¥¹œ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥=É‘•ÉÍ1¥ÍÑ}M•±•Ñ¥½¹¡…¹•¡½‰©•ĞÍ•¹‘•È°M•±•Ñ¥½¹¡…¹•‘Ù•¹ÑÉÌ”¤€ôøI•¹‘•É=É‘•È¡=É‘•ÉÍ1¥ÍĞ¹M•±•Ñ•‘%Ñ•´…Ì=É‘•È¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥M•…É¡	½á}Q•áÑ¡…¹•¡½‰©•ĞÍ•¹‘•È°Q•áÑ¡…¹•‘Ù•¹ÑÉÌ”¤ìUÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡M•…É¡	½à°M•…É¡!¥¹Ğ¤ì¥˜€¡%Í1½…‘•¤ÁÁ±å¥±Ñ•È ¤ìô(€€€ÁÉ¥Ù…Ñ”Ù½¥M•…É¡	½á}½ÕÍ¡…¹•¡½‰©•ĞÍ•¹‘•È°-•å‰½…É‘½ÕÍ¡…¹•‘Ù•¹ÑÉÌ”¤€ôøUÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡M•…É¡	½à°M•…É¡!¥¹Ğ¤ì((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½¥UÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡Q•áÑ	½à¥¹ÁÕĞ°Q•áÑ	±½¬¡¥¹Ğ¤(€€€ì(€€€€€€€¡¥¹Ğ¹Y¥Í¥‰¥±¥Ñä€ôÍÑÉ¥¹œ¹%Í9Õ±±=É]¡¥Ñ•MÁ…”¡¥¹ÁÕĞ¹Q•áĞ¤€˜˜€…¥¹ÁÕĞ¹%Í-•å‰½…É‘½ÕÍ]¥Ñ¡¥¸(€€€€€€€€€€€€üY¥Í¥‰¥±¥Ñä¹Y¥Í¥‰±”(€€€€€€€€€€€€èY¥Í¥‰¥±¥Ñä¹½±±…ÁÍ•ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½¥UÁ‘…Ñ•%¹ÁÕÑ!¥¹Ğ¡µ½©¥I¥¡Q•áÑ	½à¥¹ÁÕĞ°Q•áÑ	±½¬¡¥¹Ğ¤(€€€ì(€€€€€€€¡¥¹Ğ¹Y¥Í¥‰¥±¥Ñä€ôÍÑÉ¥¹œ¹%Í9Õ±±=É]¡¥Ñ•MÁ…”¡¥¹ÁÕĞ¹Q•áĞ¤€˜˜€…¥¹ÁÕĞ¹%Í-•å‰½…É‘½ÕÍ]¥Ñ¡¥¸(€€€€€€€€€€€€üY¥Í¥‰¥±¥Ñä¹Y¥Í¥‰±”(€€€€€€€€€€€€èY¥Í¥‰¥±¥Ñä¹½±±…ÁÍ•ì(€€€ô(€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥I•™É•Í¡	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø…İ…¥ĞI•™É•Í¡=É‘•ÉÍÍå¹Œ ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥=É‘•ÉÍ9…Ù}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•ÑM•Ñ¥½¸ ‰½É‘•ÉÌˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥MÑ…ÑÍ9…Ù}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•ÑM•Ñ¥½¸ ‰ÍÑ…ÑÌˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥M•ÑÑ¥¹Í9…Ù}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•ÑM•Ñ¥½¸ ‰Í•ÑÑ¥¹Ìˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥9•İQ…‰}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•Ñ¥±Ñ•È ‰¹•Üˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥M…±•ÍQ…‰}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•Ñ¥±Ñ•È ‰Í…±•Ìˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥AÕÉ¡…Í•ÍQ…‰}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•Ñ¥±Ñ•È ‰ÁÕÉ¡…Í•Ìˆ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥±±Q…‰}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôøM•±•Ñ¥±Ñ•È ‰…±°ˆ¤ì(€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥1½…‘I•Á±¥•Í	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø…İ…¥Ğ1½…‘I•Á±¥•ÍÍå¹Œ ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥‘‘5•ÍÍ…•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø‘‘5•ÍÍ…•I½Ü ˆˆ¤ì(€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥M…Ù•I•Á±¥•Í	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø…İ…¥ĞM…Ù•I•Á±¥•ÍÍå¹Œ ¤ì(€€€ÁÉ¥Ù…Ñ”Ù½¥5¥¹¥µ¥é•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø]¥¹‘½İMÑ…Ñ”€ô]¥¹‘½İMÑ…Ñ”¹5¥¹¥µ¥é•ì(€€€ÁÉ¥Ù…Ñ”Ù½¥5…á¥µ¥é•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø]¥¹‘½İMÑ…Ñ”€ô]¥¹‘½İMÑ…Ñ”€ôô]¥¹‘½İMÑ…Ñ”¹5…á¥µ¥é•€ü]¥¹‘½İMÑ…Ñ”¹9½Éµ…°€è]¥¹‘½İMÑ…Ñ”¹5…á¥µ¥é•ì(€€€ÁÉ¥Ù…Ñ”Ù½¥±½Í•	ÕÑÑ½¹}±¥¬¡½‰©•ĞÍ•¹‘•È°I½ÕÑ•‘Ù•¹ÑÉÌ”¤€ôø±½Í” ¤ì((€€€ÁÉ¥Ù…Ñ”Ù½¥5…¥¹]¥¹‘½İ}±½Í¥¹œ¡½‰©•ĞüÍ•¹‘•È°…¹•±Ù•¹ÑÉÌ”¤(€€€ì(€€€€€€€¥˜€¡}ÁÉ•Ù¥•İ5½‘”¤É•ÑÕÉ¸ì(€€€€€€€¥˜€¡}•á¥Ñ¥¹œ¤É•ÑÕÉ¸ì(€€€€€€€”¹…¹•°€ôÑÉÕ”ì(€€€€€€€¥˜€¡}ÍÑ…Ñ”¹±½Í•Q½QÉ…ä¤(€€€€€€€ì(€€€€€€€€€€€!¥‘” ¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€á¥ÑÁÁ±¥…Ñ¥½¸ ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥M¡½İÉ½µQÉ…ä ¤(€€€ì(€€€€€€€¥ÍÁ…Ñ¡•È¹%¹Ù½­”  ¤€ôøìM¡½Ü ¤ì]¥¹‘½İMÑ…Ñ”€ô]¥¹‘½İMÑ…Ñ”¹9½Éµ…°ìÑ¥Ù…Ñ” ¤ìô¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”…Íå¹ŒÙ½¥á¥ÑÁÁ±¥…Ñ¥½¸ ¤(€€€ì(€€€€€€€¥˜€¡}Í¡ÕÑ‘½İ¹MÑ…ÉÑ•¤É•ÑÕÉ¸ì(€€€€€€€}Í¡ÕÑ‘½İ¹MÑ…ÉÑ•€ôÑÉÕ”ì(€€€€€€€}•á¥Ñ¥¹œ€ôÑÉÕ”ì(€€€€€€€!¥‘” ¤ì(€€€€€€€ÑÉä(€€€€€€€ì(€€€€€€€€€€€…İ…¥Ğ¥ÍÁ½Í•ÁÁ±¥…Ñ¥½¹I•Í½ÕÉ•ÍÍå¹Œ ¤ì(€€€€€€€ô(€€€€€€€™¥¹…±±ä(€€€€€€€ì(€€€€€€€€€€€±½Í¥¹œ€´ô5…¥¹]¥¹‘½İ}±½Í¥¹œì(€€€€€€€€€€€±½Í” ¤ì(€€€€€€€€€€€MåÍÑ•´¹]¥¹‘½İÌ¹ÁÁ±¥…Ñ¥½¸¹ÕÉÉ•¹Ğ¹M¡ÕÑ‘½İ¸ ¤ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”…Íå¹ŒQ…Í¬¥ÍÁ½Í•ÁÁ±¥…Ñ¥½¹I•Í½ÕÉ•ÍÍå¹Œ ¤(€€€ì(€€€€€€€¥˜€¡}É•Í½ÕÉ•Í¥ÍÁ½Í•¤É•ÑÕÉ¸ì(€€€€€€€}É•Í½ÕÉ•Í¥ÍÁ½Í•€ôÑÉÕ”ì((€€€€€€€Ù…ÈÑÉ…ä€ô}ÑÉ…äì(€€€€€€€}ÑÉ…ä€ô¹Õ±°ì(€€€€€€€ÑÉ…äü¹¥ÍÁ½Í” ¤ì((€€€€€€€ÑÉä(€€€€€€€ì(€€€€€€€€€€€¥˜€¡}µ½¹¥Ñ½È¥Ì¹½Ğ¹Õ±°¤…İ…¥Ğ}µ½¹¥Ñ½È¹¥ÍÁ½Í•Íå¹Œ ¤ì(€€€€€€€ô(€€€€€€€™¥¹…±±ä(€€€€€€€ì(€€€€€€€€€€€}µ½¹¥Ñ½È€ô¹Õ±°ì(€€€€€€€€€€€}¹½Ñ¥™¥•È¹¥ÍÁ½Í” ¤ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”Í•…±•É•½É½µµ…¹‘¹ÑÉä¡ÍÑÉ¥¹œ%°ÍÑÉ¥¹œQ¥Ñ±”°ÍÑÉ¥¹œ•ÍÉ¥ÁÑ¥½¸°ÍÑÉ¥¹œM¡½ÉÑÕĞ¤ì)ô(

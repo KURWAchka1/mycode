@@ -16,6 +16,11 @@ public partial class App : System.Windows.Application
             if (snapshot.Sales != 0) throw new InvalidDataException("Statistics smoke test failed");
             return;
         }
+        if (args.Contains("--monitor-lifecycle-smoke-test", StringComparer.OrdinalIgnoreCase))
+        {
+            MonitorLifecycleSmokeTest.RunAsync().GetAwaiter().GetResult();
+            return;
+        }
         var app = new App();
         app.InitializeComponent();
         var previewIndex = Array.FindIndex(args, value => value.Equals("--render-preview", StringComparison.OrdinalIgnoreCase));

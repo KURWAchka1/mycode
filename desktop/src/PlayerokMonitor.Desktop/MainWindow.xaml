@@ -190,211 +190,6 @@
                                                                 <MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsSelected" Value="False"/></MultiTrigger.Conditions>
                                                                 <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource ElevatedBrush}"/>
                                                             </MultiTrigger>
-                                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ItemRoot" Property="BorderBrush" Value="{StaticResource AccentBrush}"/><Setter TargetName="ItemRoot" Property="BorderThickness" Value="1"/></Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </ListBox.Resources>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid MinHeight="49">
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <StackPanel VerticalAlignment="Center">
-                                                    <emoji:TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                        <TextBlock Text="{Binding DirectionLabel}" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="  Â·  " Foreground="{StaticResource SubtleBrush}" FontSize="11"/>
-                                                         <TextBlock Text="{Binding StateLabel}" Foreground="{StaticResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="190"/>
-                                                        <TextBlock Text="{Binding ReviewStars}" Foreground="{StaticResource AmberBrush}" FontSize="12" FontWeight="SemiBold" Margin="9,0,0,0"/>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12,0,0,0">
-                                                    <TextBlock Text="{Binding PriceDisplay}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                                                    <TextBlock Text="{Binding CounterpartyDisplay}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Right" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                                <StackPanel x:Name="EmptyOrders" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
-                                    <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE930;" FontSize="24" Foreground="{StaticResource GreenBrush}"/>
-                                    <TextBlock x:Name="EmptyOrdersText" Text="ÐÐ¾Ð²Ñ‹Ñ… Ð·Ð°ÐºÐ°Ð·Ð¾Ð² Ð½ÐµÑ‚" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-                                    <TextBlock Text="ÐœÐ¾Ð¶Ð½Ð¾ Ð²Ñ‹Ð´Ð¾Ñ…Ð½ÑƒÑ‚ÑŒ" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <Border Grid.Column="1" Background="{StaticResource DividerBrush}"/>
-
-                            <Grid Grid.Column="2" Background="{StaticResource PageBrush}">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <Grid Margin="22,18,20,22">
-                                        <StackPanel x:Name="NoSelection" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Text="Ð’Ñ‹Ð±ÐµÑ€Ð¸Ñ‚Ðµ Ð·Ð°ÐºÐ°Ð·" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Ð¡Ñ‚Ð°Ñ‚ÑƒÑÑ‹ Ð¸ Ð´ÐµÐ¹ÑÑ‚Ð²Ð¸Ñ Ð¿Ð¾ÑÐ²ÑÑ‚ÑÑ Ð·Ð´ÐµÑÑŒ" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                        <StackPanel x:Name="OrderDetails" Visibility="Collapsed">
-                                            <TextBlock x:Name="DetailDirection" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold"/>
-                                            <emoji:TextBlock x:Name="DetailTitle" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                            <TextBlock x:Name="DetailPrice" FontSize="16" FontWeight="SemiBold" Margin="0,7,0,0"/>
-                                            <WrapPanel Margin="0,14,0,0">
-                                                <Button x:Name="OpenDealButton" Margin="0,0,7,7" Click="OpenDealButton_Click">
-                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Playerok"/><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE8A7;" FontSize="16" Margin="7,0,0,0"/></StackPanel>
-                                                </Button>
-                                                <Button x:Name="WakeButton" Style="{StaticResource AccentButton}" Content="Ð¯ Ð¿Ñ€Ð¾ÑÐ½ÑƒÐ»ÑÑ" Margin="0,0,7,7" Click="WakeButton_Click" Visibility="Collapsed"/>
-                                                <Button x:Name="RelistButton" Style="{StaticResource AccentButton}" Content="Ð’Ñ‹ÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ ÑÐ½Ð¾Ð²Ð°" Margin="0,0,7,7" Click="RelistButton_Click" Visibility="Collapsed"/>
-                                            </WrapPanel>
-                                            <StackPanel x:Name="DetailFields" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </ScrollViewer>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-
-                    <!-- STATISTICS: useful information, calculated and animated locally. -->
-                    <ScrollViewer x:Name="StatsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <Grid Margin="18,16,18,20">
-                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                            <UniformGrid x:Name="StatsMetricsGrid" Columns="4">
-                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Ð§Ð¸ÑÑ‚Ñ‹Ð¼Ð¸ Â· 14 Ð´Ð½ÐµÐ¹" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatNet" Text="0 â‚½" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="ÐŸÑ€Ð¾Ð´Ð°Ð¶Ð¸" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatSales" Text="0" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}" Margin="0,0,8,0"><StackPanel><TextBlock Text="Ð¡Ñ€ÐµÐ´Ð½Ð¸Ð¹ Ð´Ð¾Ñ…Ð¾Ð´" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatAverage" Text="0 â‚½" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
-                                <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="Ð—Ð°Ð²ÐµÑ€ÑˆÐµÐ½Ð¸Ðµ" Foreground="{StaticResource MutedBrush}" FontSize="11"/><TextBlock x:Name="StatCompletion" Text="0%" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></Border>
-                            </UniformGrid>
-                            <Grid x:Name="StatsContentGrid" Grid.Row="1" Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="2.2*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                <Border x:Name="StatsChartPanel" Style="{StaticResource Card}">
-                                    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><StackPanel><TextBlock Text="Ð”Ð¸Ð½Ð°Ð¼Ð¸ÐºÐ° Ð´Ð¾Ñ…Ð¾Ð´Ð°" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="14 Ð´Ð½ÐµÐ¹ Â· Ð±ÐµÐ· Ð·Ð°Ð¿Ñ€Ð¾ÑÐ¾Ð² Ðº VPS" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><local:StatisticsChart x:Name="RevenueChart" Grid.Row="1" Height="300" Margin="0,10,0,0"/></Grid>
-                                </Border>
-                                <Border x:Name="StatsStatusPanel" Grid.Column="2" Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <TextBlock Text="Ð¡Ð¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ" FontSize="15" FontWeight="SemiBold"/>
-                                        <Grid Margin="0,18,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="ÐÑƒÐ¶Ð½Ð¾ Ð²Ñ‹Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÑŒ" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatNew" FontSize="15" FontWeight="SemiBold"/></Grid>
-                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatProblems" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/></Grid>
-                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‚Ñ‹" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatReturns" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource AmberBrush}"/></Grid>
-                                        <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12"/>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="ÐŸÐ¾ÐºÑƒÐ¿ÐºÐ¸" Foreground="{StaticResource MutedBrush}"/><TextBlock Grid.Column="1" x:Name="StatPurchases" FontSize="15" FontWeight="SemiBold"/></Grid>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </Grid>
-                    </ScrollViewer>
-
-                    <!-- SETTINGS: compact rows, descriptions on the left and actions on the right. -->
-                    <ScrollViewer x:Name="SettingsView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Focusable="True" PreviewMouseDown="SettingsView_PreviewMouseDown">
-                        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="18,16,18,28">
-                            <Border Style="{StaticResource Card}">
-                                <StackPanel>
-                                    <TextBlock Text="ÐŸÐ¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµ" FontSize="15" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ Ñ‚Ð¾Ñ‚ Ð¶Ðµ Pairing URL, Ñ‡Ñ‚Ð¾ Ð¸ Ð½Ð° Android. Ð¢Ð¾ÐºÐµÐ½ Ð·Ð°ÑˆÐ¸Ñ„Ñ€Ð¾Ð²Ð°Ð½ Ð´Ð»Ñ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ Windows." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,3,0,12"/>
-                                    <TextBox x:Name="PairingUrlBox"/>
-                                    <WrapPanel Margin="0,10,0,0">
-                                        <Button Style="{StaticResource AccentButton}" Content="ÐŸÑ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ" Click="SaveConnectionButton_Click"/>
-                                        <Button Content="Ð¢ÐµÑÑ‚ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ" Margin="7,0,0,0" Click="TestNotificationButton_Click"/>
-                                    </WrapPanel>
-                                    <TextBlock x:Name="NotificationStatus" Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="2,7,0,0"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="ÐŸÑ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="ÐœÐ¾Ð½Ð¸Ñ‚Ð¾Ñ€Ð¸Ð½Ð³" FontWeight="SemiBold"/><TextBlock Text="ÐŸÐ¾Ð»ÑƒÑ‡Ð°Ñ‚ÑŒ Ð½Ð¾Ð²Ñ‹Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ð² Ñ„Ð¾Ð½Ðµ" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="MonitoringCheck" VerticalAlignment="Center"/></Grid>
-                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
-                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Ð¡Ð¸ÑÑ‚ÐµÐ¼Ð½Ñ‹Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ" FontWeight="SemiBold"/><TextBlock Text="ÐŸÐ¾ÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ð² Ñ†ÐµÐ½Ñ‚Ñ€Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ð¹ Windows" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="NotificationsCheck" VerticalAlignment="Center"/></Grid>
-                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
-                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="ÐÐ²Ñ‚Ð¾Ð·Ð°Ð¿ÑƒÑÐº" FontWeight="SemiBold"/><TextBlock Text="Ð—Ð°Ð¿ÑƒÑÐºÐ°Ñ‚ÑŒ Playerok Monitor Ð²Ð¼ÐµÑÑ‚Ðµ Ñ Windows" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="AutoStartCheck" VerticalAlignment="Center"/></Grid>
-                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
-                                    <Grid Margin="0,7,0,7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Ð—Ð°ÐºÑ€Ñ‹Ñ‚Ð¸Ðµ Ð² Ñ‚Ñ€ÐµÐ¹" FontWeight="SemiBold"/><TextBlock Text="ÐžÑÑ‚Ð°Ð²Ð»ÑÑ‚ÑŒ Ð¼Ð¾Ð½Ð¸Ñ‚Ð¾Ñ€Ð¸Ð½Ð³ Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¼ Ð¿Ð¾ÑÐ»Ðµ Ð·Ð°ÐºÑ€Ñ‹Ñ‚Ð¸Ñ Ð¾ÐºÐ½Ð°" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="CloseToTrayCheck" VerticalAlignment="Center"/></Grid>
-                                    <Button Content="Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹" HorizontalAlignment="Left" Margin="0,8,0,0" Click="SaveWindowsSettingsButton_Click"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
-                                <StackPanel>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <StackPanel><TextBlock Text="ÐÐ²Ñ‚Ð¾ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ñ" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="ÐžÐ±Ñ‰Ð¸Ðµ Ñ Android Â· Ð¾Ñ‚Ð¿Ñ€Ð°Ð²Ð¸Ñ‚ÐµÐ»ÐµÐ¼ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ ÑÐµÑ€Ð²ÐµÑ€" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel>
-                                        <Button Grid.Column="1" Style="{StaticResource SubtleButton}" Content="Ð—Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ð·Ð°Ð½Ð¾Ð²Ð¾" Padding="9,5" MinHeight="30" Click="LoadRepliesButton_Click"/>
-                                    </Grid>
-                                    <Grid Margin="0,14,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="ÐžÑ‚ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ Ð²ÑÐµ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ñ" FontWeight="SemiBold"/><TextBlock Text="Ð¢ÐµÐºÑÑ‚Ñ‹ ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÑ‚ÑÑ Ð¸ Ð²ÐµÑ€Ð½ÑƒÑ‚ÑÑ Ð¿Ð¾ÑÐ»Ðµ Ð²ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="DisableRepliesCheck" VerticalAlignment="Center"/></Grid>
-                                    <Border Height="1" Background="{StaticResource DividerBrush}"/>
-
-                                    <TextBlock Text="ÐŸÐ¾ÑÐ»Ðµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹" FontWeight="SemiBold" Margin="0,14,0,7"/>
-                                    <TextBlock Text="ÐœÐ¾Ð¶Ð½Ð¾ Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð´Ð¾ Ð²Ð¾ÑÑŒÐ¼Ð¸ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ð¹. ÐŸÑƒÑÑ‚Ð¾Ðµ Ð¿ÐµÑ€Ð²Ð¾Ðµ Ð¿Ð¾Ð»Ðµ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ ÑÐµÑ€Ð²ÐµÑ€Ð½Ñ‹Ð¹ Ñ‚ÐµÐºÑÑ‚ Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ." Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                                    <StackPanel x:Name="MessagesPanel"/>
-                                    <Button Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Margin="0,2,0,0" Padding="7,5" Click="AddMessageButton_Click"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource FluentIcon}" Text="&#xE710;" FontSize="16"/><TextBlock Text="Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ" Margin="7,0,0,0" VerticalAlignment="Center"/></StackPanel></Button>
-
-                                    <TextBlock Text="ÐŸÐ¾ÑÐ»Ðµ Ð¿Ð¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¸Ñ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ñ Ð²Ð°Ð¼Ð¸" FontWeight="SemiBold" Margin="0,16,0,7"/>
-                                    <Grid>
-                                        <emoji:RichTextBox x:Name="FulfillmentMessageBox" AcceptsReturn="True" MinHeight="64"/>
-                                        <TextBlock x:Name="FulfillmentHint" Foreground="{StaticResource SubtleBrush}" FontSize="12" TextWrapping="Wrap" Margin="11,9" VerticalAlignment="Top" IsHitTestVisible="False"/>
-                                    </Grid>
-
-                                    <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,16,0,14"/>
-                                    <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Ð ÐµÐ¶Ð¸Ð¼ ÑÐ½Ð°" FontWeight="SemiBold"/><TextBlock Text="ÐŸÑ€ÐµÐ´ÑƒÐ¿Ñ€ÐµÐ¶Ð´Ð°Ñ‚ÑŒ Ð¿Ð¾ÐºÑƒÐ¿Ð°Ñ‚ÐµÐ»Ñ, Ñ‡Ñ‚Ð¾ Ð¿Ñ€Ð¾Ð´Ð°Ð²ÐµÑ† Ð¼Ð¾Ð¶ÐµÑ‚ ÑÐ¿Ð°Ñ‚ÑŒ" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><CheckBox Grid.Column="1" x:Name="SleepEnabledCheck" VerticalAlignment="Center"/></Grid>
-                                    <Grid Margin="0,2,0,0" HorizontalAlignment="Left">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="116"/><ColumnDefinition Width="7"/><ColumnDefinition Width="116"/><ColumnDefinition Width="7"/><ColumnDefinition Width="236"/></Grid.ColumnDefinitions>
-                                        <StackPanel><TextBlock Text="Ð¡" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepStartBox" Style="{StaticResource CompactComboBox}" Tag="&#xE917;"/></StackPanel>
-                                        <StackPanel Grid.Column="2"><TextBlock Text="Ð”Ð¾" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepEndBox" Style="{StaticResource CompactComboBox}" Tag="&#xE917;"/></StackPanel>
-                                        <StackPanel Grid.Column="4"><TextBlock Text="Ð§Ð°ÑÐ¾Ð²Ð¾Ð¹ Ð¿Ð¾ÑÑ" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="2,0,0,3"/><ComboBox x:Name="SleepTimezoneBox" Style="{StaticResource CompactComboBox}" Tag="&#xE909;"/></StackPanel>
-                                    </Grid>
-                                    <TextBlock Text="Ð¡Ð¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ Ð²Ð¾ Ð²Ñ€ÐµÐ¼Ñ ÑÐ½Ð°" FontWeight="SemiBold" Margin="0,14,0,7"/>
-                                    <Grid>
-                                        <emoji:RichTextBox x:Name="SleepMessageBox" AcceptsReturn="True" MinHeight="64"/>
-                                        <TextBlock x:Name="SleepHint" Foreground="{StaticResource SubtleBrush}" FontSize="12" TextWrapping="Wrap" Margin="11,9" VerticalAlignment="Top" IsHitTestVisible="False"/>
-                                    </Grid>
-                                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                                        <Button Style="{StaticResource AccentButton}" Content="Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ñ" Click="SaveRepliesButton_Click"/>
-                                        <TextBlock x:Name="RepliesStatus" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Text="Playerok Monitor 1.1.7 Â· Windows 11" Foreground="{StaticResource SubtleBrush}" FontSize="10" Margin="2,12,0,0"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Grid>
-        </Grid>
-
-        <!-- Keyboard-first command palette. It is lazy in use and produces no server requests by itself. -->
-        <Grid x:Name="CommandPaletteOverlay" Grid.RowSpan="2" Visibility="Collapsed" Background="#8A080A0D" Panel.ZIndex="1000">
-            <Border Width="520" MaxHeight="460" Margin="0,94,0,0" VerticalAlignment="Top" Background="{StaticResource ElevatedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="8">
-                <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="8" Opacity="0.45"/></Border.Effect>
-                <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                    <Grid>
-                        <TextBox x:Name="CommandSearchBox"
-                                 Padding="36,8,34,8"
-                                 TextChanged="CommandSearchBox_TextChanged"
-                                 GotKeyboardFocus="CommandSearchBox_FocusChanged"
-                                 LostKeyboardFocus="CommandSearchBox_FocusChanged"
-                                 KeyDown="CommandSearchBox_KeyDown"/>
-                        <TextBlock Style="{StaticResource FluentIcon}" Text="&#xE721;" FontSize="16" Foreground="{StaticResource MutedBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"/>
-                        <TextBlock x:Name="CommandSearchHint" Text="ÐšÐ¾Ð¼Ð°Ð½Ð´Ð° Ð¸Ð»Ð¸ Ñ€Ð°Ð·Ð´ÐµÐ»" Foreground="{StaticResource SubtleBrush}" FontSize="12" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                        <Button Style="{StaticResource SubtleButton}" Content="Esc" FontSize="10" Foreground="{StaticResource MutedBrush}" Padding="5,2" MinHeight="20" HorizontalAlignment="Right" Margin="0,0,8,0" Click="CloseCommandPaletteButton_Click"/>
-                    </Grid>
-                    <TextBlock Grid.Row="1" Text="Ð‘Ð«Ð¡Ð¢Ð Ð«Ð• Ð”Ð•Ð™Ð¡Ð¢Ð’Ð˜Ð¯" Foreground="{StaticResource SubtleBrush}" FontSize="10" FontWeight="Bold" Margin="8,10,0,5"/>
-                    <ListBox Grid.Row="2" x:Name="CommandList" Background="Transparent" BorderThickness="0" MouseDoubleClick="CommandList_MouseDoubleClick" KeyDown="CommandList_KeyDown">
-                        <ListBox.Resources>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,1"/>
-                                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Root" Padding="10,8" CornerRadius="7" Background="Transparent"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Root" Property="Background" Value="{StaticResource SelectedBrush}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
-                            </Style>
-                        </ListBox.Resources>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding Shortcut}" Foreground="{StaticResource SubtleBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0,2,0"/></Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </Border>
-        </Grid>
-    </Grid>
-</Window>
+                                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Itemß¿6¶‰žËkºwµç@€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€ð½MÉ½±±Y¥•Ý•Èø((€€€€€€€€€€€€€€€€€€€€ð„´´MQQ%9Lè½µÁ…ÐÉ½ÝÌ°‘•ÍÉ¥ÁÑ¥½¹Ì½¸Ñ¡”±•™Ð…¹…Ñ¥½¹Ì½¸Ñ¡”É¥¡Ð¸€´´ø(€€€€€€€€€€€€€€€€€€€€ñMÉ½±±Y¥•Ý•Èàé9…µ”ô‰M•ÑÑ¥¹ÍY¥•ÜˆY¥Í¥‰¥±¥Ñäô‰½±±…ÁÍ•ˆY•ÉÑ¥…±MÉ½±±	…ÉY¥Í¥‰¥±¥Ñäô‰ÕÑ¼ˆ½ÕÍ…‰±”ô‰QÉÕ”ˆAÉ•Ù¥•Ý5½ÕÍ•½Ý¸ô‰M•ÑÑ¥¹ÍY¥•Ý}AÉ•Ù¥•Ý5½ÕÍ•½Ý¸ˆø(€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°5…á]¥‘Ñ ôˆàØÀˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰1•™Ðˆ5…É¥¸ôˆÄà°ÄØ°Äà°Èàˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•ÈMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”…É‘ôˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BBûBÓBëBïF;FB×B÷BãBÔˆ½¹ÑM¥é”ôˆÄÔˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BcFBÿBûBïF3BßFB×FFF<ƒFBûFƒBÛBÔA…¥É¥¹œUI0°ƒFFBøƒBàƒB÷BÀ¹‘É½¥¸ƒB‹BûBëB×BôƒBßBÃF#BãFFBûBËBÃBôƒBÓBïF<ƒFB×BëFF'B×BÏBøƒBÿBûBïF3BßBûBËBÃFB×BïF<]¥¹‘½ÝÌ¸ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÈˆQ•áÑ]É…ÁÁ¥¹œô‰]É…Àˆ5…É¥¸ôˆÀ°Ì°À°ÄÈˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	½ààé9…µ”ô‰A…¥É¥¹UÉ±	½àˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ]É…ÁA…¹•°5…É¥¸ôˆÀ°ÄÀ°À°Àˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”•¹Ñ	ÕÑÑ½¹ôˆ½¹Ñ•¹Ðô‹BFBûBËB×FBãFF0ƒBàƒFBûFFBÃB÷BãFF0ˆ±¥¬ô‰M…Ù•½¹¹•Ñ¥½¹	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸½¹Ñ•¹Ðô‹B‹B×FFƒFBËB×BÓBûBóBïB×B÷BãF<ˆ5…É¥¸ôˆÜ°À°À°Àˆ±¥¬ô‰Q•ÍÑ9½Ñ¥™¥…Ñ¥½¹	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½]É…ÁA…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬àé9…µ”ô‰9½Ñ¥™¥…Ñ¥½¹MÑ…ÑÕÌˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆQ•áÑ]É…ÁÁ¥¹œô‰]É…Àˆ5…É¥¸ôˆÈ°Ü°À°Àˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½	½É‘•Èø((€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•ÈMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”…É‘ôˆ5…É¥¸ôˆÀ°ÄÀ°À°Àˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BFBãBïBûBÛB×B÷BãBÔˆ½¹ÑM¥é”ôˆÄÔˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ5…É¥¸ôˆÀ°À°À°Ôˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°Ü°À°ÜˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹BsBûB÷BãFBûFBãB÷BÌˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹BBûBïFFBÃFF0ƒB÷BûBËF/BÔƒFBûBÇF/FBãF<ƒBÈƒFBûB÷BÔˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰5½¹¥Ñ½É¥¹¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•È!•¥¡ÐôˆÄˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”¥Ù¥‘•É	ÉÕÍ¡ôˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°Ü°À°ÜˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹B‡BãFFB×BóB÷F/BÔƒFBËB×BÓBûBóBïB×B÷BãF<ˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹BBûBëBÃBßF/BËBÃFF0ƒFBûBÇF/FBãF<ƒBÈƒFB×B÷FFBÔƒFBËB×BÓBûBóBïB×B÷BãBä]¥¹‘½ÝÌˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰9½Ñ¥™¥…Ñ¥½¹Í¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•È!•¥¡ÐôˆÄˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”¥Ù¥‘•É	ÉÕÍ¡ôˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°Ü°À°ÜˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹BCBËFBûBßBÃBÿFFBèˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹B_BÃBÿFFBëBÃFF0A±…å•É½¬5½¹¥Ñ½ÈƒBËBóB×FFBÔƒF]¥¹‘½ÝÌˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰ÕÑ½MÑ…ÉÑ¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•È!•¥¡ÐôˆÄˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”¥Ù¥‘•É	ÉÕÍ¡ôˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°Ü°À°ÜˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹B_BÃBëFF/FBãBÔƒBÈƒFFB×Bäˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹B{FFBÃBËBïF?FF0ƒBóBûB÷BãFBûFBãB÷BÌƒBÃBëFBãBËB÷F/BðƒBÿBûFBïBÔƒBßBÃBëFF/FBãF<ƒBûBëB÷BÀˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰±½Í•Q½QÉ…å¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸½¹Ñ•¹Ðô‹B‡BûFFBÃB÷BãFF0ƒBÿBÃFBÃBóB×FFF,ˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰1•™Ðˆ5…É¥¸ôˆÀ°à°À°Àˆ±¥¬ô‰M…Ù•]¥¹‘½ÝÍM•ÑÑ¥¹Í	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½	½É‘•Èø((€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•ÈMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”…É‘ôˆ5…É¥¸ôˆÀ°ÄÀ°À°Àˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹BCBËFBûFBûBûBÇF'B×B÷BãF<ˆ½¹ÑM¥é”ôˆÄÔˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹B{BÇF'BãBÔƒF¹‘É½¥ƒ
+ÜƒBûFBÿFBÃBËBãFB×BïB×BðƒBûFFBÃFGFFF<ƒFB×FBËB×F ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸É¥¹½±Õµ¸ôˆÄˆMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÕÑÑ½¹ôˆ½¹Ñ•¹Ðô‹B_BÃBÏFFBßBãFF0ƒBßBÃB÷BûBËBøˆA…‘‘¥¹œôˆä°Ôˆ5¥¹!•¥¡ÐôˆÌÀˆ±¥¬ô‰1½…‘I•Á±¥•Í	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°ÄÐ°À°ÄÀˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹B{FBëBïF;FBãFF0ƒBËFBÔƒFBûBûBÇF'B×B÷BãF<ˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹B‹B×BëFFF,ƒFBûFFBÃB÷F?FFF<ƒBàƒBËB×FB÷FFFF<ƒBÿBûFBïBÔƒBËBëBïF;FB×B÷BãF<ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰¥Í…‰±•I•Á±¥•Í¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•È!•¥¡ÐôˆÄˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”¥Ù¥‘•É	ÉÕÍ¡ôˆ¼ø((€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BBûFBïBÔƒBûBÿBïBÃFF,ˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ5…É¥¸ôˆÀ°ÄÐ°À°Üˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BsBûBÛB÷BøƒBÓBûBÇBÃBËBãFF0ƒBÓBøƒBËBûFF3BóBàƒFBûBûBÇF'B×B÷BãBä¸ƒBFFFBûBÔƒBÿB×FBËBûBÔƒBÿBûBïBÔƒBãFBÿBûBïF3BßFB×FƒFB×FBËB×FB÷F/BäƒFB×BëFFƒBÿBøƒFBóBûBïFBÃB÷BãF8¸ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆQ•áÑ]É…ÁÁ¥¹œô‰]É…Àˆ5…É¥¸ôˆÀ°À°À°àˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°àé9…µ”ô‰5•ÍÍ…•ÍA…¹•°ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÕÑÑ½¹ôˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰1•™Ðˆ5…É¥¸ôˆÀ°È°À°ÀˆA…‘‘¥¹œôˆÜ°Ôˆ±¥¬ô‰‘‘5•ÍÍ…•	ÕÑÑ½¹}±¥¬ˆøñMÑ…­A…¹•°=É¥•¹Ñ…Ñ¥½¸ô‰!½É¥é½¹Ñ…°ˆøñQ•áÑ	±½¬MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”±Õ•¹Ñ%½¹ôˆQ•áÐôˆ˜áÜÄÀìˆ½¹ÑM¥é”ôˆÄØˆ¼øñQ•áÑ	±½¬Q•áÐô‹BSBûBÇBÃBËBãFF0ƒFBûBûBÇF'B×B÷BãBÔˆ5…É¥¸ôˆÜ°À°À°ÀˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½MÑ…­A…¹•°øð½	ÕÑÑ½¸ø((€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹BBûFBïBÔƒBÿBûBÓFBËB×FBÛBÓB×B÷BãF<ƒBËF/BÿBûBïB÷B×B÷BãF<ƒBËBÃBóBàˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ5…É¥¸ôˆÀ°ÄØ°À°Üˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ•µ½©¤éI¥¡Q•áÑ	½ààé9…µ”ô‰Õ±™¥±±µ•¹Ñ5•ÍÍ…•	½àˆ•ÁÑÍI•ÑÕÉ¸ô‰QÉÕ”ˆ5¥¹!•¥¡ÐôˆØÐˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬àé9…µ”ô‰Õ±™¥±±µ•¹Ñ!¥¹Ðˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÈˆQ•áÑ]É…ÁÁ¥¹œô‰]É…Àˆ5…É¥¸ôˆÄÄ°äˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰Q½Àˆ%Í!¥ÑQ•ÍÑY¥Í¥‰±”ô‰…±Í”ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½É¥ø((€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	½É‘•È!•¥¡ÐôˆÄˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”¥Ù¥‘•É	ÉÕÍ¡ôˆ5…É¥¸ôˆÀ°ÄØ°À°ÄÐˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°À°À°àˆøñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹BƒB×BÛBãBðƒFB÷BÀˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ¼øñQ•áÑ	±½¬Q•áÐô‹BFB×BÓFBÿFB×BÛBÓBÃFF0ƒBÿBûBëFBÿBÃFB×BïF<°ƒFFBøƒBÿFBûBÓBÃBËB×FƒBóBûBÛB×FƒFBÿBÃFF0ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñ¡•­	½àÉ¥¹½±Õµ¸ôˆÄˆàé9…µ”ô‰M±••Á¹…‰±•‘¡•¬ˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥5…É¥¸ôˆÀ°È°À°Àˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰1•™Ðˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆÄÄØˆ¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆÜˆ¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆÄÄØˆ¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆÜˆ¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆÈÌØˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‹B„ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÀˆ5…É¥¸ôˆÈ°À°À°Ìˆ¼øñ½µ‰½	½ààé9…µ”ô‰M±••ÁMÑ…ÉÑ	½àˆMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”½µÁ…Ñ½µ‰½	½áôˆQ…œôˆ˜áäÄÜìˆ¼øð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°É¥¹½±Õµ¸ôˆÈˆøñQ•áÑ	±½¬Q•áÐô‹BSBøˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÀˆ5…É¥¸ôˆÈ°À°À°Ìˆ¼øñ½µ‰½	½ààé9…µ”ô‰M±••Á¹‘	½àˆMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”½µÁ…Ñ½µ‰½	½áôˆQ…œôˆ˜áäÄÜìˆ¼øð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°É¥¹½±Õµ¸ôˆÐˆøñQ•áÑ	±½¬Q•áÐô‹BŸBÃFBûBËBûBäƒBÿBûF?Fˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÀˆ5…É¥¸ôˆÈ°À°À°Ìˆ¼øñ½µ‰½	½ààé9…µ”ô‰M±••ÁQ¥µ•é½¹•	½àˆMÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”½µÁ…Ñ½µ‰½	½áôˆQ…œôˆ˜áäÀäìˆ¼øð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‹B‡BûBûBÇF'B×B÷BãBÔƒBËBøƒBËFB×BóF<ƒFB÷BÀˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ5…É¥¸ôˆÀ°ÄÐ°À°Üˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ•µ½©¤éI¥¡Q•áÑ	½ààé9…µ”ô‰M±••Á5•ÍÍ…•	½àˆ•ÁÑÍI•ÑÕÉ¸ô‰QÉÕ”ˆ5¥¹!•¥¡ÐôˆØÐˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬àé9…µ”ô‰M±••Á!¥¹Ðˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÈˆQ•áÑ]É…ÁÁ¥¹œô‰]É…Àˆ5…É¥¸ôˆÄÄ°äˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰Q½Àˆ%Í!¥ÑQ•ÍÑY¥Í¥‰±”ô‰…±Í”ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑ…­A…¹•°=É¥•¹Ñ…Ñ¥½¸ô‰!½É¥é½¹Ñ…°ˆ5…É¥¸ôˆÀ°ÄØ°À°Àˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”•¹Ñ	ÕÑÑ½¹ôˆ½¹Ñ•¹Ðô‹B‡BûFFBÃB÷BãFF0ƒFBûBûBÇF'B×B÷BãF<ˆ±¥¬ô‰M…Ù•I•Á±¥•Í	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬àé9…µ”ô‰I•Á±¥•ÍMÑ…ÑÕÌˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÄÀ°À°À°ÀˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½	½É‘•Èø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬Q•áÐô‰A±…å•É½¬5½¹¥Ñ½È€Ä¸Ä¸àƒ
+Ü]¥¹‘½ÝÌ€ÄÄˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÀˆ5…É¥¸ôˆÈ°ÄÈ°À°Àˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑ…­A…¹•°ø(€€€€€€€€€€€€€€€€€€€€ð½MÉ½±±Y¥•Ý•Èø(€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€ð½É¥ø(€€€€€€€€ð½É¥ø((€€€€€€€€ð„´´-•å‰½…Éµ™¥ÉÍÐ½µµ…¹Á…±•ÑÑ”¸%Ð¥Ì±…éä¥¸ÕÍ”…¹ÁÉ½‘Õ•Ì¹¼Í•ÉÙ•ÈÉ•ÅÕ•ÍÑÌ‰ä¥ÑÍ•±˜¸€´´ø(€€€€€€€€ñÉ¥àé9…µ”ô‰½µµ…¹‘A…±•ÑÑ•=Ù•É±…äˆÉ¥¹I½ÝMÁ…¸ôˆÈˆY¥Í¥‰¥±¥Ñäô‰½±±…ÁÍ•ˆ	…­É½Õ¹ôˆŒáÀàÁÁˆA…¹•°¹i%¹‘•àôˆÄÀÀÀˆø(€€€€€€€€€€€€ñ	½É‘•È]¥‘Ñ ôˆÔÈÀˆ5…á!•¥¡ÐôˆÐØÀˆ5…É¥¸ôˆÀ°äÐ°À°ÀˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰Q½Àˆ	…­É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”±•Ù…Ñ•‘	ÉÕÍ¡ôˆ	½É‘•É	ÉÕÍ ô‰íMÑ…Ñ¥I•Í½ÕÉ”	½É‘•É	ÉÕÍ¡ôˆ	½É‘•ÉQ¡¥­¹•ÍÌôˆÄˆ½É¹•ÉI…‘¥ÕÌôˆÄÈˆA…‘‘¥¹œôˆàˆø(€€€€€€€€€€€€€€€€ñ	½É‘•È¹™™•ÐøñÉ½ÁM¡…‘½Ý™™•Ð½±½ÈôˆŒÀÀÀÀÀÀˆ	±ÕÉI…‘¥ÕÌôˆÈàˆM¡…‘½Ý•ÁÑ ôˆàˆ=Á…¥ÑäôˆÀ¸ÐÔˆ¼øð½	½É‘•È¹™™•Ðø(€€€€€€€€€€€€€€€€ñÉ¥ø(€€€€€€€€€€€€€€€€€€€€ñÉ¥¹I½Ý•™¥¹¥Ñ¥½¹ÌøñI½Ý•™¥¹¥Ñ¥½¸!•¥¡Ðô‰ÕÑ¼ˆ¼øñI½Ý•™¥¹¥Ñ¥½¸!•¥¡Ðô‰ÕÑ¼ˆ¼øñI½Ý•™¥¹¥Ñ¥½¸!•¥¡Ðôˆ¨ˆ¼øð½É¥¹I½Ý•™¥¹¥Ñ¥½¹Ìø(€€€€€€€€€€€€€€€€€€€€ñÉ¥ø(€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	½ààé9…µ”ô‰½µµ…¹‘M•…É¡	½àˆ(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€A…‘‘¥¹œôˆÌØ°à°ÌÐ°àˆ(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€Q•áÑ¡…¹•ô‰½µµ…¹‘M•…É¡	½á}Q•áÑ¡…¹•ˆ(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€½Ñ-•å‰½…É‘½ÕÌô‰½µµ…¹‘M•…É¡	½á}½ÕÍ¡…¹•ˆ(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€1½ÍÑ-•å‰½…É‘½ÕÌô‰½µµ…¹‘M•…É¡	½á}½ÕÍ¡…¹•ˆ(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€-•å½Ý¸ô‰½µµ…¹‘M•…É¡	½á}-•å½Ý¸ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”±Õ•¹Ñ%½¹ôˆQ•áÐôˆ˜áÜÈÄìˆ½¹ÑM¥é”ôˆÄØˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ5…É¥¸ôˆÄÄ°À°À°Àˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰1•™Ðˆ%Í!¥ÑQ•ÍÑY¥Í¥‰±”ô‰…±Í”ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬àé9…µ”ô‰½µµ…¹‘M•…É¡!¥¹ÐˆQ•áÐô‹BkBûBóBÃB÷BÓBÀƒBãBïBàƒFBÃBßBÓB×Bìˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÈˆ5…É¥¸ôˆÌØ°À°À°ÀˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ%Í!¥ÑQ•ÍÑY¥Í¥‰±”ô‰…±Í”ˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€ñ	ÕÑÑ½¸MÑå±”ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÕÑÑ½¹ôˆ½¹Ñ•¹Ðô‰ÍŒˆ½¹ÑM¥é”ôˆÄÀˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆA…‘‘¥¹œôˆÔ°Èˆ5¥¹!•¥¡ÐôˆÈÀˆ!½É¥é½¹Ñ…±±¥¹µ•¹Ðô‰I¥¡Ðˆ5…É¥¸ôˆÀ°À°à°Àˆ±¥¬ô‰±½Í•½µµ…¹‘A…±•ÑÑ•	ÕÑÑ½¹}±¥¬ˆ¼ø(€€€€€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€€€€€€€€€ñQ•áÑ	±½¬É¥¹I½ÜôˆÄˆQ•áÐô‹BGB¯B‡B‹BƒB¯BTƒBSBWBgB‡B‹BKBcB¼ˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÀˆ½¹Ñ]•¥¡Ðô‰	½±ˆ5…É¥¸ôˆà°ÄÀ°À°Ôˆ¼ø(€€€€€€€€€€€€€€€€€€€€ñ1¥ÍÑ	½àÉ¥¹I½ÜôˆÈˆàé9…µ”ô‰½µµ…¹‘1¥ÍÐˆ	…­É½Õ¹ô‰QÉ…¹ÍÁ…É•¹Ðˆ	½É‘•ÉQ¡¥­¹•ÍÌôˆÀˆ5½ÕÍ•½Õ‰±•±¥¬ô‰½µµ…¹‘1¥ÍÑ}5½ÕÍ•½Õ‰±•±¥¬ˆ-•å½Ý¸ô‰½µµ…¹‘1¥ÍÑ}-•å½Ý¸ˆø(€€€€€€€€€€€€€€€€€€€€€€€€ñ1¥ÍÑ	½à¹I•Í½ÕÉ•Ìø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñMÑå±”Q…É•ÑQåÁ”ô‰1¥ÍÑ	½á%Ñ•´ˆø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñM•ÑÑ•ÈAÉ½Á•ÉÑäô‰!½É¥é½¹Ñ…±½¹Ñ•¹Ñ±¥¹µ•¹ÐˆY…±Õ”ô‰MÑÉ•Ñ ˆ¼øñM•ÑÑ•ÈAÉ½Á•ÉÑäô‰A…‘‘¥¹œˆY…±Õ”ôˆÀˆ¼øñM•ÑÑ•ÈAÉ½Á•ÉÑäô‰5…É¥¸ˆY…±Õ”ôˆÀ°Äˆ¼ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñM•ÑÑ•ÈAÉ½Á•ÉÑäô‰Q•µÁ±…Ñ”ˆøñM•ÑÑ•È¹Y…±Õ”øñ½¹ÑÉ½±Q•µÁ±…Ñ”Q…É•ÑQåÁ”ô‰1¥ÍÑ	½á%Ñ•´ˆøñ	½É‘•Èàé9…µ”ô‰I½½ÐˆA…‘‘¥¹œôˆÄÀ°àˆ½É¹•ÉI…‘¥ÕÌôˆÜˆ	…­É½Õ¹ô‰QÉ…¹ÍÁ…É•¹Ðˆøñ½¹Ñ•¹ÑAÉ•Í•¹Ñ•È¼øð½	½É‘•Èøñ½¹ÑÉ½±Q•µÁ±…Ñ”¹QÉ¥•ÉÌøñQÉ¥•ÈAÉ½Á•ÉÑäô‰%ÍM•±•Ñ•ˆY…±Õ”ô‰QÉÕ”ˆøñM•ÑÑ•ÈQ…É•Ñ9…µ”ô‰I½½ÐˆAÉ½Á•ÉÑäô‰	…­É½Õ¹ˆY…±Õ”ô‰íMÑ…Ñ¥I•Í½ÕÉ”M•±•Ñ•‘	ÉÕÍ¡ôˆ¼øð½QÉ¥•ÈøñQÉ¥•ÈAÉ½Á•ÉÑäô‰%Í5½ÕÍ•=Ù•ÈˆY…±Õ”ô‰QÉÕ”ˆøñM•ÑÑ•ÈQ…É•Ñ9…µ”ô‰I½½ÐˆAÉ½Á•ÉÑäô‰	…­É½Õ¹ˆY…±Õ”ô‰íMÑ…Ñ¥I•Í½ÕÉ”!½Ù•É	ÉÕÍ¡ôˆ¼øð½QÉ¥•Èøð½½¹ÑÉ½±Q•µÁ±…Ñ”¹QÉ¥•ÉÌøð½½¹ÑÉ½±Q•µÁ±…Ñ”øð½M•ÑÑ•È¹Y…±Õ”øð½M•ÑÑ•Èø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½MÑå±”ø(€€€€€€€€€€€€€€€€€€€€€€€€ð½1¥ÍÑ	½à¹I•Í½ÕÉ•Ìø(€€€€€€€€€€€€€€€€€€€€€€€€ñ1¥ÍÑ	½à¹%Ñ•µQ•µÁ±…Ñ”ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ…Ñ…Q•µÁ±…Ñ”ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÉ¥øñÉ¥¹½±Õµ¹•™¥¹¥Ñ¥½¹Ìøñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ôˆ¨ˆ¼øñ½±Õµ¹•™¥¹¥Ñ¥½¸]¥‘Ñ ô‰ÕÑ¼ˆ¼øð½É¥¹½±Õµ¹•™¥¹¥Ñ¥½¹ÌøñMÑ…­A…¹•°øñQ•áÑ	±½¬Q•áÐô‰í	¥¹‘¥¹œQ¥Ñ±•ôˆ½¹Ñ]•¥¡Ðô‰M•µ¥	½±ˆ½¹ÑM¥é”ôˆÄÌˆ¼øñQ•áÑ	±½¬Q•áÐô‰í	¥¹‘¥¹œ•ÍÉ¥ÁÑ¥½¹ôˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”5ÕÑ•‘	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆ5…É¥¸ôˆÀ°È°À°Àˆ¼øð½MÑ…­A…¹•°øñQ•áÑ	±½¬É¥¹½±Õµ¸ôˆÄˆQ•áÐô‰í	¥¹‘¥¹œM¡½ÉÑÕÑôˆ½É•É½Õ¹ô‰íMÑ…Ñ¥I•Í½ÕÉ”MÕ‰Ñ±•	ÉÕÍ¡ôˆ½¹ÑM¥é”ôˆÄÄˆY•ÉÑ¥…±±¥¹µ•¹Ðô‰•¹Ñ•Èˆ5…É¥¸ôˆÄØ°À°È°Àˆ¼øð½É¥ø(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½…Ñ…Q•µÁ±…Ñ”ø(€€€€€€€€€€€€€€€€€€€€€€€€ð½1¥ÍÑ	½à¹%Ñ•µQ•µÁ±…Ñ”ø(€€€€€€€€€€€€€€€€€€€€ð½1¥ÍÑ	½àø(€€€€€€€€€€€€€€€€ð½É¥ø(€€€€€€€€€€€€ð½	½É‘•Èø(€€€€€€€€ð½É¥ø(€€€€ð½É¥ø(ð½]¥¹‘½Üø(
