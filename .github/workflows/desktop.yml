@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  DESKTOP_VERSION: 1.1.7
-  DESKTOP_TAG: desktop-v1.1.7
+  DESKTOP_VERSION: 1.1.8
+  DESKTOP_TAG: desktop-v1.1.8
 
 jobs:
   build-test-package:
@@ -53,6 +53,12 @@ jobs:
         run: |
           $process = Start-Process -FilePath ./desktop/publish/PlayerokMonitor.Desktop.exe -ArgumentList '--smoke-test' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Application smoke test failed: $($process.ExitCode)" }
+
+      - name: Verify offline catch-up and monitor shutdown
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./desktop/publish/PlayerokMonitor.Desktop.exe -ArgumentList '--monitor-lifecycle-smoke-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Monitor lifecycle smoke test failed: $($process.ExitCode)" }
 
       - name: Verify search field layouts
         shell: pwsh

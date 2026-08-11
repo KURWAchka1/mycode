@@ -36,6 +36,8 @@ public partial class MainWindow : Window
     private string _section = "orders";
     private bool _connected;
     private bool _exiting;
+    private bool _shutdownStarted;
+    private bool _resourcesDisposed;
     private AutoReplySettings? _replySettings;
     private readonly bool _previewMode;
     private readonly List<CommandEntry> _commands =
@@ -77,9 +79,9 @@ public partial class MainWindow : Window
             ? "Канал уведомлений Windows готов"
             : "Windows-toast недоступен; события будут показаны через значок в трее";
         _tray = new TrayService();
-        _tray.OpenRequested += ShowFromTray;
-        _tray.RefreshRequested += () => Dispatcher.Invoke(async () => await RefreshOrdersAsync());
-        _tray.ExitRequested += () => Dispatcher.Invoke(ExitApplication);
+        _tray.OpenRequested += () => Dispatcher.BeginInvoke(new Action(ShowFromTray));
+        _tray.RefreshRequested += () => Dispatcher.BeginInvoke(new Action(async () => await RefreshOrdersAsync()));
+        _tray.ExitRequested += () => Dispatcher.BeginInvoke(new Action(ExitApplication));
         _monitor = new MonitorCoordinator(_state, _store);
         _monitor.OrdersChanged += orders => Dispatcher.Invoke(() => ApplyOrders(orders));
         _monitor.EventReceived += record => Dispatcher.Invoke(() => OnEvent(record));
@@ -835,20 +837,14 @@ public partial class MainWindow : Window
     private void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
         if (_previewMode) return;
-        if (!_exiting && _state.CloseToTray)
+        if (_exiting) return;
+        e.Cancel = true;
+        if (_state.CloseToTray)
         {
-            e.Cancel = true;
             Hide();
             return;
         }
-        if (!_exiting)
-        {
-            _exiting = true;
-            Dispatcher.BeginInvoke(() => System.Windows.Application.Current.Shutdown());
-        }
-        _monitor?.DisposeAsync().AsTask().GetAwaiter().GetResult();
-        _notifier.Dispose();
-        _tray?.Dispose();
+        ExitApplication();
     }
 
     private void ShowFromTray()
@@ -856,11 +852,42 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() => { Show(); WindowState = WindowState.Normal; Activate(); });
     }
 
-    private void ExitApplication()
+    private async void ExitApplication()
     {
+        if (_shutdownStarted) return;
+        _shutdownStarted = true;
         _exiting = true;
-        Close();
-        System.Windows.Application.Current.Shutdown();
+        Hide();
+        try
+        {
+            await DisposeApplicationResourcesAsync();
+        }
+        finally
+        {
+            Closing -= MainWindow_Closing;
+            Close();
+            System.Windows.Application.Current.Shutdown();
+        }
+    }
+
+    private async Task DisposeApplicationResourcesAsync()
+    {
+        if (_resourcesDisposed) return;
+        _resourcesDisposed = true;
+
+        var tray = _tray;
+        _tray = null;
+        tray?.Dispose();
+
+        try
+        {
+            if (_monitor is not null) await _monitor.DisposeAsync();
+        }
+        finally
+        {
+            _monitor = null;
+            _notifier.Dispose();
+        }
     }
 
     private sealed record CommandEntry(string Id, string Title, string Description, string Shortcut);

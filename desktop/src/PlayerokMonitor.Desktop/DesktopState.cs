@@ -25,8 +25,15 @@ public sealed class DesktopStateStore
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly string _directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlayerokMonitor");
+    private readonly string _directory;
     private string FilePath => Path.Combine(_directory, "state.json");
+
+    public DesktopStateStore(string? directory = null)
+    {
+        _directory = string.IsNullOrWhiteSpace(directory)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlayerokMonitor")
+            : Path.GetFullPath(directory);
+    }
 
     public async Task<DesktopState> LoadAsync()
     {
