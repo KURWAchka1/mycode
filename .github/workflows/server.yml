@@ -61,3 +61,4 @@ jobs:
               --target "$GITHUB_SHA" \
               --title "Playerok Monitor VPS $SERVER_VERSION" \
               --notes "Интерактивная установка и безопасное повторное обновление VPS с сохранением базы, токенов, HTTPS и Pairing URL."
+          fi
