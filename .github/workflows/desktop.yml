@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: windows-desktop-release
+  cancel-in-progress: false
+
 env:
   DESKTOP_VERSION: 1.1.10
   DESKTOP_TAG: desktop-v1.1.10
