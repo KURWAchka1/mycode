@@ -37,7 +37,9 @@ public partial class RelistWindow : Window
             var defaultPrice = Math.Max(1, _setup.ItemPrice > 0 ? _setup.ItemPrice : _setup.SourceItemPrice);
             PriceBox.Text = _setup.PriceLocked || _setup.PriceCustomized ? defaultPrice.ToString() : "";
             PriceBox.IsEnabled = !_setup.PriceLocked;
-            PriceHint.Text = _setup.PriceLocked ? "Цена закреплена за уже созданным черновиком" : $"Если оставить пустым: {defaultPrice:N0} ₽ — цена проданного товара без скидки";
+            PriceHint.Text = _setup.PriceLocked
+                ? "Цена зафиксирована для этого заказа; штатное «Перевыставить» Playerok сохраняет исходную цену"
+                : $"Если оставить пустым: {defaultPrice:N0} ₽ — цена проданного товара без скидки";
             PremiumCheck.IsChecked = string.IsNullOrWhiteSpace(_setup.PriorityType) || _setup.IsPremium;
             PreviewButton.IsEnabled = true;
             StatusText.Text = _setup.HasCover || _setup.CoverPreserved ? "Исходная обложка найдена и будет сохранена." : "Сервер проверит обложку ещё раз перед публикацией.";

@@ -1,4 +1,10 @@
-# Playerok Monitor 2.3.15 · Swipe Tabs & Defaults
+# Playerok Monitor 2.3.16 · Native Playerok Relist
+
+- Если у проданного объявления доступно штатное «Перевыставить» Playerok, VPS использует ту же карточку, обложку и параметры вместо ручного создания копии.
+- Цена в этом режиме берётся из объявления и заблокирована: сайт Playerok не позволяет переуказывать её при штатном перевыставлении.
+- Уже активированная на сайте карточка принимается как готовый результат без повторной оплаты Premium; для одного заказа действие по-прежнему возможно только один раз.
+
+## Included from 2.3.15
 
 - Swipe left and right across the order list to switch between New orders, Sales and Purchases without interfering with vertical scrolling or order taps.
 - Empty automatic-message fields now show the actual default text directly inside the editor instead of leaving the field visually blank.

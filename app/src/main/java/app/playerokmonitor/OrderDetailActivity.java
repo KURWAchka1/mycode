@@ -508,7 +508,13 @@ public final class OrderDetailActivity extends Activity {
                 true
         ));
 
-        TextView priceLabel = Ui.text(this, "Новая цена (необязательно)", 13, Ui.MUTED, true);
+        TextView priceLabel = Ui.text(
+                this,
+                setup.priceLocked ? "Цена штатного перевыставления" : "Новая цена (необязательно)",
+                13,
+                Ui.MUTED,
+                true
+        );
         LinearLayout.LayoutParams labelParams = matchWrap();
         labelParams.topMargin = Ui.dp(this, 18);
         form.addView(priceLabel, labelParams);
@@ -532,7 +538,7 @@ public final class OrderDetailActivity extends Activity {
         if (setup.priceLocked) {
             TextView locked = Ui.text(
                     this,
-                    "Черновик уже создан с этой ценой. Она заблокирована, чтобы повтор не создал второй товар.",
+                    "Цена зафиксирована для этого заказа. Штатное «Перевыставить» Playerok сохраняет исходную цену.",
                     12,
                     Ui.MUTED,
                     false
