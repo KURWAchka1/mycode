@@ -49,6 +49,14 @@ final class UrlTools {
         return builder.build().toString();
     }
 
+    static String fulfillUrl(String pairingUrl, String dealId) {
+        Uri source = Uri.parse(pairingUrl.trim());
+        Uri.Builder builder = baseBuilder(source, "/fulfill");
+        copyAuthParams(source, builder);
+        builder.appendQueryParameter("deal_id", dealId == null ? "" : dealId);
+        return builder.build().toString();
+    }
+
     static String relistSetupUrl(String pairingUrl, String dealId) {
         Uri source = Uri.parse(pairingUrl.trim());
         Uri.Builder builder = baseBuilder(source, "/relist");

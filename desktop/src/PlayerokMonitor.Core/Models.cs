@@ -3,6 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace PlayerokMonitor.Core;
 
+public sealed class BuyerField
+{
+    [JsonPropertyName("label")] public string Label { get; init; } = "";
+    [JsonPropertyName("value")] public string Value { get; init; } = "";
+    [JsonPropertyName("copyable")] public bool Copyable { get; init; }
+}
+
 public sealed class Order
 {
     [JsonPropertyName("deal_id")] public string DealId { get; init; } = "";
@@ -16,6 +23,7 @@ public sealed class Order
     [JsonPropertyName("counterparty")] public string Counterparty { get; init; } = "";
     [JsonPropertyName("buyer")] public string Buyer { get; init; } = "";
     [JsonPropertyName("buyer_comment")] public string BuyerComment { get; init; } = "";
+    [JsonPropertyName("buyer_fields")] public List<BuyerField> BuyerFields { get; init; } = [];
     [JsonPropertyName("paid_at")] public string PaidAt { get; init; } = "";
     [JsonPropertyName("problem_active")] public bool ProblemActive { get; init; }
     [JsonPropertyName("problem_reported_at")] public string ProblemReportedAt { get; init; } = "";

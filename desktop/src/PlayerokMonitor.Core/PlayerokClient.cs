@@ -21,7 +21,7 @@ public sealed class PlayerokClient : IDisposable
         PairingUrl = pairingUrl.Trim();
         _http = handler is null ? new HttpClient() : new HttpClient(handler, true);
         _http.Timeout = TimeSpan.FromSeconds(70);
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.1.9 Windows11");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayerokMonitor-Desktop/1.1.10 Windows11");
         _http.DefaultRequestHeaders.Accept.ParseAdd("application/json, text/plain, */*");
     }
 
@@ -88,6 +88,12 @@ public sealed class PlayerokClient : IDisposable
     public async Task<ApiResult> WakeAsync(string dealId, CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsync(Build("/wake", ("deal_id", dealId)), new ByteArrayContent([]), cancellationToken);
+        return await ReadRequiredAsync<ApiResult>(response, cancellationToken);
+    }
+
+    public async Task<ApiResult> FulfillAsync(string dealId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsync(Build("/fulfill", ("deal_id", dealId)), new ByteArrayContent([]), cancellationToken);
         return await ReadRequiredAsync<ApiResult>(response, cancellationToken);
     }
 

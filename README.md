@@ -19,4 +19,8 @@ Android client for the Playerok Monitor VPS service.
 gradle :app:assembleDebug
 ```
 
-The CI artifact is named `PlayerokMonitor-2.3.13-OneUI85` and includes default, large-text, dark-mode and sleep-settings screenshots alongside the APK.
+The CI artifact is named `PlayerokMonitor-2.3.17-OneUI85` and includes default, large-text, dark-mode and sleep-settings screenshots alongside the APK.
+
+## VPS installer
+
+The production server source and the repeatable installer are kept in [`server/`](server/README.md). Every server release publishes `install-playerok-monitor.sh` as a separate GitHub asset. Re-running it updates only Playerok Monitor, preserves the database, pairing URL and message settings, and leaves unrelated VPN/bot services untouched.

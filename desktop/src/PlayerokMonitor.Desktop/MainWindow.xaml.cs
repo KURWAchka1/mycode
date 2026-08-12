@@ -256,6 +256,9 @@ public partial class MainWindow : Window
             : order.PriceDisplay;
         var dealUrl = string.IsNullOrWhiteSpace(order.DealUrl) ? $"https://playerok.com/deal/{order.DealId}" : order.DealUrl;
         OpenDealButton.Tag = dealUrl;
+        FulfillButton.Visibility = order.IsSale && !order.SellerFulfilled && !order.RolledBack && !order.ProblemActive
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         WakeButton.Visibility = order.WakeReplyAvailable ? Visibility.Visible : Visibility.Collapsed;
         WakeButton.Content = order.WakeReplyRequested ? "Повторить отправку" : "Я проснулся";
         var canRelist = order.IsSale && order.RelistEligible && !order.RolledBack && !order.ProblemActive && order.SellerFulfilled && !order.IsRelisted && !order.RelistState.Equals("PUBLISHING", StringComparison.OrdinalIgnoreCase);
@@ -264,6 +267,7 @@ public partial class MainWindow : Window
         AddField("Заказ", order.DealId);
         AddField(order.IsSale ? "Покупатель" : "Продавец", string.IsNullOrWhiteSpace(order.CounterpartyDisplay) ? "—" : $"@{order.CounterpartyDisplay.TrimStart('@')}");
         AddField("Оплачен", order.PaidAtDisplay);
+        if (order.BuyerFields.Count > 0) AddBuyerFields(order);
         AddStatusCard(order.SellerFulfilled ? "Выполнение подтверждено" : "Выполнение не подтверждено", order.IsSale ? (order.SellerFulfilled ? "Вами" : "Нужно выполнить заказ на Playerok") : (order.SellerFulfilled ? $"Продавцом · {order.Actor(order.SellerFulfilledByName, order.SellerFulfilledByRole, order.SellerFulfilledByRelation)}" : "Продавец ещё не подтвердил выполнение"), order.SellerFulfilled ? "green" : "amber");
         AddStatusCard(order.RecipientConfirmed ? "Получение подтверждено" : "Получение не подтверждено", ReceiptDescription(order), order.RecipientConfirmed ? "green" : "neutral");
         if (order.HasReview)
@@ -302,6 +306,51 @@ public partial class MainWindow : Window
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
         DetailFields.Children.Add(grid);
+    }
+
+    private void AddBuyerFields(Order order)
+    {
+        var stack = new StackPanel();
+        stack.Children.Add(new TextBlock
+        {
+            Text = order.IsSale ? "Данные покупателя" : "Данные для продавца",
+            Foreground = (Brush)FindResource("AccentBrush"),
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold
+        });
+        foreach (var field in order.BuyerFields.Where(field => !string.IsNullOrWhiteSpace(field.Value)))
+        {
+            stack.Children.Add(new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(field.Label) ? "Поле" : field.Label,
+                Foreground = (Brush)FindResource("MutedBrush"),
+                FontSize = 11,
+                Margin = new Thickness(0, 8, 0, 0)
+            });
+            stack.Children.Add(new TextBox
+            {
+                Text = field.Value,
+                IsReadOnly = true,
+                IsReadOnlyCaretVisible = false,
+                TextWrapping = TextWrapping.Wrap,
+                AcceptsReturn = true,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(0),
+                Foreground = (Brush)FindResource("TextBrush"),
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                Cursor = System.Windows.Input.Cursors.IBeam
+            });
+        }
+        DetailFields.Children.Add(new Border
+        {
+            BorderBrush = (Brush)FindResource("DividerBrush"),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+            Padding = new Thickness(0, 10, 0, 0),
+            Margin = new Thickness(0, 10, 0, 0),
+            Child = stack
+        });
     }
 
     private void AddStatusCard(string title, string description, string tone)
@@ -604,6 +653,30 @@ public partial class MainWindow : Window
         }
         catch (Exception error) { ShowError("Не удалось отправить", error.Message + "\n\nПовторный запрос безопасен и не создаст дубль."); }
         finally { WakeButton.IsEnabled = true; }
+    }
+
+    private async void FulfillButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (OrdersList.SelectedItem is not Order order || _monitor?.Client is null) return;
+        var warning = "Нажимайте только после полной передачи товара покупателю. Сервер отметит заказ как выполненный на Playerok и отправит настроенное сообщение после выполнения.";
+        if (MessageBox.Show(this, warning, "Подтвердить выполнение?", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        FulfillButton.IsEnabled = false;
+        FulfillButton.Content = "Подтверждаю…";
+        try
+        {
+            var result = await _monitor.Client.FulfillAsync(order.DealId);
+            if (!result.Ok) throw new InvalidOperationException(result.Message);
+            await RefreshOrdersAsync();
+        }
+        catch (Exception error)
+        {
+            ShowError("Не удалось подтвердить выполнение", error.Message + "\n\nПеред повтором обновите заказ. Двойное подтверждение сервером заблокировано.");
+        }
+        finally
+        {
+            FulfillButton.IsEnabled = true;
+            FulfillButton.Content = "Я выполнил";
+        }
     }
 
     private void RelistButton_Click(object sender, RoutedEventArgs e)

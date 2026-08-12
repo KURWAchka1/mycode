@@ -217,6 +217,19 @@ public final class OrderDetailActivity extends Activity {
             addField(card, "Возврат оформил", order.refundActorLabel());
         }
 
+        if (order.isSale() && !order.sellerFulfilled && !order.rolledBack && !order.problemActive) {
+            Button fulfilled = Ui.button(this, "Я выполнил", true);
+            fulfilled.setOnClickListener(v -> {
+                Ui.haptic(v);
+                showFulfillmentConfirmation(order, fulfilled);
+            });
+            LinearLayout.LayoutParams fulfilledParams = matchWrap();
+            fulfilledParams.topMargin = Ui.dp(this, 14);
+            content.addView(fulfilled, fulfilledParams);
+        }
+
+        if (!order.buyerFields.isEmpty()) addBuyerFieldsCard(order);
+
         if (!order.buyerComment.isEmpty()) {
             LinearLayout note = new LinearLayout(this);
             note.setOrientation(LinearLayout.VERTICAL);
@@ -275,6 +288,88 @@ public final class OrderDetailActivity extends Activity {
         chat.setTypeface(Typeface.MONOSPACE);
         LinearLayout.LayoutParams chp = matchWrap(); chp.topMargin = Ui.dp(this, 4); ids.addView(chat, chp);
         Ui.reveal(content);
+    }
+
+    private void addBuyerFieldsCard(OrderData order) {
+        LinearLayout fields = new LinearLayout(this);
+        fields.setOrientation(LinearLayout.VERTICAL);
+        fields.setPadding(Ui.dp(this, 16), Ui.dp(this, 14), Ui.dp(this, 16), Ui.dp(this, 14));
+        fields.setBackground(Ui.roundedStroke(this, Ui.CARD, Ui.BORDER, 20));
+        LinearLayout.LayoutParams params = matchWrap();
+        params.topMargin = Ui.dp(this, 14);
+        content.addView(fields, params);
+        fields.addView(Ui.text(
+                this,
+                order.isSale() ? "Данные покупателя" : "Данные для продавца",
+                14,
+                Ui.ACCENT,
+                true
+        ));
+        for (OrderData.BuyerField field : order.buyerFields) {
+            LinearLayout block = new LinearLayout(this);
+            block.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams blockParams = matchWrap();
+            blockParams.topMargin = Ui.dp(this, 12);
+            fields.addView(block, blockParams);
+            block.addView(Ui.text(this, field.label, 12, Ui.MUTED, false));
+            TextView value = Ui.text(this, field.value, 15, Ui.TEXT, true);
+            value.setTextIsSelectable(true);
+            value.setContentDescription(field.label + ": " + field.value);
+            block.addView(value, marginTop(4));
+        }
+    }
+
+    private void showFulfillmentConfirmation(OrderData order, Button button) {
+        new AlertDialog.Builder(this)
+                .setTitle("Подтвердить выполнение?")
+                .setMessage("Нажимайте только после полной передачи товара покупателю. Сервер отметит заказ как выполненный на Playerok и отправит настроенное сообщение после выполнения.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Я действительно выполнил", (dialog, which) -> sendFulfillment(order, button))
+                .show();
+    }
+
+    private void sendFulfillment(OrderData order, Button button) {
+        String pairingUrl = Prefs.getUrl(this);
+        String validation = UrlTools.validatePairingUrl(pairingUrl);
+        if (validation != null) {
+            toast(validation);
+            return;
+        }
+        button.setEnabled(false);
+        button.setText("Подтверждаю…");
+        network.execute(() -> {
+            try {
+                String raw = HttpTextClient.post(
+                        UrlTools.fulfillUrl(pairingUrl, order.dealId),
+                        30_000
+                );
+                JSONObject result = new JSONObject(raw);
+                if (!result.optBoolean("ok", false)) {
+                    throw new IllegalStateException(result.optString(
+                            "message", "VPS не подтвердил выполнение"));
+                }
+                OrdersRepository.sync(this, pairingUrl);
+                OrderData updated = OrdersRepository.findCached(this, dealId);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (updated != null) render(updated);
+                    toast(result.optString("message", "Выполнение подтверждено"));
+                });
+            } catch (Exception e) {
+                String message = serverMessage(e);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    button.setEnabled(true);
+                    button.setText("Я выполнил");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Не удалось подтвердить")
+                            .setMessage(message + "\n\nПеред повтором обновите заказ. Повторный запрос защищён от двойного подтверждения.")
+                            .setPositiveButton("Понятно", null)
+                            .show();
+                    sync(false);
+                });
+            }
+        });
     }
 
     private void addWakeCard(OrderData order) {

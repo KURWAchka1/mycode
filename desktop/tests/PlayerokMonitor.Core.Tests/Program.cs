@@ -1,5 +1,6 @@
 using PlayerokMonitor.Core;
 using System.Net;
+using System.Text.Json;
 
 static void Assert(bool condition, string message)
 {
@@ -16,6 +17,27 @@ using var jsonHealthClient = new PlayerokClient("https://example.com/poll?token=
 Assert(await jsonHealthClient.CheckHealthAsync(), "JSON health response rejected");
 using var invalidHealthClient = new PlayerokClient("https://example.com/poll?token=secret", new StaticResponseHandler("Offline"));
 Assert(!await invalidHealthClient.CheckHealthAsync(), "invalid health response accepted");
+
+var fulfillHandler = new StaticResponseHandler("{\"ok\":true,\"message\":\"Выполнение подтверждено\"}");
+using var fulfillClient = new PlayerokClient("https://example.com/poll?token=secret", fulfillHandler);
+var fulfillResult = await fulfillClient.FulfillAsync("deal with space");
+Assert(fulfillResult.Ok, "fulfillment response rejected");
+Assert(fulfillHandler.LastMethod == HttpMethod.Post, "fulfillment must use POST");
+Assert(fulfillHandler.LastUri?.AbsolutePath == "/fulfill", "fulfillment path is invalid");
+Assert(fulfillHandler.LastUri?.Query.Contains("deal_id=deal%20with%20space", StringComparison.Ordinal) == true, "fulfillment deal id is not encoded");
+
+var checkoutOrder = JsonSerializer.Deserialize<Order>("""
+{
+  "deal_id": "deal-fields",
+  "direction": "OUT",
+  "buyer_fields": [
+    {"label": "Сервер", "value": "Moscow", "copyable": true},
+    {"label": "Никнейм", "value": "Player_One", "copyable": true}
+  ]
+}
+""", new JsonSerializerOptions(JsonSerializerDefaults.Web));
+Assert(checkoutOrder?.BuyerFields.Count == 2, "checkout fields were not parsed");
+Assert(checkoutOrder?.BuyerFields[1].Value == "Player_One", "checkout field value changed");
 
 var eventRecord = EventRecord.Parse("EVENT2\t42\tORDER_PAID\tdeal-1\tНовый заказ\tТовар оплачен");
 Assert(eventRecord is { Id: 42, DealId: "deal-1" }, "EVENT2 parse failed");
@@ -44,10 +66,17 @@ Assert(reviewedOrder.HasReview, "review presence failed");
 Assert(reviewedOrder.ReviewStars == "★★★★☆", "review stars failed");
 Assert(!new Order().HasReview && new Order().ReviewStars == "", "empty review failed");
 
-Console.WriteLine("PlayerokMonitor.Core.Tests: 18 assertions passed");
+Console.WriteLine("PlayerokMonitor.Core.Tests: 25 assertions passed");
 
 sealed class StaticResponseHandler(string content) : HttpMessageHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-        Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(content) });
+    public HttpMethod? LastMethod { get; private set; }
+    public Uri? LastUri { get; private set; }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        LastMethod = request.Method;
+        LastUri = request.RequestUri;
+        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(content) });
+    }
 }

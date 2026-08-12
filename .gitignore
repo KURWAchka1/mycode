@@ -13,3 +13,5 @@ desktop/publish/
 desktop/Releases/
 desktop/assets/app.ico
 desktop/preview*.png
+__pycache__/
+*.py[cod]

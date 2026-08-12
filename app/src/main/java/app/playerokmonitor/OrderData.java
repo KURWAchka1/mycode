@@ -1,10 +1,14 @@
 package app.playerokmonitor;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 final class OrderData {
@@ -21,6 +25,7 @@ final class OrderData {
     final String sellerNetAvailableAt;
     final String counterparty;
     final String buyerComment;
+    final List<BuyerField> buyerFields;
     final String paidAt;
     final boolean problemActive;
     final String problemReportedAt;
@@ -79,6 +84,7 @@ final class OrderData {
             String sellerNetAvailableAt,
             String counterparty,
             String buyerComment,
+            List<BuyerField> buyerFields,
             String paidAt,
             boolean problemActive,
             String problemReportedAt,
@@ -136,6 +142,7 @@ final class OrderData {
         this.sellerNetAvailableAt = sellerNetAvailableAt;
         this.counterparty = counterparty;
         this.buyerComment = buyerComment;
+        this.buyerFields = Collections.unmodifiableList(new ArrayList<>(buyerFields));
         this.paidAt = paidAt;
         this.problemActive = problemActive;
         this.problemReportedAt = problemReportedAt;
@@ -203,6 +210,7 @@ final class OrderData {
                 o.optString("seller_net_available_at", ""),
                 counterparty,
                 o.optString("buyer_comment", ""),
+                parseBuyerFields(o.optJSONArray("buyer_fields")),
                 o.optString("paid_at", ""),
                 o.optBoolean("problem_active", false),
                 o.optString("problem_reported_at", ""),
@@ -250,6 +258,33 @@ final class OrderData {
                 o.optLong("revision", 0L),
                 dealUrl
         );
+    }
+
+    private static List<BuyerField> parseBuyerFields(JSONArray array) {
+        List<BuyerField> result = new ArrayList<>();
+        if (array == null) return result;
+        for (int index = 0; index < array.length(); index++) {
+            JSONObject field = array.optJSONObject(index);
+            if (field == null) continue;
+            String label = field.optString("label", "").trim();
+            String value = field.optString("value", "").trim();
+            if (value.isEmpty()) continue;
+            if (label.isEmpty()) label = "Поле " + (index + 1);
+            result.add(new BuyerField(label, value, field.optBoolean("copyable", false)));
+        }
+        return result;
+    }
+
+    static final class BuyerField {
+        final String label;
+        final String value;
+        final boolean copyable;
+
+        BuyerField(String label, String value, boolean copyable) {
+            this.label = label;
+            this.value = value;
+            this.copyable = copyable;
+        }
     }
 
     private static String normalizeDirection(String raw) {
