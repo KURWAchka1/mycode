@@ -102,7 +102,7 @@ jobs:
           grep -F "targetSdkVersion:'36'" apk-badging.txt
           grep -F "versionName='2.3.18'" apk-badging.txt
           EXPECTED_CERT="$(tr -d '[:space:]' < app/signing-certificate-sha256.txt)"
-          ACTUAL_CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' apk-signature.txt | head -1 | tr '[:upper:]' '[:lower:]')"
+          ACTUAL_CERT="$(sed -n -E 's/^(Signer #1|V[0-9.]+ Signer): certificate SHA-256 digest: //p' apk-signature.txt | head -1 | tr '[:upper:]' '[:lower:]')"
           test -n "$ACTUAL_CERT"
           test "$ACTUAL_CERT" = "$EXPECTED_CERT"
           sha256sum "$APK" | sed 's#app/build/outputs/apk/release/app-release.apk#PlayerokMonitor-OneUI85-v2.3.18.apk#' \
