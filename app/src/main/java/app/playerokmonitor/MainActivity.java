@@ -64,6 +64,7 @@ public final class MainActivity extends Activity {
         allOrders = OrdersRepository.loadCached(this);
         renderSelectedTab();
         syncOrders(false);
+        AppUpdateManager.checkAndOffer(this, network, false, null);
     }
 
     private View buildUi() {
@@ -366,6 +367,7 @@ public final class MainActivity extends Activity {
         allOrders = OrdersRepository.loadCached(this);
         renderSelectedTab();
         syncOrders(false);
+        AppUpdateManager.resumePendingInstall(this);
     }
 
     @Override

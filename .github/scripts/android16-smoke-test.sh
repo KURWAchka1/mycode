@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APK="app/build/outputs/apk/debug/app-debug.apk"
+APK="app/build/outputs/apk/release/app-release.apk"
 PACKAGE="app.playerokmonitor"
 ACTIVITY="app.playerokmonitor/.MainActivity"
 
@@ -171,6 +171,10 @@ PY
 adb shell input tap "$SETTINGS_X" "$SETTINGS_Y"
 sleep 2
 adb shell dumpsys activity activities | grep -F "$PACKAGE/.SettingsActivity"
+adb shell uiautomator dump /sdcard/playerok-settings-top.xml >/dev/null
+SETTINGS_TOP_XML="$(adb shell cat /sdcard/playerok-settings-top.xml | tr -d '\r')"
+grep -F "Проверить обновления приложения" <<<"$SETTINGS_TOP_XML"
+grep -F "Версия 2.3.18" <<<"$SETTINGS_TOP_XML"
 for _ in 1 2 3 4; do adb shell input swipe 540 2050 540 700 350; done
 sleep 1
 adb shell uiautomator dump /sdcard/playerok-settings-sleep.xml >/dev/null

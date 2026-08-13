@@ -44,12 +44,32 @@ jobs:
           echo '/tmp/gradle-8.13/bin' >> "$GITHUB_PATH"
           /tmp/gradle-8.13/bin/gradle --version
 
+      - name: Restore permanent Android signing key
+        shell: bash
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$SIGNING_KEY_BASE64"
+          test -n "$SIGNING_STORE_PASSWORD"
+          test -n "$SIGNING_KEY_PASSWORD"
+          test -n "$SIGNING_KEY_ALIAS"
+          printf '%s' "$SIGNING_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/playerok-monitor-release.p12"
+          chmod 600 "$RUNNER_TEMP/playerok-monitor-release.p12"
+          echo "ANDROID_SIGNING_STORE_FILE=$RUNNER_TEMP/playerok-monitor-release.p12" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS" >> "$GITHUB_ENV"
+
       - name: Build APK and run lint
         shell: bash
         run: |
           set -Eeuo pipefail
-          if ! gradle --no-daemon :app:lintDebug :app:assembleDebug; then
-            test ! -f app/build/reports/lint-results-debug.txt || cat app/build/reports/lint-results-debug.txt
+          if ! gradle --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease; then
+            test ! -f app/build/reports/lint-results-release.txt || cat app/build/reports/lint-results-release.txt
             exit 1
           fi
 
@@ -73,21 +93,28 @@ jobs:
       - name: Verify APK metadata and signature
         run: |
           set -eu
-          APK=app/build/outputs/apk/debug/app-debug.apk
+          APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
           "$BUILD_TOOLS_DIR/aapt" dump badging "$APK" | tee apk-badging.txt
           "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           grep -F "package: name='app.playerokmonitor'" apk-badging.txt
           grep -F "targetSdkVersion:'36'" apk-badging.txt
-          grep -F "versionName='2.3.17'" apk-badging.txt
+          grep -F "versionName='2.3.18'" apk-badging.txt
+          EXPECTED_CERT="$(tr -d '[:space:]' < app/signing-certificate-sha256.txt)"
+          ACTUAL_CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' apk-signature.txt | head -1 | tr '[:upper:]' '[:lower:]')"
+          test -n "$ACTUAL_CERT"
+          test "$ACTUAL_CERT" = "$EXPECTED_CERT"
+          sha256sum "$APK" | sed 's#app/build/outputs/apk/release/app-release.apk#PlayerokMonitor-OneUI85-v2.3.18.apk#' \
+            > PlayerokMonitor-OneUI85-v2.3.18.apk.sha256
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: PlayerokMonitor-2.3.17-OneUI85
+          name: PlayerokMonitor-2.3.18-OneUI85
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
+            PlayerokMonitor-OneUI85-v2.3.18.apk.sha256
             apk-badging.txt
             apk-signature.txt
             android16-main-default.png
@@ -111,15 +138,20 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v2.3.17-oneui85
+          TAG: v2.3.18-oneui85
         run: |
           set -Eeuo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk PlayerokMonitor-OneUI85-v2.3.17.apk
+          cp app/build/outputs/apk/release/app-release.apk PlayerokMonitor-OneUI85-v2.3.18.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" PlayerokMonitor-OneUI85-v2.3.17.apk --clobber
+            gh release upload "$TAG" \
+              PlayerokMonitor-OneUI85-v2.3.18.apk \
+              PlayerokMonitor-OneUI85-v2.3.18.apk.sha256 \
+              --clobber
           else
-            gh release create "$TAG" PlayerokMonitor-OneUI85-v2.3.17.apk \
+            gh release create "$TAG" \
+              PlayerokMonitor-OneUI85-v2.3.18.apk \
+              PlayerokMonitor-OneUI85-v2.3.18.apk.sha256 \
               --target "$GITHUB_SHA" \
-              --title "Playerok Monitor 2.3.17 · Fulfillment from the app" \
+              --title "Playerok Monitor 2.3.18 · Встроенные обновления" \
               --notes-file RELEASE_NOTES.md
           fi

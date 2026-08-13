@@ -36,6 +36,7 @@ public final class SettingsActivity extends Activity {
 
     private EditText urlInput;
     private TextView statusText;
+    private TextView updateStatusText;
     private Switch replyDisabledToggle;
     private LinearLayout replyList;
     private TextView replyStatus;
@@ -170,6 +171,18 @@ public final class SettingsActivity extends Activity {
         Button notificationSettings = button("Настройки звука уведомлений");
         notificationSettings.setOnClickListener(v -> { Ui.haptic(v); openNotificationSettings(); });
         card.addView(notificationSettings, marginTop(8));
+
+        Button checkUpdate = button("Проверить обновления приложения");
+        checkUpdate.setOnClickListener(v -> {
+            Ui.haptic(v);
+            AppUpdateManager.checkAndOffer(this, network, true, updateStatusText);
+        });
+        card.addView(checkUpdate, marginTop(8));
+
+        updateStatusText = Ui.text(this,
+                "Версия " + AppUpdateManager.currentVersion(this) + " · обновления устанавливаются из приложения",
+                13, Ui.MUTED, false);
+        card.addView(updateStatusText, marginTop(6));
 
         statusText = Ui.text(this, "", 14, Ui.MUTED, false);
         statusText.setPadding(0, Ui.dp(this, 18), 0, 0);
@@ -665,7 +678,11 @@ public final class SettingsActivity extends Activity {
                 : "Статус: мониторинг выключен");
     }
 
-    @Override protected void onResume() { super.onResume(); refreshStatus(); }
+    @Override protected void onResume() {
+        super.onResume();
+        refreshStatus();
+        AppUpdateManager.resumePendingInstall(this);
+    }
     @Override protected void onDestroy() { network.shutdownNow(); super.onDestroy(); }
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_SHORT).show(); }
 }

@@ -10,8 +10,21 @@ android {
         applicationId 'app.playerokmonitor'
         minSdk 26
         targetSdk 36
-        versionCode 27
-        versionName '2.3.17'
+        versionCode 28
+        versionName '2.3.18'
+    }
+
+    signingConfigs {
+        release {
+            def signingStore = System.getenv('ANDROID_SIGNING_STORE_FILE')
+            if (signingStore) {
+                storeFile file(signingStore)
+                storePassword System.getenv('ANDROID_SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_SIGNING_KEY_PASSWORD')
+                storeType 'PKCS12'
+            }
+        }
     }
 
     buildTypes {
@@ -20,6 +33,7 @@ android {
         }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -39,6 +53,11 @@ android {
         abortOnError true
         checkReleaseBuilds true
     }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.17.0'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 // Generate a clean, short two-note chime during the build. The mix is louder
