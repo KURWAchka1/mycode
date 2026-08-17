@@ -123,6 +123,20 @@ class RelistReceipt:
     priority_price: int
     priority_type: str
     published_at: str
+    source: str = "MANUAL"
+    payment_id: str = ""
+
+
+@dataclass(slots=True)
+class AutoRelistCheck:
+    deal_id: str
+    source_item_id: str
+    source_item_slug: str
+    payment_created_at: str
+    attempts: int
+    next_check_at: str
+    completed_at: str
+    last_error: str
 
 
 @dataclass(slots=True)
@@ -370,10 +384,48 @@ class OrderStore:
                     published_item_slug TEXT NOT NULL DEFAULT '',
                     priority_price INTEGER NOT NULL DEFAULT 0,
                     priority_type TEXT NOT NULL DEFAULT '',
+                    source TEXT NOT NULL DEFAULT 'MANUAL',
+                    payment_id TEXT NOT NULL DEFAULT '',
                     published_at TEXT NOT NULL,
                     FOREIGN KEY(deal_id) REFERENCES orders(deal_id)
                 )
                 """
+            )
+            self._ensure_column(
+                "relist_receipts", "source", "TEXT NOT NULL DEFAULT 'MANUAL'"
+            )
+            self._ensure_column(
+                "relist_receipts", "payment_id", "TEXT NOT NULL DEFAULT ''"
+            )
+            # A Playerok publication payment belongs to exactly one purchase.
+            # Empty payment ids are used by the existing manual flow and do not
+            # participate in this constraint.
+            self._conn.execute(
+                """CREATE UNIQUE INDEX IF NOT EXISTS relist_receipts_payment_idx
+                   ON relist_receipts(payment_id) WHERE payment_id<>''"""
+            )
+
+            # Only orders first observed after this migration are armed.  This
+            # prevents a service restart/update from generating historical
+            # auto-relist notifications for old purchases.
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS auto_relist_checks (
+                    deal_id TEXT PRIMARY KEY,
+                    source_item_id TEXT NOT NULL DEFAULT '',
+                    source_item_slug TEXT NOT NULL,
+                    payment_created_at TEXT NOT NULL,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    next_check_at TEXT NOT NULL,
+                    completed_at TEXT NOT NULL DEFAULT '',
+                    last_error TEXT NOT NULL DEFAULT '',
+                    FOREIGN KEY(deal_id) REFERENCES orders(deal_id)
+                )
+                """
+            )
+            self._conn.execute(
+                """CREATE INDEX IF NOT EXISTS auto_relist_checks_due_idx
+                   ON auto_relist_checks(completed_at,next_check_at)"""
             )
 
             self._conn.execute(
@@ -1542,6 +1594,7 @@ class OrderStore:
     def _relist_receipt(row: sqlite3.Row | None) -> RelistReceipt | None:
         if row is None:
             return None
+        keys = set(row.keys())
         return RelistReceipt(
             deal_id=row["deal_id"],
             source_item_id=row["source_item_id"],
@@ -1551,7 +1604,130 @@ class OrderStore:
             priority_price=int(row["priority_price"]),
             priority_type=row["priority_type"],
             published_at=row["published_at"],
+            source=row["source"] if "source" in keys else "MANUAL",
+            payment_id=row["payment_id"] if "payment_id" in keys else "",
         )
+
+    @staticmethod
+    def _auto_relist_check(row: sqlite3.Row | None) -> AutoRelistCheck | None:
+        if row is None:
+            return None
+        return AutoRelistCheck(
+            deal_id=row["deal_id"],
+            source_item_id=row["source_item_id"],
+            source_item_slug=row["source_item_slug"],
+            payment_created_at=row["payment_created_at"],
+            attempts=int(row["attempts"]),
+            next_check_at=row["next_check_at"],
+            completed_at=row["completed_at"],
+            last_error=row["last_error"],
+        )
+
+    def arm_auto_relist_check(
+        self,
+        deal_id: str,
+        *,
+        source_item_id: str,
+        source_item_slug: str,
+        payment_created_at: str,
+    ) -> bool:
+        """Arm read-only detection once for a newly observed sale."""
+        clean_slug = (source_item_slug or "").strip()
+        if not clean_slug:
+            return False
+        with self._lock:
+            now = self._now()
+            cur = self._conn.execute(
+                """INSERT OR IGNORE INTO auto_relist_checks
+                   (deal_id,source_item_id,source_item_slug,payment_created_at,next_check_at)
+                   SELECT ?,?,?,?,? FROM orders
+                   WHERE deal_id=? AND direction='OUT'""",
+                (
+                    deal_id,
+                    (source_item_id or "").strip(),
+                    clean_slug,
+                    (payment_created_at or now).strip() or now,
+                    now,
+                    deal_id,
+                ),
+            )
+            self._conn.commit()
+            return cur.rowcount > 0
+
+    def list_due_auto_relist_checks(self, limit: int = 8) -> list[AutoRelistCheck]:
+        safe_limit = max(1, min(24, int(limit)))
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT c.* FROM auto_relist_checks c
+                   JOIN orders o ON o.deal_id=c.deal_id
+                   LEFT JOIN relist_receipts r ON r.deal_id=c.deal_id
+                   WHERE c.completed_at='' AND c.attempts<8
+                     AND c.next_check_at<=? AND r.deal_id IS NULL
+                     AND o.direction='OUT' AND o.rolled_back=0
+                     AND o.relist_state<>'PUBLISHING'
+                   ORDER BY c.next_check_at,c.payment_created_at
+                   LIMIT ?""",
+                (self._now(), safe_limit),
+            ).fetchall()
+            return [
+                item
+                for row in rows
+                if (item := self._auto_relist_check(row)) is not None
+            ]
+
+    def list_open_auto_relist_checks(
+        self, source_item_slug: str, limit: int = 24
+    ) -> list[AutoRelistCheck]:
+        safe_limit = max(1, min(50, int(limit)))
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT c.* FROM auto_relist_checks c
+                   JOIN orders o ON o.deal_id=c.deal_id
+                   LEFT JOIN relist_receipts r ON r.deal_id=c.deal_id
+                   WHERE c.source_item_slug=? AND c.completed_at=''
+                     AND c.attempts<8 AND r.deal_id IS NULL
+                     AND o.direction='OUT' AND o.rolled_back=0
+                     AND o.relist_state<>'PUBLISHING'
+                   ORDER BY c.payment_created_at DESC LIMIT ?""",
+                ((source_item_slug or "").strip(), safe_limit),
+            ).fetchall()
+            return [
+                item
+                for row in rows
+                if (item := self._auto_relist_check(row)) is not None
+            ]
+
+    def defer_auto_relist_check(
+        self,
+        deal_id: str,
+        *,
+        delay_seconds: int,
+        error: str = "",
+    ) -> None:
+        with self._lock:
+            next_at = datetime.fromtimestamp(
+                datetime.now(timezone.utc).timestamp() + max(5, int(delay_seconds)),
+                tz=timezone.utc,
+            ).isoformat()
+            self._conn.execute(
+                """UPDATE auto_relist_checks
+                   SET attempts=attempts+1,next_check_at=?,last_error=?,
+                       completed_at=CASE WHEN attempts+1>=8 THEN ? ELSE completed_at END
+                   WHERE deal_id=? AND completed_at=''""",
+                (next_at, (error or "")[:160], self._now(), deal_id),
+            )
+            self._conn.commit()
+
+    def complete_auto_relist_check(self, deal_id: str) -> None:
+        with self._lock:
+            self._conn.execute(
+                """UPDATE auto_relist_checks
+                   SET completed_at=CASE WHEN completed_at='' THEN ? ELSE completed_at END,
+                       last_error=''
+                   WHERE deal_id=?""",
+                (self._now(), deal_id),
+            )
+            self._conn.commit()
 
     def get_relist_receipt(self, deal_id: str) -> RelistReceipt | None:
         with self._lock:
@@ -1720,6 +1896,9 @@ class OrderStore:
         priority_price: int,
         priority_type: str,
         published_at: str = "",
+        receipt_source: str = "MANUAL",
+        payment_id: str = "",
+        listing_price: int = 0,
     ) -> tuple[RelistReceipt, bool]:
         """Persist the one immutable success receipt for a source order."""
         with self._lock:
@@ -1729,8 +1908,9 @@ class OrderStore:
                 cur = self._conn.execute(
                     """INSERT OR IGNORE INTO relist_receipts
                        (deal_id,source_item_id,source_item_slug,published_item_id,
-                        published_item_slug,priority_price,priority_type,published_at)
-                       VALUES (?,?,?,?,?,?,?,?)""",
+                        published_item_slug,priority_price,priority_type,published_at,
+                        source,payment_id)
+                       VALUES (?,?,?,?,?,?,?,?,?,?)""",
                     (
                         deal_id,
                         source_item_id,
@@ -1740,6 +1920,8 @@ class OrderStore:
                         max(0, int(priority_price)),
                         priority_type,
                         when,
+                        (receipt_source or "MANUAL").strip().upper() or "MANUAL",
+                        (payment_id or "").strip(),
                     ),
                 )
                 created = cur.rowcount > 0
@@ -1749,7 +1931,11 @@ class OrderStore:
                         (deal_id,),
                     ).fetchone()
                 )
-                assert receipt is not None
+                if receipt is None:
+                    # The partial unique payment index rejected reuse of one
+                    # Playerok charge for another order.
+                    self._conn.rollback()
+                    raise ValueError("Playerok relist payment is already linked")
 
                 current = self._order(
                     self._conn.execute(
@@ -1774,6 +1960,7 @@ class OrderStore:
                                ELSE relist_draft_item_slug END,
                            relisted_item_id=?, relisted_item_slug=?,
                            relist_priority_price=?, relist_priority_type=?,
+                           relist_listing_price=CASE WHEN ?>0 THEN ? ELSE relist_listing_price END,
                            relisted_at=?, relist_error='', updated_at=?, revision=?
                            WHERE deal_id=?""",
                         (
@@ -1785,6 +1972,8 @@ class OrderStore:
                             receipt.published_item_slug,
                             receipt.priority_price,
                             receipt.priority_type,
+                            max(0, int(listing_price)),
+                            max(0, int(listing_price)),
                             receipt.published_at,
                             now,
                             rev,

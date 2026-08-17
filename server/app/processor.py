@@ -416,6 +416,7 @@ class OrderProcessor:
         )
 
         async with self._locks[deal_id]:
+            is_new_order = self.store.get(deal_id) is None
             row = self.store.record(
                 deal_id,
                 chat_id,
@@ -432,6 +433,14 @@ class OrderProcessor:
                 seller_net_available_at=seller_net_available_at,
             )
             deal = _value(event, "deal")
+            if is_new_order and row.direction == "OUT":
+                source_item = _value(deal, "item")
+                self.store.arm_auto_relist_check(
+                    deal_id,
+                    source_item_id=_text(_value(source_item, "id")),
+                    source_item_slug=_text(_value(source_item, "slug")),
+                    payment_created_at=payment_created_at or row.first_seen_at,
+                )
             self.persist_review(deal_id, deal, details_loaded=True)
             status = _enum_name(_value(deal, "status"))
             self.store.set_deal_progress(

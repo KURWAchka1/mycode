@@ -172,6 +172,25 @@ class EventBus:
         )
         return await self._notify(row, created)
 
+    async def publish_auto_relist(
+        self,
+        order: OrderRow,
+        *,
+        payment_id: str,
+        priority_price: int,
+    ) -> EventRow:
+        fee = max(0, int(priority_price))
+        placement = f"Premium: {fee} ₽" if fee else "Размещение: бесплатно"
+        details = [x for x in (_safe(order.item_name), placement) if x]
+        row, created = self.store.add_event(
+            f"auto-relist:{order.deal_id}:{payment_id}",
+            order.deal_id,
+            "ITEM_AUTO_RELISTED",
+            "Товар автоматически перевыставлен",
+            " • ".join(details),
+        )
+        return await self._notify(row, created)
+
     async def publish_problem(
         self,
         order: OrderRow,

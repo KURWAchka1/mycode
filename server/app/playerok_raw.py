@@ -28,15 +28,18 @@ _KNOWN_APQ_HASHES: dict[str, tuple[str, ...]] = {
         "c1ddbcd7c8b87160ac25e0734f9dc32fc945287b056f4b14abf1473bfb1ad11a",
     ),
     "chatMessages": (
+        "9b4e264ff1b20e0fd3929afe023dee8f50affc02b85f80cb4b3dc1516ecfbaa0",
         "1cabd4aee7c22353f49eaaff78ca82355e182f33a723d0fd92ccd36092917784",
     ),
     "deal": (
+        "d0421fb8dea49652876d69b1a14ce2c715ea9c7127c48c85a78e06de31a845ae",
         "e572582c52871c15c3278d46c649c7ec70dd4711d80661a4aa3cc67b48823e3e",
     ),
     "deals": (
         "591b0e6d036c2120c8f95b97dbfdf5635df3747cd901f4895e009935229417ef",
     ),
     "item": (
+        "1cdb4b335f6c119db77883451f41cef83fc449f79f021627f27b76ec49203487",
         "014b7824712618664cdfd3223504f52f785a46b06561dd9e9c0e9d2e4d8262c6",
     ),
     "itemPriorityStatuses": (

@@ -6,7 +6,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,6 +15,7 @@ from app.config import playerok_identity_from_token
 from app.db import OrderStore
 from app.event_bus import EventBus, PollServer, _order_json
 from app.processor import ITEM_PAID_TEXT, OrderProcessor
+from app.playerok_watcher import PlayerokOrderWatcher, _match_auto_relist
 from app.relist import RelistError, RelistService
 
 
@@ -1321,6 +1322,104 @@ class OrderStateTests(unittest.TestCase):
             self.assertNotEqual("PUBLISHED", self.store.get("deal-1").relist_state)
 
         asyncio.run(scenario())
+
+    def test_auto_relist_detection_uses_playerok_payment_and_keeps_manual_fallback(self) -> None:
+        paid_at = datetime.now(timezone.utc)
+        published_at = paid_at + timedelta(seconds=95)
+        self.assertTrue(
+            self.store.arm_auto_relist_check(
+                "deal-1",
+                source_item_id="snapshot-1",
+                source_item_slug="permanent-item",
+                payment_created_at=paid_at.isoformat(),
+            )
+        )
+        # Old rows are never armed merely by opening the upgraded database.
+        self.store.record(
+            "manual-deal",
+            "manual-chat",
+            "Manual item",
+            "200 ₽",
+            "buyer",
+            direction="OUT",
+        )
+
+        live = SimpleNamespace(
+            id="live-1",
+            slug="permanent-item",
+            status="APPROVED",
+            priority="PREMIUM",
+            keep_in_sale=True,
+            approval_date=published_at.isoformat(),
+            raw_price=199,
+            status_payment=SimpleNamespace(
+                id="premium-payment-1",
+                operation="ITEM_PREMIUM_PRIORITY",
+                direction="OUT",
+                status="CONFIRMED",
+                value=25,
+            ),
+        )
+        match = _match_auto_relist(live, paid_at)
+        self.assertIsNotNone(match)
+        self.assertEqual(25, match.priority_price)
+
+        class FakeRaw:
+            async def get_item_by_slug(self, slug: str):
+                self.slug = slug
+                return live
+
+        async def scenario() -> None:
+            bus = EventBus(self.store, "secret")
+            processor = SimpleNamespace(bus=bus)
+            watcher = PlayerokOrderWatcher(
+                SimpleNamespace(), processor, self.store, "owner"
+            )
+            watcher.raw = FakeRaw()
+            await watcher._detect_auto_relists_once()
+
+        asyncio.run(scenario())
+        receipt = self.store.get_relist_receipt("deal-1")
+        self.assertIsNotNone(receipt)
+        self.assertEqual("PLAYEROK_AUTO", receipt.source)
+        self.assertEqual("premium-payment-1", receipt.payment_id)
+        self.assertEqual(25, receipt.priority_price)
+        row = self.store.get("deal-1")
+        self.assertEqual("PUBLISHED", row.relist_state)
+        self.assertEqual(199, row.relist_listing_price)
+        # A different sale without keep-in-sale remains available for the
+        # existing manual relist flow and is not marked automatically.
+        self.assertIsNone(self.store.get_relist_receipt("manual-deal"))
+        self.assertTrue(self.store.get("manual-deal").relist_eligible)
+
+    def test_one_playerok_auto_relist_payment_cannot_mark_two_orders(self) -> None:
+        self.store.record(
+            "deal-2", "chat-2", "Second", "100 ₽", "buyer", direction="OUT"
+        )
+        self.store.mark_relist_published(
+            "deal-1",
+            source_item_id="snapshot-1",
+            source_item_slug="item",
+            published_item_id="live-1",
+            published_item_slug="item",
+            priority_price=19,
+            priority_type="PREMIUM",
+            receipt_source="PLAYEROK_AUTO",
+            payment_id="same-payment",
+        )
+        with self.assertRaises(ValueError):
+            self.store.mark_relist_published(
+                "deal-2",
+                source_item_id="snapshot-2",
+                source_item_slug="item",
+                published_item_id="live-1",
+                published_item_slug="item",
+                priority_price=19,
+                priority_type="PREMIUM",
+                receipt_source="PLAYEROK_AUTO",
+                payment_id="same-payment",
+            )
+        self.assertIsNone(self.store.get_relist_receipt("deal-2"))
 
 
 if __name__ == "__main__":

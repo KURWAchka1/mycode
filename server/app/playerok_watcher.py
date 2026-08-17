@@ -5,6 +5,8 @@ import json
 import logging
 import time
 import uuid
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -39,6 +41,9 @@ FINANCIAL_REFRESH_SECONDS = 15 * 60.0
 REVIEW_REFRESH_SECONDS = 5 * 60.0
 REVIEW_RECENT_PAGES = 2
 MAX_CHAT_PAGES = 3  # 72 latest messages; important when one buyer makes many orders in one chat.
+AUTO_RELIST_SCAN_SECONDS = 12.0
+AUTO_RELIST_MATCH_WINDOW_SECONDS = 45 * 60
+AUTO_RELIST_RETRY_SECONDS = (15, 30, 60, 120, 240, 480, 900, 1200)
 
 
 def _value(obj: Any, name: str, default: Any = None) -> Any:
@@ -82,6 +87,81 @@ def _parse_dt(raw: Any) -> datetime | None:
         return dt.astimezone(timezone.utc)
     except (TypeError, ValueError):
         return None
+
+
+def _whole_money(raw: Any) -> int | None:
+    try:
+        value = Decimal(str(raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if not value.is_finite() or value < 0 or value != value.to_integral_value():
+        return None
+    return int(value)
+
+
+@dataclass(frozen=True, slots=True)
+class _AutoRelistMatch:
+    published_item_id: str
+    published_item_slug: str
+    payment_id: str
+    priority_price: int
+    priority_type: str
+    listing_price: int
+    published_at: str
+    published_dt: datetime
+
+
+def _match_auto_relist(live_item: Any, paid_at: datetime) -> _AutoRelistMatch | None:
+    """Match Playerok's own keep-in-sale publication without mutating it."""
+    if _value(live_item, "keep_in_sale", False) is not True:
+        return None
+    if _status_name(_value(live_item, "status")) != "APPROVED":
+        return None
+
+    payment = _value(live_item, "status_payment")
+    operation = _status_name(_value(payment, "operation"))
+    if operation not in {"ITEM_PREMIUM_PRIORITY", "ITEM_DEFAULT_PRIORITY"}:
+        return None
+    if _status_name(_value(payment, "direction")) != "OUT":
+        return None
+    if _status_name(_value(payment, "status")) != "CONFIRMED":
+        return None
+
+    payment_id = _text(_value(payment, "id"))
+    published_item_id = _text(_value(live_item, "id"))
+    published_item_slug = _text(_value(live_item, "slug"))
+    published_at = _text(_value(live_item, "approval_date"))
+    published_dt = _parse_dt(published_at)
+    priority_price = _whole_money(_value(payment, "value"))
+    listing_price = _whole_money(
+        _value(live_item, "raw_price", _value(live_item, "price", 0))
+    )
+    if (
+        not payment_id
+        or not published_item_id
+        or not published_item_slug
+        or published_dt is None
+        or priority_price is None
+    ):
+        return None
+
+    delta = (published_dt - paid_at).total_seconds()
+    if delta < -30 or delta > AUTO_RELIST_MATCH_WINDOW_SECONDS:
+        return None
+
+    priority_type = (
+        "PREMIUM" if operation == "ITEM_PREMIUM_PRIORITY" else "DEFAULT"
+    )
+    return _AutoRelistMatch(
+        published_item_id=published_item_id,
+        published_item_slug=published_item_slug,
+        payment_id=payment_id,
+        priority_price=priority_price,
+        priority_type=priority_type,
+        listing_price=listing_price or 0,
+        published_at=published_at,
+        published_dt=published_dt,
+    )
 
 
 class PlayerokOrderWatcher:
@@ -157,6 +237,7 @@ class PlayerokOrderWatcher:
             asyncio.create_task(self._financials_forever(), name="playerok-financial-refresh"),
             asyncio.create_task(self._reviews_forever(), name="playerok-review-refresh"),
             asyncio.create_task(self._buyer_fields_backfill_once(), name="playerok-buyer-fields-backfill"),
+            asyncio.create_task(self._auto_relists_forever(), name="playerok-auto-relist-detect"),
         ]
 
     async def _backfill_directions(self) -> None:
@@ -403,6 +484,124 @@ class PlayerokOrderWatcher:
             rows = self.store.list_orders_with_pending_financials(limit=50)
             if rows:
                 await self._refresh_financial_rows(rows, reason="pending-status")
+
+    @staticmethod
+    def _auto_relist_retry_delay(attempts: int) -> int:
+        index = max(0, min(int(attempts), len(AUTO_RELIST_RETRY_SECONDS) - 1))
+        return AUTO_RELIST_RETRY_SECONDS[index]
+
+    async def _detect_auto_relists_once(self) -> None:
+        due = self.store.list_due_auto_relist_checks(limit=8)
+        if not due:
+            return
+
+        grouped: dict[str, list[Any]] = {}
+        for candidate in due:
+            grouped.setdefault(candidate.source_item_slug, []).append(candidate)
+
+        for slug, due_for_slug in grouped.items():
+            try:
+                live_item = await self.raw.get_item_by_slug(slug)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                for candidate in due_for_slug:
+                    self.store.defer_auto_relist_check(
+                        candidate.deal_id,
+                        delay_seconds=self._auto_relist_retry_delay(candidate.attempts),
+                        error=f"ITEM_READ_{type(exc).__name__}",
+                    )
+                log.debug(
+                    "Auto-relist item read failed slug=%s", slug, exc_info=True
+                )
+                continue
+
+            compatible: list[tuple[float, Any, _AutoRelistMatch]] = []
+            for candidate in self.store.list_open_auto_relist_checks(slug):
+                paid_at = _parse_dt(candidate.payment_created_at)
+                if paid_at is None:
+                    continue
+                match = _match_auto_relist(live_item, paid_at)
+                if match is not None:
+                    compatible.append(
+                        ((match.published_dt - paid_at).total_seconds(), candidate, match)
+                    )
+
+            selected_deal_id = ""
+            if compatible:
+                # If the same permanent item is bought twice quickly, bind the
+                # current Playerok payment to the closest preceding purchase.
+                _delta, candidate, match = min(compatible, key=lambda entry: entry[0])
+                selected_deal_id = candidate.deal_id
+                order = self.store.get(candidate.deal_id)
+                if order is not None:
+                    try:
+                        receipt, _created = self.store.mark_relist_published(
+                            candidate.deal_id,
+                            source_item_id=candidate.source_item_id,
+                            source_item_slug=candidate.source_item_slug,
+                            published_item_id=match.published_item_id,
+                            published_item_slug=match.published_item_slug,
+                            priority_price=match.priority_price,
+                            priority_type=match.priority_type,
+                            published_at=match.published_at,
+                            receipt_source="PLAYEROK_AUTO",
+                            payment_id=match.payment_id,
+                            listing_price=match.listing_price,
+                        )
+                    except ValueError:
+                        self.store.defer_auto_relist_check(
+                            candidate.deal_id,
+                            delay_seconds=self._auto_relist_retry_delay(candidate.attempts),
+                            error="PAYMENT_ALREADY_LINKED",
+                        )
+                        log.warning(
+                            "Ignored reused Playerok auto-relist payment deal=%s payment=%s",
+                            candidate.deal_id,
+                            match.payment_id,
+                        )
+                    else:
+                        self.store.complete_auto_relist_check(candidate.deal_id)
+                        if (
+                            receipt.source == "PLAYEROK_AUTO"
+                            and receipt.payment_id == match.payment_id
+                        ):
+                            await self.processor.bus.publish_auto_relist(
+                                order,
+                                payment_id=match.payment_id,
+                                priority_price=match.priority_price,
+                            )
+                            log.info(
+                                "Playerok auto-relist detected deal=%s item=%s fee=%s",
+                                candidate.deal_id,
+                                match.published_item_id,
+                                match.priority_price,
+                            )
+                else:
+                    self.store.complete_auto_relist_check(candidate.deal_id)
+
+            for candidate in due_for_slug:
+                if candidate.deal_id == selected_deal_id:
+                    continue
+                self.store.defer_auto_relist_check(
+                    candidate.deal_id,
+                    delay_seconds=self._auto_relist_retry_delay(candidate.attempts),
+                    error="NOT_AUTO_RELISTED_YET",
+                )
+            await asyncio.sleep(0.2)
+
+    async def _auto_relists_forever(self) -> None:
+        # This loop is intentionally bounded by the persisted eight-attempt
+        # schedule. It never scans historical orders or performs Playerok writes.
+        await asyncio.sleep(3)
+        while self._running:
+            try:
+                await self._detect_auto_relists_once()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                log.exception("Playerok auto-relist detection failed")
+            await asyncio.sleep(AUTO_RELIST_SCAN_SECONDS)
 
     async def stop(self) -> None:
         self._running = False
